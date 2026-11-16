@@ -18,7 +18,7 @@ This is the "separate architecture document" referenced in the PRD's Constraints
 | # | Constraint | Source |
 |---|---|---|
 | K1 | Closed pilot January 2027, production launch February 2027 (~7 weeks from 2026-11-16) | PRD § Constraints → Delivery |
-| K2 | Learner data hosted in the EU with a GDPR-governed provider (decided 2026-11-16; the PRD still says South Africa — amendment pending); POPIA s72 cross-border transfer (DPA + privacy notice); parent consent for children's data recorded | PRD § Constraints; *Hosting → Provider & region* |
+| K2 | Learner data hosted in the EU with a GDPR-governed provider (decided 2026-11-16; PRD amended 2026-11-16 to allow international hosting); POPIA s72 cross-border transfer (DPA + privacy notice); parent consent for children's data recorded | PRD § Constraints; *Hosting → Provider & region* |
 | K3 | Responsive web app (also serves iPhone/iPad users) + native Android app on Google Play, same features; no iOS app | PRD § Constraints, Technical Context |
 | K4 | Runs on 2 GB RAM Android phones; a 15-min session uses < 5 MB data | PRD § Constraints |
 | K5 | Parents: Google or email+password only, explicit linking; children: no login, parent-issued one-time code/QR (15 min, single use) creating a revocable device credential | PRD AC-A1…A11 |
@@ -28,7 +28,7 @@ This is the "separate architecture document" referenced in the PRD's Constraints
 | K9 | AI pipeline: reading Afrikaans phone-photo PDFs (no text layer), fact extraction/paraphrase, question generation with rubrics; cost-capped two-step grader marking correct/partial/incorrect | PRD § Content, Engine, AC-E8–E12 |
 | K10 | Push to Android (parents, children), email to parents, in-app reminders on web | PRD § Constraints |
 | K11 | Web-only content back office with versioning and review queues | PRD § Content |
-| K12 | Engine: knowledge tracing, spaced repetition, pluggable strategy layer; scheduled work (missed sessions, digests, 12-month retention deletes) | PRD § Engine, Oversight |
+| K12 | Engine: knowledge tracing, spaced repetition, pluggable strategy layer; scheduled work (missed sessions, digests) | PRD § Engine, Oversight |
 
 ## Technology preferences and principles
 
@@ -74,7 +74,6 @@ The user's standing preferences for Slaag (2026-11-16). The decisions below star
 | Data | Source document repository | Google Drive (Shared Drive) for ingested source documents; back office reads via Drive API | decided |
 | Data | User-facing images & content files | Cloudflare R2 + Cloudflare CDN | decided |
 | Data | Backups | Continuous WAL archiving / PITR (WAL-G or pgBackRest) to Cloudflare R2 + Coolify scheduled pg_dump + Hetzner daily server backups; restore drill before pilot | decided |
-| Data | Retention deletes | pg-boss scheduled jobs (12-month retention, 30-day warning) | decided |
 | Engine | Answer evaluation (grader) ◆ | AnswerEvaluationService: TypeSafe AI Jev primary; Claude Haiku 5.5 fallback below a configurable confidence threshold | decided (Afrikaans accuracy: research) |
 | API | Style: mobile BFF ◆ | `/api/mobile/v1/*` REST (Server Routes) for Android; Server Functions for web; both transport adapters over shared services | decided |
 | API | Versioning ◆ | Contract version (v1, v2) separate from app version; compile-time default, server config may select among versions the build supports; fixed trusted origins | decided |
@@ -169,7 +168,7 @@ The user's standing preferences for Slaag (2026-11-16). The decisions below star
 #### Background jobs & scheduling
 - **Choice:** pg-boss as the queue and scheduler, used only through a shared job-service abstraction in `packages/core` (enqueue, schedule, handle) so the implementation stays replaceable. Jobs run in a separate worker container built from the same TypeScript codebase and deployed by Coolify alongside the web container.
 - **Category:** New
-- **Why:** Postgres-backed, so no extra service on the single VPS (cost, simplicity) and jobs can be enqueued in the same transaction as the data that triggers them (e.g. PayFast webhook → subscription change → email job). Covers K12 scheduled work (missed sessions, digests, retention deletes) and K9 pipeline steps (page reading, extraction, question generation). A separate worker keeps long AI jobs away from request handling.
+- **Why:** Postgres-backed, so no extra service on the single VPS (cost, simplicity) and jobs can be enqueued in the same transaction as the data that triggers them (e.g. PayFast webhook → subscription change → email job). Covers K12 scheduled work (missed sessions, digests) and K9 pipeline steps (page reading, extraction, question generation). A separate worker keeps long AI jobs away from request handling.
 - **Preference:** specified by the user (abstraction and separate worker container)
 - **Alternatives rejected:** BullMQ + Redis — another stateful container to run, back up and monitor; Graphile Worker — comparable, smaller ecosystem in Drizzle-based stacks.
 - **Facts checked:** pg-boss 12.x is current (12.26.x as of July 2026) and requires Node ≥ 22.12; PostgreSQL 18 is the current stable major — checked 2026-11-16.
@@ -232,14 +231,10 @@ The user's standing preferences for Slaag (2026-11-16). The decisions below star
 - **Alternatives rejected:** daily dumps + snapshots only — up to a day of answers and billing events could be lost; Hetzner Object Storage as the target — an extra object-storage service and same provider as the server.
 - **Status:** decided
 
-#### Retention deletes
-- **Choice:** pg-boss scheduled jobs send the 30-day warning email and delete suspended or cancelled accounts' data after 12 months (PRD § Accounts & billing). Deletions also expire from backups through the backup retention window.
-- **Status:** decided
-
 ### Engine
 
 #### Answer evaluation (grader) ◆
-- **Context:** written answers are graded instantly against teacher-approved model answers and rubrics and marked correct, partial or incorrect (AC-E8). The grader must tolerate Afrikaans spelling slips, agree with teachers ≥ 90% of the time (AC-E9), and respect a per-session cost cap (AC-E11). The PRD describes the first step as a keyword/semantic-similarity check.
+- **Context:** written answers are graded instantly against teacher-approved model answers and rubrics and marked correct, partial or incorrect (AC-E8). The grader must tolerate Afrikaans spelling slips, agree with teachers ≥ 90% of the time (AC-E9), and respect a per-session cost cap (AC-E11).
 - **Choice:** An `AnswerEvaluationService` abstraction in `packages/core`:
   1. **Primary:** TypeSafe AI **Jev** (hosted API) classifies the answer as correct / partial / incorrect against the question's rubric, with calibrated per-option probabilities.
   2. **Fallback:** only when Jev's confidence is below a configurable threshold, Claude Haiku 5.5 (`claude-haiku-5-5`) evaluates the answer with the teacher's rubric. The per-session cost cap applies here; once reached, a borderline answer is marked "close".
@@ -324,7 +319,6 @@ The user's standing preferences for Slaag (2026-11-16). The decisions below star
   - **Link codes:** created only by an authenticated parent for one of their children; ~8 characters from an unambiguous alphabet plus a QR encoding; stored hashed with child ID, 15-minute expiry and a used flag.
   - **Redemption:** the device posts the code with device metadata; rate-limited per IP and per device, invalid attempts counted; success marks the code used and issues an opaque, high-entropy device token.
   - **Device credentials:** stored hashed in `device_credentials` (child, device label, created, last seen); on Android encrypted with a Keystore key, in a browser an httpOnly, Secure cookie.
-  - **Revocation:** the parent removes a device, deleting its row; the next request fails and the app returns to the link screen.
   - **Two principal types:** request handling resolves a *parent* (Better Auth session or bearer token) or a *child device* (device token); authorization rules state which principal each operation accepts.
 - **Category:** Build
 - **Why:** matches the PRD's parent-issued flow and keeps children out of the user/credential model.
@@ -615,7 +609,7 @@ The user's standing preferences for Slaag (2026-11-16). The decisions below star
 | K9 AI pipeline + grader | Sonnet 5.5 page reading, Opus 5.5 content pipeline; Jev + Haiku 5.5 grader. **Open:** Afrikaans accuracy (research) |
 | K10 Push, email, in-app | FCM via pg-boss; SES + React Email; in-app reminders on web open |
 | K11 Back office | `apps/backoffice` (TanStack Start + Mantine); Google Drive source repository |
-| K12 Engine + scheduled work | `packages/core` services; pg-boss schedules (missed sessions, digests, retention deletes) |
+| K12 Engine + scheduled work | `packages/core` services; pg-boss schedules (missed sessions, digests) |
 
 ## Processors (POPIA s72 / privacy notice)
 
@@ -660,8 +654,8 @@ Rough monthly estimates, checked 2026-11-16 from third-party sources where noted
 
 - **Play developer account (deadline risk):** create an organization account for Slaag Group now — D-U-N-S can take up to 30 days. Also check Play's Families policy obligations for an app used by children under 13 (target audience declaration, permitted SDKs, data practices).
 - **PRD amendments not yet applied.** Another session regenerates `docs/PRD.md` from `.omc/specs/deep-interview-slaag-prd.md`, which overwrote an earlier edit. Make these changes through that spec:
-  1. Constraints and Technical Context: learner data EU-hosted (GDPR-governed provider), POPIA s72 safeguards (DPA, privacy notice states storage location) — replaces "hosted in South Africa".
-  2. Engine constraint, AC-E8 and Technical Context: the first grading step is an evaluation model with calibrated confidence (not keyword/semantic similarity); a generative LLM below a configurable threshold; cost cap unchanged.
+  1. ~~Constraints and Technical Context: hosting outside South Africa~~ — **done 2026-11-16** (PRD Revision 12: international hosting allowed under POPIA s72; the PRD stays provider-neutral, so EU/Hetzner remains recorded here only).
+  2. ~~Engine constraint, AC-E8 and Technical Context: grading by evaluation model with confidence threshold, not keyword/semantic similarity~~ — **done 2026-11-16** (PRD Revision 13).
 - **Research — Jev Afrikaans accuracy (AC-E9):** labelled evaluation set before the January 2027 pilot (*Engine → Answer evaluation*).
 - **Research — cross-brand parent sign-in (K7):** decide before brand #2 (*Identity → Cross-brand parent sign-in*).
 - **PayFast amount changes:** confirm the subscription API can change the recurring amount for partner-campaign discounts (PRD Revision 11).

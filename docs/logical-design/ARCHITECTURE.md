@@ -165,7 +165,7 @@ Other aggregates are referenced by ID only; consistency between aggregates is ev
 | Family | **BrandMembership** | Language within the brand's allowed languages; consent timestamp recorded |
 | Identity | **ParentIdentity** | One account per verified email, whatever the sign-in method |
 | Identity | **DeviceLinkCode** | Single use, one child, valid 15 minutes |
-| Identity | **LinkedDevice** | Once revoked, its next request is rejected |
+| Identity | **LinkedDevice** | Holds a long-lived device credential used only to obtain **30-minute access tokens**; once revoked, it can't obtain a new access token, so it stops working within 30 minutes |
 | Rewards | **CreditLedger** | One per child; credits only from credit-table activities |
 | Rewards | **Streak**, **RewardGoal** | One streak per child; goal progress derived from the ledger |
 
@@ -201,6 +201,8 @@ Other aggregates are referenced by ID only; consistency between aggregates is ev
 | Partner | An organisation that runs campaigns within a brand; never a brand | `Partner` |
 | Campaign | A partner offer: sign-up window, discount, discount period | `Campaign` |
 | Device link | Authorising a device for one child with a one-time code or QR | `DeviceLinkCode`, `LinkedDevice` |
+| Device credential | Long-lived secret a linked device holds; used only to obtain access tokens | `DeviceCredential` |
+| Access token | Short-lived (30 min) proof that a linked device may act for its child; verified without a store lookup | `DeviceAccessToken` |
 | Sign-in | A parent authenticating; never called a "session" | `SignIn` |
 
 ## Data & Consistency Decisions
@@ -241,7 +243,7 @@ Every rule is enforced **explicitly**, by a conditional update, a uniqueness rul
 | 10 | Each answer counted once in mastery | Background answer sync retries | Client-generated response ID; response and mastery update in one transaction |
 | 11 | LLM cost cap per session | Two borderline answers at once | Conditional increment on the session's spend |
 | 12 | Credits once per activity | Redelivered event | Triggering event ID is the ledger entry key |
-| 13 | Revoked device rejected on next request | Cached credential stays valid | Device checked against the system of record on every request |
+| 13 | A revoked device can't obtain a new access token | A refresh races the revocation | Refresh is a conditional check against the `LinkedDevice` record (only non-revoked devices get a token). Requests themselves are verified from the 30-minute access token alone, with no store lookup, so a revoked device keeps working for **at most 30 minutes** |
 | 14 | Suspension blocks children immediately | Stale copy of Access | Access read from Billing's published query at request time; never copied |
 
 ### Consistency between contexts
@@ -272,7 +274,7 @@ Each context exposes one small published interface that hides a lot behind it; p
 | Prep | add/change assessment, switch strategy, start/finish session, submit answer, record result, dashboard queries | Planning, strategies, importance, mastery, marking, LLM grading, cost cap |
 | Content | `ContentCatalogue`: resolve scope, session bundle, report a problem; back office: upload, review, generate, publish | AI pipeline, versioning, review gates, page reading, image storage |
 | Billing & Campaigns | checkout, handle provider event, cancel, reactivate, start card update, `access(membership)` | Lifecycle state machine, provider quirks, discounts, reversion |
-| Identity & Access | sign-in flows, issue/redeem link code, revoke device, authenticate request | Provider sign-in, credentials, rate limits |
+| Identity & Access | sign-in flows, issue/redeem link code, refresh device access token, revoke device, authenticate request | Provider sign-in, credentials, token issuing and verification, rate limits |
 | Family | register, add child, enrol subject, directory queries | Consent, memberships, schools |
 | Notifications | `notify(recipient, alertType, payload)` + event handlers, set mutes | Channels, devices, templates, digest |
 | Rewards | event handlers, set goal, balance/goal queries | Credit table, levels, streaks |
@@ -396,7 +398,8 @@ Deliberately deferred work (Phase 8, 2026-11-16). Each keeps its seam from day 1
 | 2026-11-16 | **14 invariants enforced explicitly** (conditional updates, uniqueness, per-aggregate version checks), never by default isolation | Write skew passes single-user tests and fails under load | Rely on the store's default isolation |
 | 2026-11-16 | **Transactional outbox + at-least-once delivery + idempotent handlers** for all cross-context events and outbound emails | No lost or doubled alerts, credits or billing emails | Publish after commit (events lost on crash); distributed transactions |
 | 2026-11-16 | **Derived views computed on read or by scheduled batch;** readiness % maintained with mastery | Enough at this scale; nothing extra to keep in sync | Event-driven projections for every view |
-| 2026-11-16 | **Access and device revocation read live** from the system of record on every request | Suspension and revocation must apply on the next request (AC-A12, A15) | Cached copies in other contexts |
+| 2026-11-16 | **Access and device revocation read live** from the system of record on every request. *Device-revocation part superseded 2026-11-16 by the 30-minute access-token decision below; Access is still read live.* | Suspension and revocation must apply on the next request (AC-A12, A15) | Cached copies in other contexts |
+| 2026-11-16 | **Linked devices use 30-minute access tokens,** verified without a store lookup and refreshed with the long-lived device credential; revocation blocks the next refresh, so **a revoked device stops working within 30 minutes** | Checking the device record on every request costs too much load on the system of record (user decision) | Immediate revocation by checking the device on every request |
 | 2026-11-16 | **Deep modules over pipelines** (Phase 5): `PrepPlan`, `Importance`, `Mastery`, `Marking`, `PrepSettings` in Prep; one general `Review & Versioning` in Content; one `notify()`; one `Messages.render()`; one request-context resolver at the edge; one published interface per context. Details: [Module Design](#module-design-deep-modules) | Each piece of knowledge in one module; small interfaces hiding a lot | Per-step policy classes and one port per need (classitis, information leakage) |
 | 2026-11-16 | **The rubric format is part of the content catalogue's published contract,** defined once and versioned; `Marking` is its only interpreter | Stops grading knowledge leaking between Content and Prep | Each side keeps its own view of the rubric |
 | 2026-11-16 | **Every outside service has a timeout, circuit breaker, separate capacity and fallback** (Phase 6); see [RELIABILITY.md](RELIABILITY.md) | A slow dependency must never freeze learner traffic | Defaults with no timeouts; shared pools |

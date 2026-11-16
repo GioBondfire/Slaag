@@ -68,6 +68,7 @@ Statuses: pending · in-progress · awaiting-evidence · done · deferred: <reas
 | 2026-11-16 | 8 | Kept in pilot: all three strategies, full gamification, AI index-tree proposal, meaning-based duplicate detection; by launch: campaigns, fee reversion, full partner reporting, weekly digest | User decisions |
 | 2026-11-16 | 8 | Deferred with triggers (Debt Ledger D1–D7): per-child tuning, statistical knowledge tracing, diagram-labelling questions, retention deletion job, second-brand rehearsal, bulk importance edit, full coverage dashboard | Not needed before launch; seams kept |
 | 2026-11-16 | 8 | No circuit breaker: the pilot date moves rather than scope | User decision |
+| 2026-11-16 | Post-journey | Linked devices use 30-minute access tokens; revocation takes effect within 30 minutes (supersedes "device checked on every request") | Avoids a store lookup per request |
 
 ## Journey Close (2026-11-16)
 All 8 phases done; team-topologies skipped (one team). Exit checklist:
@@ -78,6 +79,8 @@ All 8 phases done; team-topologies skipped (one team). Exit checklist:
 - [x] v1 scope fixed to the time budget, deferred work in the Debt Ledger with triggers (ARCHITECTURE.md)
 
 ## Next Actions
+- [ ] PRD AC-A12 says device removal "takes effect on the device's next request"; change it to "within 30 minutes" on the next PRD revision (owner: user, P1)
+- [ ] Tech decision needed → docs/TECH-STACK.md: format and verification of the 30-minute device access token and its refresh with the device credential (the Child device linking section currently describes an opaque device token checked by the server) (owner: user, P1)
 - [ ] Update PRD on its next revision: pilot is paid (resolves "Pilot pricing" open assumption); AC-B8 second-brand proof moved to after launch (D5); per-child tuning (AC-E20, E24), diagram-labelling questions (AC-C9/C13), retention job (AC-A16), bulk importance edit (AC-C28) and full coverage dashboard (AC-C6) deferred per Debt Ledger; Term 1 pilot content limited to the most-used textbook per subject per grade (owner: user, P1)
 - [ ] Billing on the pilot's critical path: payment-sandbox contract tests and Safety Net Map #4 green before the pilot (owner: team, due: before Jan 2027 pilot, P1)
 - [ ] Weekly check of pilot readiness against the January date; with no circuit breaker, decide early whether the pilot date moves (owner: user, weekly, P1)

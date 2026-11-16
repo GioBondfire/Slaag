@@ -26,7 +26,7 @@ Most tests sit in the inner rings, where they are fast and need no I/O. Few end-
 | 2 | Parent signs up → subscribes (payment sandbox) → adds child → links a device | End-to-end | planned |
 | 3 | Child starts a session → answers mechanical + written questions → Verdicts (incl. LLM-borderline and Close on timeout) → mastery and readiness update → parent alerted | End-to-end | planned |
 | 4 | Failed payment → Overdue (one email) → further failures (no email) → provider paused → Suspended → child blocked on every linked device → reactivation restores access | End-to-end (payment sandbox) + state-machine table | planned |
-| 5 | Parent revokes a device → next request from it rejected | End-to-end | planned |
+| 5 | Parent revokes a device → its next access-token refresh is refused and the device returns to the link screen; requests carrying its current access token may still succeed until that token expires (**revocation delay of up to 30 minutes is expected, not a failure**); after expiry every request is rejected | End-to-end (with a controllable clock to cross the 30-minute expiry) + concurrency test (refresh vs revocation) | planned |
 | 6 | Content: upload → facts → Gate 1 → generate questions with model answer + rubric → Gate 2 → published → appears in a session bundle | End-to-end (AI provider fake) + contract test | planned |
 | 7 | Campaign sign-up → discount locked in → reversion notice → amount change confirmed | Use-case + payment sandbox | planned |
 | 8 | Family erasure → every context erases its data | Use-case + end-to-end | planned |
