@@ -1,6 +1,6 @@
 {
-  "active": true,
-  "current_phase": "deep-interview",
+  "active": false,
+  "current_phase": "complete",
   "state": {
     "interview_id": "b7e4c2a1-5f3d-4e8a-9c61-2d0f8a7b3e15",
     "type": "greenfield",
@@ -178,9 +178,100 @@
           "constraints": 0.8,
           "criteria": 0.77
         }
+      },
+      {
+        "n": 14,
+        "component": "accounts-family",
+        "dimension": "constraints",
+        "q": "Store billing: web-only checkout, no purchase buttons/prices/links in iOS/Android apps (reader-app)?",
+        "a": "Yes, web-only checkout via PayFast; apps sign in but never sell.",
+        "ambiguity": 0.18,
+        "scores": {
+          "goal": 0.87,
+          "constraints": 0.81,
+          "criteria": 0.77
+        }
+      },
+      {
+        "n": 15,
+        "component": "prep-engine",
+        "dimension": "constraints",
+        "q": "Written-answer grading approach?",
+        "a": "Two-step grader: cheap keyword/semantic similarity vs model answer decides clear cases; only borderline answers go to a small low-cost LLM with teacher rubric. Tolerant of Gr4-7 Afrikaans spelling slips; per-session cost cap; model answer always shown; undecidable -> 'close' not wrong. Replaces vague 'JEV' reference.",
+        "ambiguity": 0.17,
+        "scores": {
+          "goal": 0.87,
+          "constraints": 0.83,
+          "criteria": 0.77
+        }
+      },
+      {
+        "n": 16,
+        "component": "planner",
+        "dimension": "constraints",
+        "q": "Next-session suggestion rules?",
+        "a": "Accepted: time = same time-of-day as last completed session else parent-configurable default (e.g. 16:00), next suitable day; remaining sessions estimated from unmastered concepts, spread evenly over days left with >=1 day gap when possible; test today/tomorrow -> short last-minute session on weak + high-weight topics with calm message; scope edits mid-plan: added topics enter next session, removed stop counting; past test date -> suggestions stop, post-test rating prompt.",
+        "ambiguity": 0.16,
+        "scores": {
+          "goal": 0.87,
+          "constraints": 0.86,
+          "criteria": 0.79
+        }
+      },
+      {
+        "n": 17,
+        "component": "cross-cutting",
+        "dimension": "criteria",
+        "q": "Launch plan + year-1 KPIs?",
+        "a": "Closed pilot January 2027; production (paid) launch February 2027. Parent NPS >=40 confirmed. Other proposed KPIs (>=60% tests with >=1 completed session, >=70% month-2 retention, paying-family target) not explicitly addressed - carry as assumptions. Schedule risk: ~2.5 months from now to production with full engine.",
+        "ambiguity": 0.15,
+        "scores": {
+          "goal": 0.87,
+          "constraints": 0.86,
+          "criteria": 0.83
+        }
+      },
+      {
+        "n": 18,
+        "component": "accounts-family",
+        "dimension": "constraints",
+        "q": "Account lifecycle?",
+        "a": "Accepted: failed payment -> email + retries, 7-day grace then child access paused, data kept; cancellation -> access to end of paid month then paused; paused accounts retain data 12 months then deleted with 30-day warning email; parent self-service full family deletion anytime; learner data hosted in South Africa region.",
+        "ambiguity": 0.14,
+        "scores": {
+          "goal": 0.87,
+          "constraints": 0.89,
+          "criteria": 0.83
+        }
+      },
+      {
+        "n": 19,
+        "component": "content-bank",
+        "dimension": "goal",
+        "q": "Content back office?",
+        "a": "Accepted: web-only back office; staff upload textbook pages, AI drafts topic map/questions/model answers/overrides; contracted Afrikaans teacher reviewers approve/edit/reject, set difficulty + topic weight; only approved items live; all changes versioned; parents/kids 'report a problem' -> back to review queue; >=3 reports auto-hides until reviewed.",
+        "ambiguity": 0.12,
+        "scores": {
+          "goal": 0.9,
+          "constraints": 0.89,
+          "criteria": 0.83
+        }
+      },
+      {
+        "n": 20,
+        "component": "accounts-family",
+        "dimension": "goal",
+        "q": "Province: reporting-only?",
+        "a": "Expanded: at child enrolment parent selects child's school from ~2000 preloaded schools; if not listed, parent enters a new school name. (Province purpose not explicitly addressed - assume reporting-only, national calendar.)",
+        "ambiguity": 0.12,
+        "scores": {
+          "goal": 0.9,
+          "constraints": 0.89,
+          "criteria": 0.83
+        }
       }
     ],
-    "current_ambiguity": 0.18,
+    "current_ambiguity": 0.12,
     "threshold": 0.2,
     "threshold_source": "default",
     "codebase_context": null,
@@ -198,8 +289,8 @@
           ],
           "clarity_scores": {
             "goal": 0.9,
-            "constraints": 0.85,
-            "criteria": 0.7,
+            "constraints": 0.95,
+            "criteria": 0.8,
             "context": null
           },
           "weakest_dimension": null
@@ -213,9 +304,9 @@
             "user Round 0 detail"
           ],
           "clarity_scores": {
-            "goal": 0.7,
+            "goal": 0.9,
             "constraints": 0.8,
-            "criteria": 0.7,
+            "criteria": 0.8,
             "context": null
           },
           "weakest_dimension": "criteria"
@@ -230,8 +321,8 @@
           ],
           "clarity_scores": {
             "goal": 0.9,
-            "constraints": 0.55,
-            "criteria": 0.75,
+            "constraints": 0.85,
+            "criteria": 0.85,
             "context": null
           },
           "weakest_dimension": null
@@ -246,7 +337,7 @@
           ],
           "clarity_scores": {
             "goal": 0.8,
-            "constraints": 0.5,
+            "constraints": 0.7,
             "criteria": 0.75,
             "context": null
           },
@@ -302,7 +393,7 @@
           "confirmed_at": "2026-11-10T21:19:34.465816+00:00"
         }
       ],
-      "last_targeted_component_id": "child-experience",
+      "last_targeted_component_id": "content-bank",
       "platform_note": "Year 1 includes hybrid store apps (Capacitor-wrapped TanStack Start web app) with push for parents and kids; web app also runs in laptop/mobile browsers. Reverses earlier deferral of native apps/push (round 3, 2026-11-11)."
     },
     "challenge_modes_used": [
@@ -644,6 +735,220 @@
         ],
         "stability_ratio": 1.0,
         "matching": "all 22 stable"
+      },
+      {
+        "round": 14,
+        "entities": [
+          "Parent",
+          "Child",
+          "Subscription",
+          "Subject",
+          "Textbook",
+          "Question",
+          "ModelAnswer",
+          "Assessment(Test/Exam)",
+          "PrepSession",
+          "AssessmentMastery",
+          "Alert",
+          "Credit",
+          "TeacherReviewer",
+          "Device(push token)",
+          "CAPSTopic",
+          "TextbookPageMap",
+          "TextbookOverride",
+          "Badge/Level",
+          "Streak",
+          "ParentRewardGoal",
+          "WeeklyDigest",
+          "PayFast(external)"
+        ],
+        "stability_ratio": 1.0,
+        "matching": "all 22 stable"
+      },
+      {
+        "round": 15,
+        "entities": [
+          "Parent",
+          "Child",
+          "Subscription",
+          "Subject",
+          "Textbook",
+          "Question",
+          "ModelAnswer",
+          "Assessment(Test/Exam)",
+          "PrepSession",
+          "AssessmentMastery",
+          "Alert",
+          "Credit",
+          "TeacherReviewer",
+          "Device(push token)",
+          "CAPSTopic",
+          "TextbookPageMap",
+          "TextbookOverride",
+          "Badge/Level",
+          "Streak",
+          "ParentRewardGoal",
+          "WeeklyDigest",
+          "PayFast(external)",
+          "LearnerResponse"
+        ],
+        "stability_ratio": 0.96,
+        "matching": "22 stable; LearnerResponse (graded correct/close/incorrect) new"
+      },
+      {
+        "round": 16,
+        "entities": [
+          "Parent",
+          "Child",
+          "Subscription",
+          "Subject",
+          "Textbook",
+          "Question",
+          "ModelAnswer",
+          "Assessment(Test/Exam)",
+          "PrepSession",
+          "AssessmentMastery",
+          "Alert",
+          "Credit",
+          "TeacherReviewer",
+          "Device(push token)",
+          "CAPSTopic",
+          "TextbookPageMap",
+          "TextbookOverride",
+          "Badge/Level",
+          "Streak",
+          "ParentRewardGoal",
+          "WeeklyDigest",
+          "PayFast(external)",
+          "LearnerResponse"
+        ],
+        "stability_ratio": 1.0,
+        "matching": "all 23 stable"
+      },
+      {
+        "round": 17,
+        "entities": [
+          "Parent",
+          "Child",
+          "Subscription",
+          "Subject",
+          "Textbook",
+          "Question",
+          "ModelAnswer",
+          "Assessment(Test/Exam)",
+          "PrepSession",
+          "AssessmentMastery",
+          "Alert",
+          "Credit",
+          "TeacherReviewer",
+          "Device(push token)",
+          "CAPSTopic",
+          "TextbookPageMap",
+          "TextbookOverride",
+          "Badge/Level",
+          "Streak",
+          "ParentRewardGoal",
+          "WeeklyDigest",
+          "PayFast(external)",
+          "LearnerResponse"
+        ],
+        "stability_ratio": 1.0,
+        "matching": "all 23 stable"
+      },
+      {
+        "round": 18,
+        "entities": [
+          "Parent",
+          "Child",
+          "Subscription",
+          "Subject",
+          "Textbook",
+          "Question",
+          "ModelAnswer",
+          "Assessment(Test/Exam)",
+          "PrepSession",
+          "AssessmentMastery",
+          "Alert",
+          "Credit",
+          "TeacherReviewer",
+          "Device(push token)",
+          "CAPSTopic",
+          "TextbookPageMap",
+          "TextbookOverride",
+          "Badge/Level",
+          "Streak",
+          "ParentRewardGoal",
+          "WeeklyDigest",
+          "PayFast(external)",
+          "LearnerResponse"
+        ],
+        "stability_ratio": 1.0,
+        "matching": "all 23 stable"
+      },
+      {
+        "round": 19,
+        "entities": [
+          "Parent",
+          "Child",
+          "Subscription",
+          "Subject",
+          "Textbook",
+          "Question",
+          "ModelAnswer",
+          "Assessment(Test/Exam)",
+          "PrepSession",
+          "AssessmentMastery",
+          "Alert",
+          "Credit",
+          "TeacherReviewer",
+          "Device(push token)",
+          "CAPSTopic",
+          "TextbookPageMap",
+          "TextbookOverride",
+          "Badge/Level",
+          "Streak",
+          "ParentRewardGoal",
+          "WeeklyDigest",
+          "PayFast(external)",
+          "LearnerResponse",
+          "ProblemReport",
+          "ContentVersion"
+        ],
+        "stability_ratio": 0.92,
+        "matching": "23 stable; ProblemReport, ContentVersion new"
+      },
+      {
+        "round": 20,
+        "entities": [
+          "Parent",
+          "Child",
+          "Subscription",
+          "Subject",
+          "Textbook",
+          "Question",
+          "ModelAnswer",
+          "Assessment(Test/Exam)",
+          "PrepSession",
+          "AssessmentMastery",
+          "Alert",
+          "Credit",
+          "TeacherReviewer",
+          "Device(push token)",
+          "CAPSTopic",
+          "TextbookPageMap",
+          "TextbookOverride",
+          "Badge/Level",
+          "Streak",
+          "ParentRewardGoal",
+          "WeeklyDigest",
+          "PayFast(external)",
+          "LearnerResponse",
+          "ProblemReport",
+          "ContentVersion",
+          "School"
+        ],
+        "stability_ratio": 0.96,
+        "matching": "25 stable; School new"
       }
     ],
     "user_detail_notes": [
@@ -667,20 +972,42 @@
       "criteria": 0.32
     },
     "spec_path": ".omc/specs/deep-interview-slaag-prd.md",
-    "generated": "2026-11-13T01:44:59.250115+00:00",
-    "phase_note": "Phase 2 refinement after Phase 5 \"Refine further\"; Round 14 asked but answer not recorded (session interrupted) - re-ask.",
-    "pending_question": {
-      "n": 14,
-      "component": "accounts-family",
-      "dimension": "constraints",
-      "topic": "store billing / web-only checkout"
-    },
+    "generated": "2026-11-14T00:40:22Z",
+    "phase_note": "Spec approved as PRD.",
+    "pending_question": null,
     "checkpoint": {
       "at": "2026-11-13T11:50:13.597759+00:00",
       "files": [
         "docs/PRD.md",
         "docs/INTERVIEW-STATE.md"
       ]
-    }
+    },
+    "approved_at": "2026-11-14T00:45:29Z",
+    "amendments": [
+      {
+        "n": 1,
+        "date": "2026-11-16",
+        "component": "accounts-family",
+        "summary": "Child access by parent-authorised device linking (one-time code/QR, 15 min, single use); no child credentials; no-password name picker on shared devices; same for web per browser; parent can remove devices. Replaces R9 PIN flow."
+      },
+      {
+        "n": 2,
+        "date": "2026-11-16",
+        "component": "cross-cutting",
+        "summary": "Language-driven experience: everything from ad/landing page to app, emails and support driven by family language; af only in year 1, en supported but off; resolution explicit > entry point > default af; content tagged by language; PayFast/OAuth screens explained in Afrikaans."
+      },
+      {
+        "n": 3,
+        "date": "2026-11-16",
+        "component": "cross-cutting",
+        "summary": "Multi-brand platform: brand = config record resolved by domain/app; per-brand store apps, PayFast merchant, emails, look; shared parent identity across brands (user chose over separate accounts), per-brand subscriptions; shared engine/content; year 1 Slaag only, no hard-coding. Open: children shared across brands, language per brand membership, POPIA shared-identity notice."
+      },
+      {
+        "n": 4,
+        "date": "2026-11-16",
+        "component": "prep-engine",
+        "summary": "Runway ratio (prep days / weighted scope) selects pluggable strategy: Incremental (portions by CAPS topic/pages, study then prep, parent progress per portion, final interleaved review), Standard, Last-minute. Slaag suggests; parent or child can switch (parent wins, alerted). Outcomes logged for per-child tuning of cut-offs/portion sizes. 'Learn' = own textbook; no teaching in year 1."
+      }
+    ]
   }
 }
