@@ -1008,6 +1008,28 @@
         "component": "prep-engine",
         "summary": "Runway ratio (prep days / weighted scope) selects pluggable strategy: Incremental (portions by CAPS topic/pages, study then prep, parent progress per portion, final interleaved review), Standard, Last-minute. Slaag suggests; parent or child can switch (parent wins, alerted). Outcomes logged for per-child tuning of cut-offs/portion sizes. 'Learn' = own textbook; no teaching in year 1."
       }
+    ],
+    "open_topics": [
+      {
+        "topic": "content-ingestion",
+        "started": "2026-11-16",
+        "notes": [
+          "Staff upload PDFs made from phone photos of textbook sections (no text layer).",
+          "Upload metadata: year, grade, textbook, optionally section and page ranges.",
+          "PDF -> OCR to text as base; then itemise into small incremental factual statements (thousands), each indexed to grade, subject, textbook, quarter (term), topic, subtopic, page number.",
+          "Q1: Facts are the base layer: single teacher-checked fact from textbook; questions/model answers generated from one or more facts; mastery tracked per fact, rolled up to subtopic/topic; scopes and page ranges resolve to facts.",
+          "Q2: Two review gates: upload+tag -> OCR per page linked to page image -> AI fact extraction + tagging -> Gate 1 teacher fact review beside page photo (approve/edit/merge/split/reject) -> question/model answer generation from approved facts -> Gate 2 teacher question review. No separate OCR review; low-quality pages auto-flagged for re-photographing.",
+          "Q3: Dual indexing. Every fact indexed to the SOURCE DOCUMENT's own index (quarter/term, topic, subtopic, page) as the PRIMARY base used in the day-to-day user experience, AND cross-referenced/mapped to the CAPS breakdown. Questions are generally based on textbook-specific content. 'Source document of type textbook' implies source documents are typed (textbook first). Revises R4 hybrid model: textbook content is primary, CAPS is the cross-reference (no longer CAPS bank with textbook overrides).",
+          "Q4: Textbook index built from table of contents: upload ToC photo first; AI proposes index tree (terms/topics/subtopics with page ranges) + suggested CAPS mapping per node; person confirms once. Section uploads then need only textbook + page range; pages/facts auto-placed in tree.",
+          "Q5: 'year' in upload metadata means GRADE (not edition/school year). Upload metadata = grade, textbook, optional section + page ranges. Assumption: textbook identity still includes publisher/edition/ISBN (unconfirmed).",
+          "Q6: Fact structure accepted: short self-contained statement in textbook language/wording, one idea; type (definition, fact, list item, process step, cause-effect, date/event, diagram/table label); key terms (bold/keyword flagged); source = textbook, page, page-image region; textbook index (term/topic/subtopic) + CAPS cross-ref; links to related facts. Diagrams/tables -> labelled facts with cropped image kept for questions.",
+          "Q7: Re-uploads = replace and redo: re-uploaded page replaces old one entirely; all its facts go back through review (Gate 1). (Assumption: questions built on replaced facts are re-reviewed too.)",
+          "Q8: Question generation accepted: 2-4 questions per approved fact, types by fact type (definition: define/MCQ term-match/fill keyword; fact/date: MCQ, true-false with correction, fill blank; process/list: order steps, missing step; cause-effect: short written 'why'; diagram: label cropped diagram); difficulty easy/medium/hard; model answer from fact wording; some multi-fact paragraph questions; all to Gate 2.",
+          "Q9: Risk-based review accepted: Gate 1 every fact reviewed; Gate 2 mechanical question types (MCQ, true/false, fill blank, ordering) go live after ~10% random sample per textbook with >=95% pass; judgement types (written definitions, why, paragraph, diagram labelling) always fully reviewed; problem reports (auto-hide >=3) as safety net; launch content staged (Term 1 first). Supersedes 'every question teacher-approved' (AC-C5/C7).",
+          "Q10: Question generation is curator-initiated (never automatic); defaults pre-filled (2-4 per fact, types by fact type), curator can override count/types; can later 'generate more questions'. Facts: verbatim + 1-2 linked paraphrased statements (copyright buffer); curator picks paraphrase (default) or verbatim as basis per run."
+        ],
+        "status": "folded into PRD 2026-11-16 (AC-C1..C24)"
+      }
     ]
   }
 }
