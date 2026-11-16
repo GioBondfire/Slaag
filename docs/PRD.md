@@ -27,7 +27,7 @@ Confirmed in Round 0 (2026-11-10). Platform note: native store apps were first d
 
 | Component | Status | Description | Coverage / Deferral Note |
 |-----------|--------|-------------|--------------------------|
-| Accounts & Family Setup | active | Parent social login, family subscription via PayFast (web-only checkout), web account and subscription management, webhook-driven billing lifecycle, parent-owned child accounts, school/grade/province/textbooks | AC-A1…A27 |
+| Accounts & Family Setup | active | Parent social login, family subscription via PayFast (web-only checkout), web account and subscription management, webhook-driven billing lifecycle, parent-owned child accounts, school/grade/province/textbooks, partner campaigns with time-limited member discounts | AC-A1…A37 |
 | Content & Question Bank | active | Ingestion of photographed textbook PDFs into reviewed, importance-weighted facts (verbatim + paraphrased), indexed to the textbook and cross-referenced to CAPS; curator-initiated question generation; risk-based review | AC-C1…C28 |
 | Test/Exam Planner | active | Add test/exam (date + scope), parent review/edit, rule-based next-session suggestion, post-test rating and marks | AC-P1…P12 |
 | Prep Session Engine | active | Full adaptive engine with every technique; strategy layer (Incremental / Standard / Last-minute) chosen by runway ratio; two-step grading of written answers | AC-E1…E24 |
@@ -41,7 +41,7 @@ Confirmed in Round 0 (2026-11-10). Platform note: native store apps were first d
 ## Goal
 Slaag ("pass/succeed") is the first business of Slaag Group, a platform for Afrikaans-speaking families in South Africa. In year 1, Slaag helps parents of Grade 4–7 children prepare their children for school **tests** (small, during term) and **exams** (end of term, consolidated), replacing last-minute, stressful manual quizzing from the textbook.
 
-A parent subscribes on the web (PayFast) and enrols up to 3 children with their school, grade, province and the textbook for each subject. The parent or child adds an upcoming test or exam with its date and scope (content-tree selection or page ranges). Slaag suggests the next prep session one at a time. An adaptive engine diagnoses gaps and drills the child towards mastery, using multiple-choice and written questions graded instantly against teacher-approved model answers. Parents get honest visibility into planned, missed and completed sessions and readiness. Children get a fun, encouraging, gamified experience. Content is produced through an AI-drafting, teacher-review back office. The closed pilot is in **January 2027** and the production launch in **February 2027**. When a test is added early enough, Slaag can offer an incremental strategy (learn and prep portion by portion, with earlier progress to the parent). The platform is language-driven (Afrikaans only in year 1, English ready) and multi-brand, so a future English offering can run under its own brand and domain on the same engine.
+A parent subscribes on the web (PayFast) and enrols up to 3 children with their school, grade, province and the textbook for each subject. The parent or child adds an upcoming test or exam with its date and scope (content-tree selection or page ranges). Slaag suggests the next prep session one at a time. An adaptive engine diagnoses gaps and drills the child towards mastery, using multiple-choice and written questions graded instantly against teacher-approved model answers and marking rubrics (correct / partial / incorrect). Parents get honest visibility into planned, missed and completed sessions and readiness. Children get a fun, encouraging, gamified experience. Content is produced through an AI-drafting, teacher-review back office. The closed pilot is in **January 2027** and the production launch in **February 2027**. When a test is added early enough, Slaag can offer an incremental strategy (learn and prep portion by portion, with earlier progress to the parent). The platform is language-driven (Afrikaans only in year 1, English ready) and multi-brand, so a future English offering can run under its own brand and domain on the same engine. **Partnerships are a key distribution channel:** civic organisations such as AfriForum, Solidariteit and OUTA can run long-running campaigns that give their members a discounted subscription for a fixed period, after which the price reverts to standard automatically.
 
 ## Constraints
 **Platform & tech**
@@ -56,6 +56,7 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 - **PayFast** onsite checkout; first charge pro-rata, then recurring billing on the **2nd**; card update started from Slaag.
 - **Checkout is web-only** (the "reader app" approach): the Android app shows no purchase buttons, prices or payment links.
 - Lifecycle is **driven by PayFast webhooks**. PayFast may notify Slaag of **every** failed collection attempt, so Slaag works out first vs final failure from its own subscription status plus the subscription status reported by PayFast. The first failure moves an Active subscription to **Overdue**, with one email saying there was a problem and PayFast will retry; child access continues. Later failed attempts are only logged, with no email. When PayFast reports the subscription paused after its final retry, Slaag sets **Suspended**: child access is blocked and the parent is emailed a deep link to reactivate. Reactivation is a **new web checkout** (card details entered again) that reactivates the subscription at PayFast. Cancellation is a **guided journey with a reason**; access continues to the end of the paid month. Suspended or cancelled accounts keep their data **12 months**, then it is deleted after a **30-day warning email**. A parent can delete the whole family account themselves at any time.
+- **Partner campaigns:** members of partner organisations (e.g. AfriForum, Solidariteit, OUTA) who sign up during a campaign window (e.g. 3 months) get a discounted fee for a fixed period (e.g. 12 months), which then **reverts automatically** to the standard fee after a notice email. Discounts don't stack. Campaign prices are shown only on the web.
 - Parents manage their account and subscription **on the web**: status, next billing date, card on file, card-expiry warnings, card update, cancel and reactivate.
 - **POPIA**: the parent's consent for processing children's data is recorded at registration.
 
@@ -71,7 +72,7 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 **Engine**
 - **All** techniques in the first release. Adaptive Learning (paradigm), Knowledge Tracing (learner model) and Spaced Retrieval (reinforcement) are kept distinct.
 - Each test or exam stands alone: mastery is tracked per assessment. Marks tune per-child engine behaviour only.
-- **Two-step grader** for written answers: a cheap keyword/semantic-similarity check decides clear cases; only borderline answers go to a small, low-cost LLM using the teacher's rubric. It tolerates children's Afrikaans spelling slips and has a per-session cost cap.
+- **Two-step grader** for written answers: a cheap keyword/semantic-similarity check decides clear cases; only borderline answers go to a small, low-cost LLM using the question's teacher-approved rubric. Every answer is marked **correct**, **partial** or **incorrect**. It tolerates children's Afrikaans spelling slips and has a per-session cost cap.
 - **Prep strategies:** a pluggable strategy layer picks how to prepare from an internal **runway ratio** (prep days remaining ÷ difficulty-weighted scope size). Launch strategies are **Incremental** (plenty of time: learn and prep portion by portion, with progress after each portion and a final interleaved review), **Standard** (full-scope diagnostic + adaptive plan) and **Last-minute**. Slaag suggests the strategy; **the parent or the child** can switch it. Cut-offs and portion sizes are settings, tuned per child from outcomes. In year 1, "learn" means studying the child's own textbook pages; Slaag does not teach content.
 
 **Language**
@@ -141,6 +142,18 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 - [ ] AC-A26: PayFast webhooks are checked for authenticity (signature and source checks) and processed idempotently; repeated or out-of-order callbacks never move a subscription to the wrong status. Every status change is logged with its triggering event.
 - [ ] AC-A27: All subscription emails (overdue, suspended, reactivated, cancellation confirmation, card expiring) follow the family's brand and language.
 
+#### Partner campaigns
+- [ ] AC-A28: Staff manage **partners** in the back office: civic society organisations such as AfriForum, Solidariteit and OUTA. Each partner has a name, logo, a recorded permission to use its name and logo, contact details, and an optional membership-number format for validation. A partner belongs to a brand; a partner is not a brand.
+- [ ] AC-A29: Staff create **campaigns** per partner. Each has a name, a **sign-up window** (start and end date, e.g. 3 months), a **discount** (a percentage or a fixed rand amount off the family fee), a **discount period** in months (e.g. 12), an optional sign-up cap, terms text, and its own landing page link and campaign code. A partner can have several campaigns over time. Staff can pause or end a campaign early; that only stops new sign-ups.
+- [ ] AC-A30: Each campaign has a co-branded **landing page** in the brand's language, with its own link and QR code for the partner's newsletters, emails, social media and events. Members can also enter the **campaign code** at web checkout. The campaign is recorded as the family's acquisition entry point.
+- [ ] AC-A31: **Membership check (year 1):** during sign-up, the parent confirms they are a member of the partner and enters their membership number (checked against the partner's format, if set). Staff can export a campaign's sign-ups with membership numbers for the partner to verify. If a number is confirmed invalid, staff can remove the discount; the parent is emailed and the standard fee applies from the next billing date.
+- [ ] AC-A32: **The discount is locked in at sign-up.** A family that subscribes during the window keeps the discount for the full discount period, even after the campaign ends. The period starts from the first charge, and the pro-rata first charge is also discounted. Checkout and the account page show the discounted fee, the standard fee, and the date the discount ends.
+- [ ] AC-A33: **Automatic reversion:** when the discount period ends, the subscription fee reverts to the standard family fee then in force, with no action by the parent. Slaag emails the parent **30 days before** with the new amount and its start date, and shows the same notice on the account page. Slaag changes the recurring amount at PayFast, confirms it, and flags any failure to staff before the next billing date.
+- [ ] AC-A34: **One discount per subscription:** campaign discounts don't stack with each other or with other offers, and a family can use a campaign discount once per brand. If a discounted subscription is suspended or cancelled and then reactivated within the discount period, the discount applies for the months that remain. After the period ends, reactivation is at the standard fee.
+- [ ] AC-A35: **Partner reporting:** per partner and campaign, staff see landing-page visits, sign-ups, conversion, active discounted subscriptions, upcoming and completed reversions, cancellations around reversion, and revenue. Reports can be exported to share with partners and to calculate any commission or revenue share, whose terms are agreed outside the product.
+- [ ] AC-A36: Campaign landing pages, prices and offers appear only on the web, in line with web-only checkout; the Android app shows no prices or offers. Campaign pages and emails follow the brand and language rules (AC-X, AC-B).
+- [ ] AC-A37: Every discount applied, removed or expired, and every fee change, is recorded in the subscription's history with the campaign and the reason.
+
 ### Content & Question Bank
 
 #### Textbooks & upload
@@ -178,7 +191,14 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 - [ ] AC-C12: Question generation is **started by the curator**, for a selected scope (textbook, index node(s) or page range) of approved facts. It never runs automatically.
 - [ ] AC-C13: The generation dialog is **pre-filled with defaults**, scaled by importance: around 4 questions per Core fact, 2 per Supporting fact, and 0–1 per Peripheral fact, with types chosen by fact type (definition → define the term / match term to definition / fill in the keyword; fact or date → multiple choice / true-false with correction / fill in the blank; process or list → put steps in order / name the missing step; cause and effect → short written "why"; diagram → label the image; some multi-fact paragraph questions). The curator can **override** the number per fact and which types are included.
 - [ ] AC-C14: The curator chooses whether questions and model answers are based on the **paraphrased** statements (default) or the **verbatim** fact (e.g. where exact textbook wording of a definition is examined).
-- [ ] AC-C15: Each question gets an easy, medium or hard rating and a model answer (and rubric for written types) taken from its source fact(s), and stays linked to those facts.
+- [ ] AC-C15: Each question gets an easy, medium or hard rating and stays linked to its source fact(s).
+- [ ] AC-C15a: Generation **explicitly produces a model answer for every question**, written from the source fact(s) (verbatim or paraphrase, per AC-C14) and citing the fact(s) it comes from. The model answer contains nothing that isn't in the source facts.
+- [ ] AC-C15b: Generation also produces a **marking rubric** for every question, so marking is systematic and repeatable. The rubric defines three outcomes:
+  - **Correct:** the required key points (e.g. the keyword and its defining idea) are all present; acceptable alternative wordings and synonyms are listed.
+  - **Partial:** which subset of key points earns partial credit (e.g. the right term but an incomplete definition, 2 of 3 steps in the right order, most labels correct).
+  - **Incorrect:** missing or wrong key points, plus known misconceptions and wrong answers that must never be marked correct.
+  For mechanical types the rubric is derived automatically (the correct option, sequence or blank; partial credit rules for ordering, matching and labelling). For written types it lists key points with their weight.
+- [ ] AC-C15c: Reviewers see and can edit the model answer and rubric together with the question at Gate 2. A question can't go live without an approved model answer and rubric, and rubric edits are versioned with the question (AC-C20).
 - [ ] AC-C16: The curator can return to any scope later and **"generate more questions"**. New questions are added to the existing ones, avoid duplicating questions already generated, and go through Gate 2.
 - [ ] AC-C17: Every generation run is logged (who, when, scope, options used, number of questions created).
 
@@ -213,11 +233,11 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 - [ ] AC-E5: Adaptive learning changes content, questions and difficulty based on demonstrated proficiency.
 - [ ] AC-E6: The engine uses retrieval practice, spaced repetition at increasing intervals, error-based remediation, and interleaving.
 - [ ] AC-E7: Before the test date, the plan covers every in-scope **Core and Supporting** fact **at least once** and every weak **Core** fact **at least twice**. Peripheral facts are included only when the runway allows.
-- [ ] AC-E8: Written answers go through the **two-step grader**. Similarity decides clear cases; borderline answers go to a small LLM using the rubric. The model answer is always shown straight away.
-- [ ] AC-E9: The grader agrees with a teacher's "good enough" judgement **≥ 90%** of the time on a reviewed sample (validated in the pilot).
+- [ ] AC-E8: Written answers go through the **two-step grader**, which marks each answer **correct**, **partial** or **incorrect** against the question's rubric. Similarity against the model answer and the rubric's key points decides clear cases; borderline answers go to a small LLM that applies the rubric. The grade records which rubric criteria were met or missed. The model answer is always shown straight away. Partial answers earn partial mastery credit (configurable).
+- [ ] AC-E9: The grader's correct / partial / incorrect mark agrees with a teacher marking with the same rubric **≥ 90%** of the time on a reviewed sample (validated in the pilot).
 - [ ] AC-E10: Results of ad-hoc sessions are included in the next system-generated session.
 - [ ] AC-E11: LLM grading respects a configurable cost cap per session. Once the cap is reached, borderline answers are marked "close".
-- [ ] AC-E12: Children's Afrikaans spelling slips don't by themselves make an answer wrong. Answers the grader can't decide are marked **"close"**, never wrong.
+- [ ] AC-E12: Children's Afrikaans spelling slips don't by themselves make an answer wrong. Answers the grader can't decide are marked **"close"**, never wrong, and are queued for a teacher to mark with the rubric during the pilot.
 
 #### Prep strategies
 - [ ] AC-E13: The runway ratio (prep days remaining ÷ count of Core and Supporting facts in the scope, weighted by importance and difficulty) is calculated when an assessment is added and recalculated whenever its date or scope changes or a day passes. It is never shown to users as a number.
@@ -246,7 +266,7 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 
 ### Child Experience & Gamification
 - [ ] AC-G1: All child-facing text is in Afrikaans, at a reading level suitable for Grade 4.
-- [ ] AC-G2: Wrong answers never produce negative or shaming language; the child sees an encouraging line plus the model answer.
+- [ ] AC-G2: Wrong answers never produce negative or shaming language; the child sees an encouraging line plus the model answer. For a partial answer, the child sees what they got right and which key point was missing.
 - [ ] AC-G3: Every completed session ends with a celebration animation, praise, and the credits earned.
 - [ ] AC-G4: Credits are earned only in the app (no money value, no shop), for adding a test, completing a session, finishing early, keeping a streak and entering a post-test mark, according to a parent-visible credit table.
 - [ ] AC-G5: Credits unlock levels, badges and cosmetic items.
@@ -320,6 +340,10 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 - **PayFast capabilities:** the billing flow assumes PayFast notifies Slaag of failed attempts (possibly every attempt) and reports the subscription's status (active/paused) in the notification or through its API, and sends webhooks for card nearing expiry and successful payment, and supports reactivating a paused subscription through a new checkout. Check this against PayFast's subscription API early in planning.
 - **Apple sign-in rule (future):** if an iOS app is added later, Apple's guideline 4.8 may require Sign in with Apple alongside Google; this must be checked then. It doesn't apply in year 1 (no iOS app).
 - **Reactivation charge:** assumed to work like a first checkout, with a pro-rata charge to the next 2nd of the month.
+- **Partner membership check:** year 1 assumes self-declared membership with a membership number, checked afterwards by the partner from an export. Live verification through a partner's system is future work and depends on each partner.
+- **Existing subscribers:** campaigns are assumed to apply to new and returning subscribers only. Whether a family that already pays can switch to a partner discount is to be confirmed.
+- **PayFast amount change:** automatic reversion assumes Slaag can change the recurring amount of an existing PayFast subscription through its API. Check this early in planning.
+- **Partner agreements:** permission to use partner names and logos, any commission or revenue share, and the partner's role in promoting campaigns are business agreements outside the product. Price-change notices should be checked against consumer-protection rules.
 
 ## Technical Context
 Greenfield: the repo currently contains only tooling and planning docs.
@@ -342,7 +366,10 @@ Greenfield: the repo currently contains only tooling and planning docs.
 | Parent | core domain | name, email, sign-in method (Google / email+password), email verified, password hash (identity shared across brands) | has BrandMemberships; owns Subscription per brand; owns 1–3 Child; sets ParentRewardGoal |
 | Child | core domain | short name, grade (4–7), province | belongs to Parent; attends School; has Subjects with Textbooks; has Assessments; earns Credits |
 | School | supporting | name, province, preloaded flag / custom-entered | attended by Child (~2,000 preloaded) |
-| Subscription | core domain | brand, family flat fee, status (active/overdue/suspended/cancelling/cancelled/deleted), billing day = 2, pro-rata first charge, card expiry warning, cancellation reason, status history | belongs to BrandMembership (one per brand); billed through PayFast |
+| Partner | supporting | name, logo, logo-use permission, contact, membership-number format, brand | runs Campaigns |
+| Campaign | supporting | partner, name, sign-up window, discount (% or rand), discount period (months), sign-up cap, terms, landing page, code, status | offers a discount; attributed to BrandMemberships |
+| SubscriptionDiscount | supporting | campaign, membership number, starts, ends, status (active/removed/expired), reversion notice sent | belongs to Subscription; at most one |
+| Subscription | core domain | brand, family flat fee, current fee, status (active/overdue/suspended/cancelling/cancelled/deleted), billing day = 2, pro-rata first charge, card expiry warning, cancellation reason, status history | belongs to BrandMembership (one per brand); billed through PayFast |
 | PayFast | external system | token, subscription ID, subscription status, card-update flow, webhooks (each failed attempt, subscription paused, card expiring, payment success) | processes Subscription payments (web only); notifies Slaag through webhooks |
 | Subject | supporting | name, grade, active flag | Child activates Subject with one Textbook |
 | SourceDocument (Textbook) | core domain | type (textbook first), title, publisher, edition/ISBN, grade, subject, language, cover | has IndexNodes, Uploads, Pages |
@@ -354,15 +381,16 @@ Greenfield: the repo currently contains only tooling and planning docs.
 | Paraphrase | supporting | text, review status | 1–2 per Fact |
 | GenerationRun | supporting | curator, scope, options (count, types, verbatim/paraphrase), created count, time | creates Questions |
 | Question | core domain | type, difficulty, review status, language, based on (verbatim/paraphrase) | generated from Fact(s) by a GenerationRun; has ModelAnswer; has ContentVersions |
-| ModelAnswer | supporting | text, rubric | belongs to Question |
-| ContentVersion | supporting | version, author, status (draft/approved/hidden) | versions Facts, Paraphrases, Questions, ModelAnswers |
+| ModelAnswer | supporting | text, source fact references, based on (verbatim/paraphrase) | belongs to Question; generated with it |
+| Rubric | supporting | correct / partial / incorrect criteria, weighted key points, accepted alternatives, known misconceptions, partial-credit rules | belongs to Question; applied by the grader; versioned |
+| ContentVersion | supporting | version, author, status (draft/approved/hidden) | versions Facts, Paraphrases, Questions, ModelAnswers, Rubrics |
 | TeacherReviewer | supporting | name, subjects | approves ContentVersions |
 | ProblemReport | supporting | reporter, reason, status | raised by Parent/Child on Question; ≥3 open → auto-hide |
 | Assessment (Test/Exam) | core domain | type, subject, date, scope, rating, mark, runway ratio, active strategy, strategy history | belongs to Child; has PrepSessions; has AssessmentMastery; has ScopePortions |
 | PrepStrategy | supporting | key (incremental/standard/last-minute), cut-offs, portion-size rules, per-child tuning | chosen for Assessment; pluggable |
 | ScopePortion | supporting | order, topics, page range, study-by date, status, mastery | belongs to Assessment (Incremental); has PrepSessions |
 | PrepSession | core domain | kind (diagnostic/system/ad-hoc/last-minute/portion/cumulative review), scheduled time, status, score, duration | belongs to Assessment (and optionally a ScopePortion); contains LearnerResponses |
-| LearnerResponse | core domain | answer text/choice, grade (correct/close/incorrect), grader step used | belongs to PrepSession; updates AssessmentMastery |
+| LearnerResponse | core domain | answer text/choice, grade (correct/partial/incorrect, or close if undecided), rubric criteria met/missed, grader step used | belongs to PrepSession; updates AssessmentMastery |
 | AssessmentMastery | core domain | per-fact mastery estimate, rolled up to subtopic/topic | belongs to Assessment (not carried over) |
 | Alert | supporting | type, channel, mute settings | sent to Parent/Child Devices |
 | Device | supporting | push token, platform (Android/web browser), linked child profiles, linked-at, revoked flag | belongs to Parent and/or linked to Child via DeviceLink |
@@ -404,6 +432,8 @@ Greenfield: the repo currently contains only tooling and planning docs.
 | 2026-11-16 | **Framework references removed:** technology and framework choices moved to a separate architecture document. |
 | 2026-11-16 | **Content ingestion:** photo-PDF upload tagged with grade and textbook; OCR; facts as the base layer, verbatim plus 1–2 paraphrases; textbook index primary (built from the table of contents) with a CAPS cross-reference, replacing the CAPS-bank hybrid; Gate 1 reviews every fact; curator-initiated, overridable, repeatable question generation; risk-based Gate 2; replace-and-redo re-uploads (AC-C1–C24, E3, E4, E7, E13, P10, X5). |
 | 2026-11-16 | **Fact importance:** Core/Supporting/Peripheral tiers and weights proposed by AI from textbook signals (margin keywords highest) and confirmed by teachers; typed fact links (elaborates/duplicates/part of/related); prep, question counts and readiness weighted by importance (AC-C7, C10, C13, C25–C28, E7, E13, E21–E24, P11, O6). |
+| 2026-11-16 | **Model answers and marking rubrics:** question generation explicitly produces a model answer from the source fact(s) and a rubric defining correct / partial / incorrect for every question; both are reviewed and versioned at Gate 2; the grader marks correct / partial / incorrect against the rubric, with "close" kept for undecided answers (AC-C15–C15c, E8, E9, E12, G2). |
+| 2026-11-16 | **Partner campaigns:** partners (e.g. AfriForum, Solidariteit, OUTA) run campaigns with a sign-up window, a percentage or rand discount and a discount period; co-branded landing pages, links and codes; self-declared membership numbers checked by the partner; discount locked in at sign-up and reverted automatically to the standard fee after a 30-day notice; no stacking; partner reporting (AC-A28–A37). |
 
 ## Interview Transcript
 <details>
