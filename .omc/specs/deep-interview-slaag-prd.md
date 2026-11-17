@@ -28,7 +28,7 @@ Confirmed in Round 0 (2026-11-10). Platform note: native store apps were first d
 | Accounts & Family Setup | active | Parent social login, family subscription via PayFast (web-only checkout), web account and subscription management, webhook-driven billing lifecycle, parent-owned child accounts, school/grade/province/textbooks, partner campaigns with time-limited member discounts | AC-A1…A37 |
 | Content & Question Bank | active | Ingestion of photographed textbook PDFs into reviewed, importance-weighted facts (verbatim + paraphrased), indexed to the textbook and cross-referenced to CAPS; curator-initiated question generation; risk-based review | AC-C1…C28 |
 | Test/Exam Planner | active | Add test/exam (date + scope), parent review/edit, rule-based next-session suggestion, post-test rating and marks | AC-P1…P12 |
-| Prep Session Engine | active | Full adaptive engine with every technique; strategy layer (Incremental / Standard / Last-minute) chosen by runway ratio; two-step grading of written answers | AC-E1…E24 |
+| Prep Session Engine | active | Full adaptive engine with every technique; strategy layer (Incremental / Standard / Last-minute) chosen by runway ratio; language-model-based grading of written answers against rubrics | AC-E1…E24 |
 | Parent Oversight & Alerts | active | Email + push alerts, missed-session detection, weekly digest, per-child dashboard | AC-O1…O7 |
 | Child Experience & Gamification | active | Fun, low-stress Afrikaans UX; in-app credits, levels, badges, streaks, cosmetics; parent reward goals | AC-G1…G9 |
 | Schools / teachers / tutors | deferred | Group subscriptions, flipped classroom, pre/post quizzes, tutor assessment | Deferred by user in Round 0 (2026-11-10): long-term opportunity, not year 1. (Schools are captured as **reference data** only; see AC-A18.) |
@@ -46,7 +46,7 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 - Two client surfaces: a **web app**, responsive for laptop and mobile browsers, and an **Android app on Google Play** with the same features for parents and children. Technology and framework choices are defined in a separate architecture document. **No iOS app in year 1**: iPhone and iPad users, parents and children alike, use the web app in their browser, which must work well on mobile and desktop.
 - Push notifications to parents and children come through the Android app; parents also get email. Web-only users (e.g. iPhone) receive **email** (parents) and in-app reminders when they open the web app. **No WhatsApp.**
 - Runs smoothly on 2 GB RAM Android phones; a 15-min session uses < 5 MB of data.
-- Learner data is **hosted in South Africa** (a local cloud region).
+- **Hosting may be in South Africa or international** (no South African data-residency requirement). If personal information, including children's data, is stored or processed outside South Africa, the transfer must meet POPIA's cross-border conditions (section 72): the hosting provider is bound by adequate data-protection law (e.g. GDPR) or a binding agreement (a data processing agreement), and the privacy notice says where data is held and lists the processors.
 
 **Accounts & billing**
 - Parents sign in **only** with **Google** or **email and password**. Microsoft and Apple sign-in are not offered. **Children have no sign-in details of their own** (no social login, password or PIN). A child gets in only through a **device the parent has linked** with a one-time code or QR code.
@@ -70,7 +70,7 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 **Engine**
 - **All** techniques in the first release. Adaptive Learning (paradigm), Knowledge Tracing (learner model) and Spaced Retrieval (reinforcement) are kept distinct.
 - Each test or exam stands alone: mastery is tracked per assessment. Marks tune per-child engine behaviour only.
-- **Two-step grader** for written answers: a cheap keyword/semantic-similarity check decides clear cases; only borderline answers go to a small, low-cost LLM using the question's teacher-approved rubric. Every answer is marked **correct**, **partial** or **incorrect**. It tolerates children's Afrikaans spelling slips and has a per-session cost cap.
+- **Language-model-based grader** for written answers: every answer goes **straight to a language-model evaluation** against the question's teacher-approved rubric (no keyword or similarity pre-check). The evaluation reports how confident it is; below a configurable confidence threshold a second, more capable language model re-assesses the answer. Every answer is marked **correct**, **partial** or **incorrect**. It tolerates children's Afrikaans spelling slips and has a per-session cost cap.
 - **Prep strategies:** a pluggable strategy layer picks how to prepare from an internal **runway ratio** (prep days remaining ÷ difficulty-weighted scope size). Launch strategies are **Incremental** (plenty of time: learn and prep portion by portion, with progress after each portion and a final interleaved review), **Standard** (full-scope diagnostic + adaptive plan) and **Last-minute**. Slaag suggests the strategy; **the parent or the child** can switch it. Cut-offs and portion sizes are settings, tuned per child from outcomes. In year 1, "learn" means studying the child's own textbook pages; Slaag does not teach content.
 
 **Language**
@@ -109,6 +109,8 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 
 ## Acceptance Criteria
 
+> **Staging and deferrals:** these criteria describe the full product. Which capabilities ship in the January 2027 pilot, by the February 2027 launch, or later (deferred with revisit triggers) is defined in the architecture document: [v1 Scope & Staging](logical-design/ARCHITECTURE.md#v1-scope--staging) and the [Debt Ledger](logical-design/ARCHITECTURE.md#debt-ledger). Criteria affected by a deferral carry a *Staging* note. Where the two differ on timing, the architecture document wins; the requirement itself stays here.
+
 ### Accounts & Family Setup
 - [ ] AC-A1: A parent can register and sign in only with **Google** or with **email and password**. No other sign-in methods are offered.
 - [ ] AC-A1a: Email-and-password registration requires email verification before the account can subscribe, a minimum password strength, and a self-service "forgot password" reset by emailed link. Repeated failed sign-ins are rate-limited. Passwords are stored only as strong salted hashes.
@@ -127,7 +129,7 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 - [ ] AC-A13: The Android app contains no purchase buttons, prices or payment links. An app user without an active subscription sees a neutral "account not active" message.
 - [ ] AC-A14: On a failed-payment notification, Slaag compares its local subscription status with the status PayFast reports. If the subscription is **Active** locally and still active at PayFast, it is the **first failure**: Slaag sets **Overdue** and emails the parent **once** that there was a problem with the payment and that it will be retried a few times. Child access continues while Overdue.
 - [ ] AC-A15: If the subscription is already **Overdue** and PayFast reports it still active, the attempt is logged with **no email**. If PayFast reports the subscription **paused** (its final retry failed), Slaag sets **Suspended**, blocks all child access on every linked device with a friendly message, and emails the parent **once** with a **deep link** to reactivate. The parent never receives more than one overdue email and one suspension email per billing failure episode. A successful payment while Overdue returns the subscription to Active with no further email.
-- [ ] AC-A16: A suspended or cancelled account's data is kept for 12 months. A warning email goes out 30 days before deletion, and the data is then deleted.
+- [ ] AC-A16: A suspended or cancelled account's data is kept for 12 months. A warning email goes out 30 days before deletion, and the data is then deleted. ***Staging:** the automated 12-month deletion job and its 30-day warning are deferred after v1 (D4); retention dates are recorded from day 1. See [Architecture → Debt Ledger](logical-design/ARCHITECTURE.md#debt-ledger).*
 - [ ] AC-A17: A parent can permanently delete the whole family account, children's data included, from settings.
 - [ ] AC-A18: When enrolling a child, the parent selects the child's **school** from a searchable list of about 2,000 preloaded schools.
 - [ ] AC-A19: If the school isn't listed, the parent can enter a new school name, which is saved on the child's profile.
@@ -160,12 +162,12 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 - [ ] AC-C3: The curator uploads **PDFs of phone photos** (no text layer) and tags each upload with **grade** and **textbook**, plus optional **section and page range(s)**. Pages are placed in the textbook's index tree automatically.
 - [ ] AC-C4: Each page is read by OCR (Afrikaans and English) and kept linked to its page image. Pages that read poorly (blur, skew, glare, cut-off text) are **flagged for re-photographing**.
 - [ ] AC-C5: **Re-uploading a page replaces it entirely.** All facts from the old version go back through Gate 1, and questions built on them go back through Gate 2.
-- [ ] AC-C6: Each textbook shows coverage in the back office: pages uploaded, flagged, extracted, facts approved, and questions generated and live.
+- [ ] AC-C6: Each textbook shows coverage in the back office: pages uploaded, flagged, extracted, facts approved, and questions generated and live. ***Staging:** v1 shows a table of counts per textbook; the full coverage dashboard is deferred (D7). See [Architecture → Debt Ledger](logical-design/ARCHITECTURE.md#debt-ledger).*
 
 #### Facts
 - [ ] AC-C7: AI extracts **facts**: short, self-contained statements, one idea each, **verbatim** in the textbook's wording. Each has a **type** (definition, fact, list item, process step, cause and effect, date or event, diagram/table label), **key terms** (bold or keyword terms flagged), its **source** (textbook, page, area of the page image), the **textbook index** (term, topic, subtopic, page), the **CAPS cross-reference**, its **position type on the page** (margin keyword/definition box, body text, heading, summary or "remember" box, caption, example or enrichment box, activity), and **links** to related facts.
 - [ ] AC-C8: For each verbatim fact, AI generates **1–2 linked paraphrased statements** with the same meaning in different words, keeping the textbook's key terms intact.
-- [ ] AC-C9: Diagrams and tables become labelled facts; the cropped image is stored and can be shown in questions.
+- [ ] AC-C9: Diagrams and tables become labelled facts; the cropped image is stored and can be shown in questions. ***Staging:** diagram facts and crops are extracted and reviewed in v1; "label the diagram" questions are deferred (D3). See [Architecture → Debt Ledger](logical-design/ARCHITECTURE.md#debt-ledger).*
 - [ ] AC-C10: **Gate 1:** a teacher reviews **every** fact and its paraphrases next to the page photo, and can approve, edit, merge, split or reject. They also confirm or change the fact's importance and links (AC-C25–C28). Only approved facts can be used to generate questions.
 
 #### Fact importance & relationships
@@ -182,12 +184,12 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
   - **related**
 
   The keyword fact stays the anchor; elaborating facts get their own tier, usually lower.
-- [ ] AC-C28: Teachers can adjust tier, weight and links per fact at Gate 1, and curators can bulk-adjust them for a whole index node (e.g. mark an enrichment section Peripheral). Changes are versioned and take effect in prep plans from the next session.
+- [ ] AC-C28: Teachers can adjust tier, weight and links per fact at Gate 1, and curators can bulk-adjust them for a whole index node (e.g. mark an enrichment section Peripheral). Changes are versioned and take effect in prep plans from the next session. ***Staging:** per-fact edits are in v1; bulk adjustment per index node is deferred (D6). See [Architecture → Debt Ledger](logical-design/ARCHITECTURE.md#debt-ledger).*
 - [ ] AC-C11: A test scope given as page ranges or index-tree selections resolves to the approved facts on those pages or nodes.
 
 #### Question generation
 - [ ] AC-C12: Question generation is **started by the curator**, for a selected scope (textbook, index node(s) or page range) of approved facts. It never runs automatically.
-- [ ] AC-C13: The generation dialog is **pre-filled with defaults**, scaled by importance: around 4 questions per Core fact, 2 per Supporting fact, and 0–1 per Peripheral fact, with types chosen by fact type (definition → define the term / match term to definition / fill in the keyword; fact or date → multiple choice / true-false with correction / fill in the blank; process or list → put steps in order / name the missing step; cause and effect → short written "why"; diagram → label the image; some multi-fact paragraph questions). The curator can **override** the number per fact and which types are included.
+- [ ] AC-C13: The generation dialog is **pre-filled with defaults**, scaled by importance: around 4 questions per Core fact, 2 per Supporting fact, and 0–1 per Peripheral fact, with types chosen by fact type (definition → define the term / match term to definition / fill in the keyword; fact or date → multiple choice / true-false with correction / fill in the blank; process or list → put steps in order / name the missing step; cause and effect → short written "why"; diagram → label the image; some multi-fact paragraph questions). The curator can **override** the number per fact and which types are included. ***Staging:** the diagram-labelling question type is deferred (D3). See [Architecture → Debt Ledger](logical-design/ARCHITECTURE.md#debt-ledger).*
 - [ ] AC-C14: The curator chooses whether questions and model answers are based on the **paraphrased** statements (default) or the **verbatim** fact (e.g. where exact textbook wording of a definition is examined).
 - [ ] AC-C15: Each question gets an easy, medium or hard rating and stays linked to its source fact(s).
 - [ ] AC-C15a: Generation **explicitly produces a model answer for every question**, written from the source fact(s) (verbatim or paraphrase, per AC-C14) and citing the fact(s) it comes from. The model answer contains nothing that isn't in the source facts.
@@ -231,10 +233,10 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 - [ ] AC-E5: Adaptive learning changes content, questions and difficulty based on demonstrated proficiency.
 - [ ] AC-E6: The engine uses retrieval practice, spaced repetition at increasing intervals, error-based remediation, and interleaving.
 - [ ] AC-E7: Before the test date, the plan covers every in-scope **Core and Supporting** fact **at least once** and every weak **Core** fact **at least twice**. Peripheral facts are included only when the runway allows.
-- [ ] AC-E8: Written answers go through the **two-step grader**, which marks each answer **correct**, **partial** or **incorrect** against the question's rubric. Similarity against the model answer and the rubric's key points decides clear cases; borderline answers go to a small LLM that applies the rubric. The grade records which rubric criteria were met or missed. The model answer is always shown straight away. Partial answers earn partial mastery credit (configurable).
+- [ ] AC-E8: Written answers are assessed **directly by a language model** against the question's model answer and rubric, which marks each answer **correct**, **partial** or **incorrect** with a confidence level. There is no keyword or similarity pre-check. When confidence is below a configurable threshold, a second, more capable language model re-assesses the answer with the same rubric. The grade records which rubric criteria were met or missed. The model answer is always shown straight away. Partial answers earn partial mastery credit (configurable).
 - [ ] AC-E9: The grader's correct / partial / incorrect mark agrees with a teacher marking with the same rubric **≥ 90%** of the time on a reviewed sample (validated in the pilot).
 - [ ] AC-E10: Results of ad-hoc sessions are included in the next system-generated session.
-- [ ] AC-E11: LLM grading respects a configurable cost cap per session. Once the cap is reached, borderline answers are marked "close".
+- [ ] AC-E11: Grading respects a configurable cost cap per session. Once the cap is reached, low-confidence answers are not escalated and are marked "close".
 - [ ] AC-E12: Children's Afrikaans spelling slips don't by themselves make an answer wrong. Answers the grader can't decide are marked **"close"**, never wrong, and are queued for a teacher to mark with the rubric during the pilot.
 
 #### Prep strategies
@@ -245,13 +247,13 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 - [ ] AC-E17: The next-session suggestion stays one session at a time (AC-P4); the active strategy decides that session's portion and focus.
 - [ ] AC-E18: The parent and the child can each switch the strategy (e.g. Incremental → Standard). If the child switches, the parent is alerted; if both change it, the parent's choice wins.
 - [ ] AC-E19: If the runway shrinks (missed sessions, a moved date, a bigger scope), the engine re-plans and can move to a more compressed strategy, explaining this in a calm message to the child and parent.
-- [ ] AC-E20: For every assessment, the strategy used, any switches, the per-portion results and the outcome (rating and mark) are recorded. Per-child tuning adjusts that child's cut-offs and portion sizes, and new strategies can be added as plug-ins without changing the planner, the grader or the session runner.
+- [ ] AC-E20: For every assessment, the strategy used, any switches, the per-portion results and the outcome (rating and mark) are recorded. Per-child tuning adjusts that child's cut-offs and portion sizes, and new strategies can be added as plug-ins without changing the planner, the grader or the session runner. ***Staging:** recording strategies, switches and outcomes is in v1; per-child tuning is deferred (D1). See [Architecture → Debt Ledger](logical-design/ARCHITECTURE.md#debt-ledger).*
 
 #### Importance-weighted prep
 - [ ] AC-E21: Question selection, spacing and repetition are **proportional to importance**: Core facts (above all margin keywords and definitions) are asked first, more often, and reviewed at shorter spaced intervals; Supporting facts less often; Peripheral facts only when time allows, and never in Last-minute sessions.
 - [ ] AC-E22: A fact linked as **elaborating** a keyword is only drilled after the keyword itself is mastered. A fact linked as a **duplicate** shares mastery with the fact it duplicates and is not drilled separately.
 - [ ] AC-E23: An assessment counts as "ready" when the weighted mastery of its Core facts reaches a configurable threshold. Readiness % shown to parents is weighted by importance, so Peripheral facts barely affect it.
-- [ ] AC-E24: Importance tiers and weights are inputs that later per-child and outcome-based tuning (AC-E20) can learn from, e.g. which facts appeared to matter in tests children rated "tough".
+- [ ] AC-E24: Importance tiers and weights are inputs that later per-child and outcome-based tuning (AC-E20) can learn from, e.g. which facts appeared to matter in tests children rated "tough". ***Staging:** deferred with per-child tuning (D1). See [Architecture → Debt Ledger](logical-design/ARCHITECTURE.md#debt-ledger).*
 
 ### Parent Oversight & Alerts
 - [ ] AC-O1: Push + email **within 5 minutes** when a child adds or edits a test or exam.
@@ -292,7 +294,7 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 - [ ] AC-B5: A parent who signs in with the same Google account or email and password on a second brand is recognised as the same person. They can use that brand after subscribing to it; each brand's subscription is billed by that brand's PayFast merchant.
 - [ ] AC-B6: Every message, email, page and screen shown to a user carries only the branding of the brand they're currently using.
 - [ ] AC-B7: The engine and content back office are shared; a content set can be enabled for any brand that allows its language.
-- [ ] AC-B8: A test (non-production) second brand with its own domain can be set up purely through configuration and per-brand app builds, proving AC-B1–B7 before launch.
+- [ ] AC-B8: A test (non-production) second brand with its own domain can be set up purely through configuration and per-brand app builds, proving AC-B1–B7 before launch. ***Staging:** the test second-brand rehearsal moves to after launch (D5); brand configuration and the hard-coded-brand check stay in v1. See [Architecture → Debt Ledger](logical-design/ARCHITECTURE.md#debt-ledger).*
 
 ### Launch & Year-1 Success
 - [ ] AC-L1: A closed pilot with Afrikaans families runs in **January 2027** and validates AC-E1, E2, E7 and E9.
@@ -312,7 +314,7 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 | Per-child pricing | (R11) | Flat family fee, ≤ 3 children, PayFast |
 | "Negotiate" a schedule | Study windows proposed (R12) | One suggestion at a time; rules in R16 |
 | The apps can sell subscriptions | Store billing rules (R14) | Web-only checkout; no purchase UI in the apps |
-| "JEV" grader | What is it, and what does it cost? (R15) | Two-step grader: similarity first, then a small LLM; cost cap |
+| "JEV" grader | What is it, and what does it cost? (R15) | Two-step grader: similarity first, then a small LLM; cost cap. *Revised 2026-11-16:* language-model evaluation for every answer, escalating to a more capable model below a confidence threshold; cost cap |
 | Children sign in with credentials | Revision (2026-11-16): the user wanted children's access to be effortless | Parent-authorised device linking by code or QR; a name picker on shared devices; no child credentials |
 | Brand and product are Afrikaans-only forever | Revision (2026-11-16): future English audience | Language-driven from day 1; Afrikaans enabled, English switched off; language from explicit choice > entry point > default |
 | One brand forever | Revision (2026-11-16): English may be a different brand on a different domain | Multi-brand platform; brand is a config record resolved by domain or app; shared parent identity, per-brand subscriptions |
@@ -324,7 +326,6 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 - **Custom school names:** assumed saved as entered and flagged for staff to add to the master list. Not confirmed.
 - **School list source:** where the ~2,000 schools come from (e.g. Department of Basic Education school master list, filtered to Afrikaans/dual-medium) is to be confirmed.
 - **KPIs other than NPS:** proposed in R17 but not explicitly confirmed (AC-L4).
-- **Pilot pricing:** assumed free. Not confirmed.
 - **Textbook copyright:** AI extraction from photographed copies Slaag owns needs legal review. Paraphrased statements (AC-C8, C14) are a partial buffer, not a legal clearance.
 - **Importance defaults:** the tier signals (AC-C26), default weights, question counts per tier and the readiness threshold are set and tuned during the pilot.
 - **Content ingestion assumptions:** only Slaag content staff upload; a textbook is identified by edition/ISBN as well as title; the quality bar for fact extraction (e.g. share of facts approved without edits) is set during the pilot.
@@ -349,10 +350,10 @@ Greenfield: the repo currently contains only tooling and planning docs.
 - **Auth:** parents use Google OAuth or email and password (verified email, reset by emailed link, rate-limited, hashed passwords). Children use parent-authorised device linking (a one-time code/QR, 15-minute expiry, single use) that creates a long-lived device credential the parent can revoke; there is no child login.
 - **Payments:** PayFast (onsite checkout, recurring billing, card update, pause and reactivate); web-only; subscription status driven by authenticated, idempotent PayFast webhooks.
 - **Notifications:** email (parents), push (parents and children).
-- **AI:** OCR of photographed pages (Afrikaans/English); AI fact extraction, paraphrasing, index/CAPS tagging and curator-initiated question generation, all behind teacher review gates; runtime two-step grader (similarity + small LLM, cost-capped).
+- **AI:** OCR of photographed pages (Afrikaans/English); AI fact extraction, paraphrasing, index/CAPS tagging and curator-initiated question generation, all behind teacher review gates; runtime language-model-based grader against rubrics (confidence threshold with escalation to a more capable model, cost-capped). Model and vendor choices are in the separate architecture document.
 - **Learner modelling:** knowledge tracing per assessment + spaced-repetition scheduling, under a pluggable **strategy layer** (runway ratio → Incremental / Standard / Last-minute), with per-child tuning of cut-offs and portion sizes from recorded outcomes.
 - **Back office:** web-only content back office with versioning and a review queue.
-- **Hosting/compliance:** South African cloud region; POPIA.
+- **Hosting/compliance:** South African or international cloud region; POPIA, including cross-border transfer conditions (section 72) when data is held outside South Africa.
 - **Multi-brand:** brand configuration records; brand resolved by domain or app ID; per-brand Android app builds, OAuth clients, push credentials, email domains and PayFast merchants; shared identity, engine and content.
 - **Internationalisation:** per-language string resources for every surface; language resolved from explicit choice > entry point > default `af`; language-tagged content; per-language email/push templates, landing pages and store listings; `en` switched off by a flag.
 
@@ -388,7 +389,7 @@ Greenfield: the repo currently contains only tooling and planning docs.
 | PrepStrategy | supporting | key (incremental/standard/last-minute), cut-offs, portion-size rules, per-child tuning | chosen for Assessment; pluggable |
 | ScopePortion | supporting | order, topics, page range, study-by date, status, mastery | belongs to Assessment (Incremental); has PrepSessions |
 | PrepSession | core domain | kind (diagnostic/system/ad-hoc/last-minute/portion/cumulative review), scheduled time, status, score, duration | belongs to Assessment (and optionally a ScopePortion); contains LearnerResponses |
-| LearnerResponse | core domain | answer text/choice, grade (correct/partial/incorrect, or close if undecided), rubric criteria met/missed, grader step used | belongs to PrepSession; updates AssessmentMastery |
+| LearnerResponse | core domain | answer text/choice, grade (correct/partial/incorrect, or close if undecided), rubric criteria met/missed, evaluator used, confidence | belongs to PrepSession; updates AssessmentMastery |
 | AssessmentMastery | core domain | per-fact mastery estimate, rolled up to subtopic/topic | belongs to Assessment (not carried over) |
 | Alert | supporting | type, channel, mute settings | sent to Parent/Child Devices |
 | Device | supporting | push token, platform (Android/web browser), linked child profiles, linked-at, revoked flag | belongs to Parent and/or linked to Child via DeviceLink |
@@ -432,6 +433,10 @@ Greenfield: the repo currently contains only tooling and planning docs.
 | 2026-11-16 | **Fact importance:** Core/Supporting/Peripheral tiers and weights proposed by AI from textbook signals (margin keywords highest) and confirmed by teachers; typed fact links (elaborates/duplicates/part of/related); prep, question counts and readiness weighted by importance (AC-C7, C10, C13, C25–C28, E7, E13, E21–E24, P11, O6). |
 | 2026-11-16 | **Model answers and marking rubrics:** question generation explicitly produces a model answer from the source fact(s) and a rubric defining correct / partial / incorrect for every question; both are reviewed and versioned at Gate 2; the grader marks correct / partial / incorrect against the rubric, with "close" kept for undecided answers (AC-C15–C15c, E8, E9, E12, G2). |
 | 2026-11-16 | **Partner campaigns:** partners (e.g. AfriForum, Solidariteit, OUTA) run campaigns with a sign-up window, a percentage or rand discount and a discount period; co-branded landing pages, links and codes; self-declared membership numbers checked by the partner; discount locked in at sign-up and reverted automatically to the standard fee after a 30-day notice; no stacking; partner reporting (AC-A28–A37). |
+| 2026-11-16 | **Staging and deferrals:** the PRD now refers to the architecture document (v1 Scope & Staging, Debt Ledger) for which capabilities are deferred; *Staging* notes added to AC-A16, C6, C9, C13, C28, E20, E24 and B8. |
+| 2026-11-16 | **Pilot pricing:** the open assumption that the January 2027 pilot is free is removed. |
+| 2026-11-16 | **Grader:** the keyword/similarity first step is removed; every written answer goes straight to language-model evaluation against the rubric, with a confidence threshold that escalates to a more capable model, and the cost cap unchanged (Constraints, AC-E8, E11, Technical Context, Ontology). |
+| 2026-11-16 | **Hosting:** the South African hosting requirement (Round 18) is removed; international hosting is allowed, subject to POPIA's cross-border transfer conditions (Constraints, Technical Context). |
 
 ## Interview Transcript
 <details>

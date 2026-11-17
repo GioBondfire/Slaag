@@ -34,7 +34,7 @@ All earlier decisions (Rounds 1–13) are recorded in [PRD.md](PRD.md).
 3. **Custom school names:** assumed flagged for staff to add to the master list.
 4. **School list source:** e.g. the Department of Basic Education school list filtered to Afrikaans/dual-medium schools.
 5. **KPIs other than NPS:** ≥60% of tests with a completed session, ≥70% month-2 retention, paying-family target.
-6. **Pilot pricing:** assumed free.
+6. ~~**Pilot pricing:** assumed free.~~ Removed 2026-11-16 (Revision 14).
 7. **Textbook copyright:** legal review needed.
 8. **Fee amount:** business decision.
 
@@ -52,3 +52,7 @@ All earlier decisions (Rounds 1–13) are recorded in [PRD.md](PRD.md).
 | 2026-11-16 | **Revision 9: fact importance.** Core/Supporting/Peripheral tiers with weights, proposed by AI from textbook signals (margin keywords and definitions highest) and confirmed by teachers; typed fact links (elaborates, duplicates, part of, related); prep, question counts and readiness weighted by importance. Folded into PRD.md (AC-C25–C28, E21–E24). |
 | 2026-11-16 | **Revision 10: model answers and marking rubrics.** Question generation explicitly produces a model answer from the source fact(s), citing them, and a rubric defining **correct / partial / incorrect** (weighted key points, accepted alternatives, partial-credit rules, known misconceptions) for every question. Both are reviewed and versioned at Gate 2; no question goes live without them. The grader marks correct / partial / incorrect against the rubric; "close" stays for undecided answers. Folded into PRD.md (AC-C15–C15c, E8, E9, E12, G2). |
 | 2026-11-16 | **Revision 11: partner campaigns.** Partnerships are a key distribution channel. Partners (e.g. AfriForum, Solidariteit, OUTA) run campaigns with a sign-up window (e.g. 3 months), a % or rand discount and a discount period (e.g. 12 months). Co-branded landing pages, links/QR and codes; self-declared membership number, checked by the partner from an export; discount locked in at sign-up; automatic reversion to the standard fee after a 30-day notice email; no stacking; per-partner reporting. Folded into PRD.md (AC-A28–A37). Open: live membership verification, existing subscribers, PayFast amount-change API. |
+| 2026-11-16 | **Revision 12: hosting.** South African hosting is no longer required (replaces "hosted in SA" from Round 18); international hosting is allowed, subject to POPIA's cross-border transfer conditions (section 72). |
+| 2026-11-16 | **Revision 13: grader.** The keyword/similarity first step is removed; every written answer goes straight to language-model evaluation against the rubric (correct / partial / incorrect with confidence), escalating to a more capable model below a configurable threshold; cost cap unchanged. Aligns with TECH-STACK.md. |
+| 2026-11-16 | **Revision 14: pilot pricing.** The assumption that the pilot is free is removed from the PRD. |
+| 2026-11-16 | **Revision 15: staging and deferrals.** The PRD refers to [ARCHITECTURE.md](logical-design/ARCHITECTURE.md) (v1 Scope & Staging, Debt Ledger D1–D7) for deferred capabilities; *Staging* notes on AC-A16, C6, C9, C13, C28, E20, E24, B8. |
