@@ -92,6 +92,7 @@ All 8 phases done; team-topologies skipped (one team). Exit checklist:
 - [ ] Tech decision needed → docs/TECH-STACK.md: how one contract source generates server and Android types; dependency-rule checking; sandbox accounts for payment, push, email and AI providers (owner: user, P1)
 - [ ] Pre-pilot testing per RELIABILITY.md: load test, soak, GameDay (owner: team, due: before Jan 2027 pilot, P1)
 - [ ] Tech decision needed → docs/TECH-STACK.md: feature-flag and kill-switch mechanism; how breakers, bulkheads and per-workload connection limits are implemented; where metrics, alerts and correlation IDs go (owner: user, P1)
+- [ ] Confirm the 8 proposals in [CONTENT-USE-CASES.md → Decisions to confirm](CONTENT-USE-CASES.md#decisions-to-confirm) (curator-started extraction, reprocessing as a change proposal, batch approval, feedback-driven regeneration, publish step, amendable index tree, fact-change cascade, staging); then update the PRD, aggregates table and Decision Log (owner: user, P1)
 - [ ] Define the rubric format in the content catalogue's published contract before Marking or question generation is built (owner: user + Claude, P1)
 - [ ] Tech decision needed → docs/TECH-STACK.md: confirm the store's default isolation level, and the mechanisms for the 14 serialized-write invariants and the transactional outbox (owner: user, P1)
 - [ ] Define how long backups are kept, so erased family data ages out of backups within a stated period (POPIA; AC-A16–A17) (owner: user, P2)

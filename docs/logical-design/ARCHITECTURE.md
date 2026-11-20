@@ -283,7 +283,7 @@ Each context exposes one small published interface that hides a lot behind it; p
 | Context | Published interface (in short) | Hides |
 |---|---|---|
 | Prep | add/change assessment, switch strategy, start/finish session, submit answer, record result, assessment detail and assessment list queries for child and parent (each with readiness % and whether it has reached "ready"), dashboard queries (incl. per-topic readiness breakdown) | Planning, strategies, importance, mastery, readiness, marking, LLM grading, cost cap |
-| Content | `ContentCatalogue`: resolve scope, session bundle, report a problem; back office: upload, review, generate, publish. | AI pipeline, versioning, review gates, page reading, image storage |
+| Content | `ContentCatalogue`: resolve scope, session bundle, report a problem; back office: upload, review, generate, publish. Full list: [CONTENT-USE-CASES.md](CONTENT-USE-CASES.md) | AI pipeline, versioning, review gates, page reading, image storage |
 | Billing & Campaigns | checkout, handle provider event, cancel, reactivate, start card update, `access(membership)` | Lifecycle state machine, provider quirks, discounts, reversion |
 | Identity & Access | sign-in flows, issue/redeem link code, refresh device access token, revoke device, authenticate request | Provider sign-in, credentials, token issuing and verification, rate limits |
 | Family | register, add child, enrol subject, directory queries | Consent, memberships, schools |
