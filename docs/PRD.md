@@ -1,4 +1,4 @@
-> **APPROVED** as the Slaag year-1 PRD on 2026-11-14T00:45:29Z; revised 2026-11-16 (see Revision History). Deep Interview: 20 rounds, 12% ambiguity.
+> **APPROVED** as the Slaag year-1 PRD on 2026-11-14T00:45:29Z; revised 2026-11-16 and 2026-11-17 (see Revision History). Deep Interview: 20 rounds, 12% ambiguity.
 
 # Slaag — Year-1 PRD (Afrikaans Test & Exam Prep for Grades 4–7)
 
@@ -11,7 +11,7 @@
 - Threshold: 0.2
 - Threshold Source: default
 - Initial Context Summarized: no
-- Status: APPROVED (2026-11-14T00:45:29Z); revised 2026-11-16 (child device linking, language-driven experience, multi-brand platform, prep strategies)
+- Status: APPROVED (2026-11-14T00:45:29Z); revised 2026-11-16 (child device linking, language-driven experience, multi-brand platform, prep strategies); revised 2026-11-17 (missed, skipped and expired prep sessions; session-based assessment readiness shown as a progress bar)
 
 ## Clarity Breakdown
 | Dimension | Score | Weight | Weighted |
@@ -30,13 +30,14 @@ Confirmed in Round 0 (2026-11-10). Platform note: native store apps were first d
 | Accounts & Family Setup | active | Parent social login, family subscription via PayFast (web-only checkout), web account and subscription management, webhook-driven billing lifecycle, parent-owned child accounts, school/grade/province/textbooks, partner campaigns with time-limited member discounts | AC-A1…A37 |
 | Content & Question Bank | active | Ingestion of photographed textbook PDFs into reviewed, importance-weighted facts (verbatim + paraphrased), indexed to the textbook and cross-referenced to CAPS; curator-initiated question generation; risk-based review | AC-C1…C28 |
 | Test/Exam Planner | active | Add test/exam (date + scope), parent review/edit, rule-based next-session suggestion, post-test rating and marks | AC-P1…P12 |
-| Prep Session Engine | active | Full adaptive engine with every technique; strategy layer (Incremental / Standard / Last-minute) chosen by runway ratio; language-model-based grading of written answers against rubrics | AC-E1…E24 |
+| Prep Session Engine | active | Full adaptive engine with every technique; strategy layer (Incremental / Standard / Last-minute) chosen by runway ratio; language-model-based grading of written answers against rubrics | AC-E1…E31 |
 | Parent Oversight & Alerts | active | Email + push alerts, missed-session detection, weekly digest, per-child dashboard | AC-O1…O7 |
-| Child Experience & Gamification | active | Fun, low-stress Afrikaans UX; in-app credits, levels, badges, streaks, cosmetics; parent reward goals | AC-G1…G9 |
+| Child Experience & Gamification | active | Fun, low-stress Afrikaans UX; in-app credits, levels, badges, cosmetics; parent reward goals | AC-G1…G8 |
 | Schools / teachers / tutors | deferred | Group subscriptions, flipped classroom, pre/post quizzes, tutor assessment | Deferred by user in Round 0 (2026-11-10): long-term opportunity, not year 1. (Schools are captured as **reference data** only; see AC-A18.) |
 | English-speaking users | deferred | Expansion beyond Afrikaans communities | Deferred by user in Round 0 (2026-11-10): year 1 is 100% Afrikaans. The platform is built to support languages from day 1 (AC-X1…X8), so English can later be switched on without rework. English may launch as a **separate brand on its own domain** on the same platform. |
 | Non-education extensions | deferred | Other Slaag Group businesses for Afrikaner households | Deferred by user in Round 0 (2026-11-10) |
 | iOS app | deferred | Native iPhone/iPad app on the Apple App Store | Deferred by user on 2026-11-16: year 1 is the Android app + responsive web app; iPhone users use the web app |
+| Streaks | future consideration | A count of consecutive activity, shown to the child and on the parent dashboard, possibly earning credits | Removed by user on 2026-11-18 (formerly AC-G9 and part of AC-G4). How a streak is counted was never defined, and a daily streak clashes with prep sessions planned days apart. Revisit with a definition, e.g. planned sessions completed in a row. |
 
 ## Goal
 Slaag ("pass/succeed") is the first business of Slaag Group, a platform for Afrikaans-speaking families in South Africa. In year 1, Slaag helps parents of Grade 4–7 children prepare their children for school **tests** (small, during term) and **exams** (end of term, consolidated), replacing last-minute, stressful manual quizzing from the textbook.
@@ -117,10 +118,11 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 - [ ] AC-A1: A parent can register and sign in only with **Google** or with **email and password**. No other sign-in methods are offered.
 - [ ] AC-A1a: Email-and-password registration requires email verification before the account can subscribe, a minimum password strength, and a self-service "forgot password" reset by emailed link. Repeated failed sign-ins are rate-limited. Passwords are stored only as strong salted hashes.
 - [ ] AC-A1b: A parent who registered with email and password can later sign in with Google using the same verified email address (and the reverse), and ends up in the same account rather than a duplicate.
+- [ ] AC-A1c: On the web, a parent stays signed in on that browser for a long time, until they choose to sign out. This also applies on a shared computer linked to their children (AC-A11). Sensitive financial actions need a **recent sign-in**: starting checkout, updating the card, cancelling, and reactivating. If the parent last signed in longer ago than a configurable window, they confirm with their password or Google before continuing.
 - [ ] AC-A2: Registration records the parent's POPIA consent for processing their children's data (timestamped).
 - [ ] AC-A3: Checkout uses PayFast onsite payment; the first charge is pro-rata to the 2nd of the next month, and recurring charges run on the 2nd.
 - [ ] AC-A4: A parent can start a card update from Slaag, which completes on PayFast.
-- [ ] AC-A5: A parent with an active subscription can create up to 3 child accounts; a 4th is blocked with a clear message.
+- [ ] AC-A5: A parent with an active subscription can create up to 3 child accounts; a 4th is blocked with a clear message that invites the parent to email support. Families with more than 3 children in Grades 4–7 are rare and are handled case by case over email (decided 2026-11-17).
 - [ ] AC-A6: Creating a child requires only a short name (typically the first name), used to identify the child in reports; grade (4–7) and province are captured during child setup.
 - [ ] AC-A7: For each subject, the parent can confirm the textbook and turn the subject on, now or later. Subjects without a confirmed textbook stay inactive.
 - [ ] AC-A8: Child accounts have no sign-in details: no Google sign-in, email/password, username/password or PIN. A child can use Slaag only on a device the parent has linked, or through the parent's own signed-in app (AC-A11).
@@ -214,7 +216,7 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 - [ ] AC-C24: Textbook page photos and verbatim text are visible only to Slaag staff and reviewers; learners see questions, model answers and diagram crops only.
 
 ### Test/Exam Planner
-- [ ] AC-P1: The parent or the child can add a test or exam with a type, subject, date and scope.
+- [ ] AC-P1: The parent or the child can add a test or exam with a type, subject, date (and optionally a time of day) and scope.
 - [ ] AC-P2: Scope can be set by selecting from the textbook's content tree **or** by entering page ranges.
 - [ ] AC-P3: When a child adds or edits a test or exam, the parent is alerted and can view and edit every detail, including the prep session date and time.
 - [ ] AC-P4: Slaag suggests **one** next prep session date and time; the child or parent accepts it or changes it.
@@ -226,6 +228,8 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 - [ ] AC-P10: The sessions still needed are estimated from the facts not yet mastered and spread evenly over the days left, with at least 1 day between sessions when time allows.
 - [ ] AC-P11: If the test is today or tomorrow, Slaag offers a short last-minute session on weak **Core** facts (margin keywords first), with a calm, no-panic message.
 - [ ] AC-P12: Editing scope mid-plan adds new topics to the next session and drops removed topics from the plan. After the test date, suggestions stop and the rating prompt appears.
+- [ ] AC-P13: A **missed** prep session (AC-O3) stays available: the child can still **do** it at any time before the assessment, or the child or parent can **skip** it. A missed session done late is logged as completed and keeps a record that it was missed. Skipping marks the session **Skipped**, re-plans the runway (AC-E19) and brings up the next suggested session (AC-P4).
+- [ ] AC-P14: At the assessment's time, every prep session for it that is **not in progress or completed** (scheduled or missed) is marked **Expired** and can no longer be started. A session already in progress can be finished. Skipped sessions stay Skipped. The assessment's time is the time of day entered with it, otherwise a configurable default (e.g. school start, 07:30).
 
 ### Prep Session Engine
 - [ ] AC-E1: Under the Standard strategy, the first session for an assessment is an adaptive **diagnostic** that takes **≤ 15 minutes** for one test scope. Under Incremental, a diagnostic runs per portion, within the same time limit.
@@ -254,29 +258,41 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 #### Importance-weighted prep
 - [ ] AC-E21: Question selection, spacing and repetition are **proportional to importance**: Core facts (above all margin keywords and definitions) are asked first, more often, and reviewed at shorter spaced intervals; Supporting facts less often; Peripheral facts only when time allows, and never in Last-minute sessions.
 - [ ] AC-E22: A fact linked as **elaborating** a keyword is only drilled after the keyword itself is mastered. A fact linked as a **duplicate** shares mastery with the fact it duplicates and is not drilled separately.
-- [ ] AC-E23: An assessment counts as "ready" when the weighted mastery of its Core facts reaches a configurable threshold. Readiness % shown to parents is weighted by importance, so Peripheral facts barely affect it.
+- [ ] AC-E23: An assessment counts as "ready" when its **readiness %** (AC-E25–E30) reaches a configurable threshold. Readiness is weighted by importance, so Peripheral facts barely affect it. Per-fact mastery (AC-E3, E4) still drives the engine's choice of what to ask; it is not the number shown as readiness.
 - [ ] AC-E24: Importance tiers and weights are inputs that later per-child and outcome-based tuning (AC-E20) can learn from, e.g. which facts appeared to matter in tests children rated "tough". ***Staging:** deferred with per-child tuning (D1). See [Architecture → Debt Ledger](logical-design/ARCHITECTURE.md#debt-ledger).*
+
+#### Assessment readiness
+- [ ] AC-E25: Every assessment has a calculated **readiness %**. It starts at **0%** when the assessment is added and changes only when a prep session for it is **completed**.
+- [ ] AC-E26: Every prep session has a **coverage**: the part of the assessment's scope it is planned on (e.g. one topic, one Incremental portion, a subset chosen for an ad-hoc session, or the whole scope for a diagnostic or a cumulative review). Coverage is fixed when the session starts. A session's coverage share is its covered facts' **weighted fact count** (the sum of their importance weights) divided by the weighted fact count of the whole scope.
+- [ ] AC-E27: A completed session's **score %** is the credit earned divided by the number of answers marked: correct = 1, partial = the configurable partial credit (AC-E8), incorrect = 0. Answers marked "close" are left out. A session with no marked answers does not change readiness.
+- [ ] AC-E28: Readiness % = the sum, over every part of the scope, of (the score % of the **most recent completed session covering that part**) × (that part's coverage share). Parts no completed session has covered count as 0%. The number of questions asked does not matter, only the session's score and its coverage. *Example (equal weights):* topic 1 has 100 facts and topic 2 has 300. Session 1 covers topic 1 (25%) and scores 100%, so readiness is 100% × 25% = **25%**. Session 2 covers topic 2 (75%) and scores 50%, so readiness is (100% × 25%) + (50% × 75%) = **62.5%**.
+- [ ] AC-E29: A later session that covers parts already covered **replaces** the earlier score for those parts, because it is the more recent outcome. *Example, continued:* a cumulative review over topics 1 and 2 scoring 80% makes readiness **80%**; a later ad-hoc session on topic 1 alone scoring 90% then makes it (90% × 25%) + (80% × 75%) = **82.5%**. Readiness can therefore go down as well as up. "Most recent" means the session that was completed last, even if its results reach Slaag later (e.g. after an offline sync).
+- [ ] AC-E30: Readiness follows the current scope and weights: facts added to the scope (AC-P12) start at 0% and lower readiness; removed facts drop out of it; teacher changes to importance weights (AC-C28) apply from the next calculation. At the assessment's time (AC-P14) the readiness % is **recorded with the assessment** and kept beside its Result (rating and mark), so final readiness can later be compared with how the test went.
+- [ ] AC-E31: Readiness is shown as a **progress bar** with its % to **both the child and the parent**: on each **assessment detail page**, and for every assessment on the **assessment list (summary) page**. Every place shows the same value, from the same calculation (AC-E28). When readiness reaches the "ready" threshold (AC-E23), the bar shows that the child is ready. A bar at 0% (no completed session yet) gives an encouraging prompt to start, not an empty or failing state. Child-facing wording follows AC-G1 and AC-G2.
 
 ### Parent Oversight & Alerts
 - [ ] AC-O1: Push + email **within 5 minutes** when a child adds or edits a test or exam.
 - [ ] AC-O2: At the scheduled session time, a push goes to the child and the parent.
-- [ ] AC-O3: If no session is started within **2 hours** of the scheduled time, it is logged as **missed** and the parent is alerted.
-- [ ] AC-O4: Push + email **within 5 minutes** when a session is completed, with the score, weak topics and the suggested next step.
+- [ ] AC-O3: If no session is started within **2 hours** of the scheduled time, it is logged as **missed** and the parent is alerted. A missed session can still be done or skipped (AC-P13) until it expires (AC-P14).
+- [ ] AC-O4: Push + email **within 5 minutes** when a session is completed, with the session score %, the assessment's new readiness % (AC-E28), weak topics and the suggested next step.
 - [ ] AC-O5: A weekly digest email is sent every Sunday evening.
-- [ ] AC-O6: The per-child dashboard shows upcoming tests and exams, readiness % per test (importance-weighted, AC-E23), weak topics and weak keywords, credits and reward goal, and a full log of planned, missed, completed and ad-hoc sessions.
+- [ ] AC-O6: The per-child dashboard shows upcoming tests and exams, readiness per test as a progress bar (session-based and importance-weighted, AC-E23, E25–E31), weak topics and weak keywords, credits and reward goal, and a full log of planned, missed, skipped, expired, completed and ad-hoc sessions.
 - [ ] AC-O7: The parent can mute any alert type for each channel (email/push), including portion-progress and strategy-switch alerts.
 
 ### Child Experience & Gamification
 - [ ] AC-G1: All child-facing text is in Afrikaans, at a reading level suitable for Grade 4.
 - [ ] AC-G2: Wrong answers never produce negative or shaming language; the child sees an encouraging line plus the model answer. For a partial answer, the child sees what they got right and which key point was missing.
 - [ ] AC-G3: Every completed session ends with a celebration animation, praise, and the credits earned.
-- [ ] AC-G4: Credits are earned only in the app (no money value, no shop), for adding a test, completing a session, finishing early, keeping a streak and entering a post-test mark, according to a parent-visible credit table.
+- [ ] AC-G4: Credits are earned only in the app (no money value, no shop), according to a parent-visible credit table. The default amounts are configurable:
+  - **Adding a test or exam:** 10 credits.
+  - **Completing a prep session:** 1 credit for each multiple-choice question and 3 credits for each written (free-text) question answered in the session, whether the answer is right or not. Credits are added when the session is completed.
+  - **Entering a post-test mark for feedback:** 10 credits.
 - [ ] AC-G5: Credits unlock levels, badges and cosmetic items.
 - [ ] AC-G6: A parent can optionally set a real-life reward at a credit target. Slaag tracks progress towards it; the parent provides the reward.
 - [ ] AC-G7: Animations run smoothly on a 2 GB RAM Android device.
 - [ ] AC-G7a: Every parent and child journey works in the web app on current mobile browsers (Chrome on Android, Safari on iPhone) and desktop browsers (Chrome, Edge, Safari, Firefox), with layouts that suit phone and desktop screens.
 - [ ] AC-G8: A 15-minute session uses < 5 MB of mobile data.
-- [ ] AC-G9: Streaks are visible to the child and shown on the parent dashboard.
+- AC-G9: *Removed on 2026-11-18. Streaks are a future consideration; see the Streaks row in the parts table.*
 
 ### Language
 - [ ] AC-X1: Every user-facing string (web, apps, emails, push, digest, help pages, praise and humour, grader feedback) comes from per-language resources; an automated check finds no hard-coded user-facing text.
@@ -297,6 +313,7 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 - [ ] AC-B6: Every message, email, page and screen shown to a user carries only the branding of the brand they're currently using.
 - [ ] AC-B7: The engine and content back office are shared; a content set can be enabled for any brand that allows its language.
 - [ ] AC-B8: A test (non-production) second brand with its own domain can be set up purely through configuration and per-brand app builds, proving AC-B1–B7 before launch. ***Staging:** the test second-brand rehearsal moves to after launch (D5); brand configuration and the hard-coded-brand check stay in v1. See [Architecture → Debt Ledger](logical-design/ARCHITECTURE.md#debt-ledger).*
+- [ ] AC-B9: Each brand's web home page (for Slaag, slaag.co.za) presents the brand's family mission and offerings as a whole, not a single product. Each offering has its own page at its own path; for test prep this is slaag.co.za/toetse. The home page has a register call to action and sign-in for parents and children. On a browser linked to children, the child name picker and the parent's entry are at the top of the page, and the rest of the home page follows.
 
 ### Launch & Year-1 Success
 - [ ] AC-L1: A closed pilot with Afrikaans families runs in **January 2027** and validates AC-E1, E2, E7 and E9.
@@ -336,6 +353,8 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 - **Children across brands:** assumed shared with the parent identity, and can be enrolled under either brand.
 - **Language per brand:** family language is stored per brand membership, so one family can use Afrikaans on Slaag and English on another brand.
 - **POPIA for shared identity:** privacy notices must say that the operating company (Slaag Group) shares one sign-in across its brands; consent is recorded per brand.
+- **Readiness:** readiness is shown to the child and the parent as a progress bar on each assessment's detail page and on the assessment list (AC-E31), and to the parent in the dashboard and the completed-session alert. ⚠️ The design brief says progress bars always fill up and never count down, but readiness can drop (AC-E29). How the bar shows a drop, especially to the child, is to be decided. The "ready" threshold is set during the pilot. Readiness can drop when a newer session scores lower; this is intended, as the more recent outcome is the better signal.
+- **Assessment time and skips:** the default assessment time of day (if none is entered) is assumed to be school start, around 07:30, and is a config value. Skipping a session is assumed to be logged for the parent (dashboard and weekly digest) rather than sent as a separate alert; whether skips should alert the parent immediately is to be confirmed.
 - **Strategy switching:** if the child switches strategy, the parent is alerted; if both change it, the parent's choice wins.
 - **Strategy cut-offs:** initial runway-ratio cut-offs and portion sizes are set during the January 2027 pilot.
 - **PayFast capabilities:** the billing flow assumes PayFast notifies Slaag of failed attempts (possibly every attempt) and reports the subscription's status (active/paused) in the notification or through its API, and sends webhooks for card nearing expiry and successful payment, and supports reactivating a paused subscription through a new checkout. Check this against PayFast's subscription API early in planning.
@@ -387,19 +406,19 @@ Greenfield: the repo currently contains only tooling and planning docs.
 | ContentVersion | supporting | version, author, status (draft/approved/hidden) | versions Facts, Paraphrases, Questions, ModelAnswers, Rubrics |
 | TeacherReviewer | supporting | name, subjects | approves ContentVersions |
 | ProblemReport | supporting | reporter, reason, status | raised by Parent/Child on Question; ≥3 open → auto-hide |
-| Assessment (Test/Exam) | core domain | type, subject, date, scope, rating, mark, runway ratio, active strategy, strategy history | belongs to Child; has PrepSessions; has AssessmentMastery; has ScopePortions |
+| Assessment (Test/Exam) | core domain | type, subject, date, time of day (optional; configurable default), scope, rating, mark, readiness at assessment time, runway ratio, active strategy, strategy history | belongs to Child; has PrepSessions; has AssessmentMastery; has AssessmentReadiness; has ScopePortions |
 | PrepStrategy | supporting | key (incremental/standard/last-minute), cut-offs, portion-size rules, per-child tuning | chosen for Assessment; pluggable |
 | ScopePortion | supporting | order, topics, page range, study-by date, status, mastery | belongs to Assessment (Incremental); has PrepSessions |
-| PrepSession | core domain | kind (diagnostic/system/ad-hoc/last-minute/portion/cumulative review), scheduled time, status, score, duration | belongs to Assessment (and optionally a ScopePortion); contains LearnerResponses |
+| PrepSession | core domain | kind (diagnostic/system/ad-hoc/last-minute/portion/cumulative review), scheduled time, status (scheduled/in progress/completed/missed/skipped/expired), was-missed flag, coverage (part of the scope), score %, completed-at, duration | belongs to Assessment (and optionally a ScopePortion); contains LearnerResponses |
 | LearnerResponse | core domain | answer text/choice, grade (correct/partial/incorrect, or close if undecided), rubric criteria met/missed, evaluator used, confidence | belongs to PrepSession; updates AssessmentMastery |
 | AssessmentMastery | core domain | per-fact mastery estimate, rolled up to subtopic/topic | belongs to Assessment (not carried over) |
+| AssessmentReadiness | core domain | per fact: score % of the most recent completed session covering it, that session, its completed-at; readiness % derived from these and importance weights | belongs to Assessment; updated by completed PrepSessions |
 | Alert | supporting | type, channel, mute settings | sent to Parent/Child Devices |
 | Device | supporting | push token, platform (Android/web browser), linked child profiles, linked-at, revoked flag | belongs to Parent and/or linked to Child via DeviceLink |
 | DeviceLink | supporting | one-time code, QR payload, child, expires-at (15 min), used-at | created by Parent; consumed by Device to link a Child |
 | WeeklyDigest | supporting | week, summary | emailed to Parent |
 | Credit | supporting | activity, amount | earned by Child |
 | Badge/Level | supporting | name, unlock rule, cosmetic | unlocked by Credits |
-| Streak | supporting | length, last activity | belongs to Child |
 | ParentRewardGoal | supporting | description, credit target | set by Parent for Child |
 
 ## Ontology Convergence
@@ -439,6 +458,13 @@ Greenfield: the repo currently contains only tooling and planning docs.
 | 2026-11-16 | **Pilot pricing:** the open assumption that the January 2027 pilot is free is removed. |
 | 2026-11-16 | **Grader:** the keyword/similarity first step is removed; every written answer goes straight to language-model evaluation against the rubric, with a confidence threshold that escalates to a more capable model, and the cost cap unchanged (Constraints, AC-E8, E11, Technical Context, Ontology). |
 | 2026-11-16 | **Hosting:** the South African hosting requirement (Round 18) is removed; international hosting is allowed, subject to POPIA's cross-border transfer conditions (Constraints, Technical Context). |
+| 2026-11-17 | **Missed, skipped and expired sessions:** a missed prep session can still be done or skipped by the child or parent; at the assessment's time, every session not in progress or completed is marked Expired; an assessment can carry an optional time of day (AC-P1, P13, P14, O3, O6, Ontology). |
+| 2026-11-17 | **Assessment readiness:** readiness % is now session-based: each part of the scope takes the score % of the most recent completed session covering it, weighted by its share of the scope's importance-weighted facts; it starts at 0%, later sessions replace earlier scores on the parts they cover, and final readiness is recorded beside the Result. Per-fact mastery still drives the engine (AC-E23, E25–E30, O4, O6, Ontology). |
+| 2026-11-17 | **Readiness progress bar:** readiness is shown as a progress bar with its % to the child and the parent on each assessment detail page and on the assessment list (summary) page; the bar shows when the "ready" threshold is reached (AC-E31, O6). |
+| 2026-11-18 | **Streaks removed:** streaks are now a future consideration, not year-1 scope; AC-G9 removed and streak credits dropped from AC-G4; Streak removed from the Ontology (parts table, AC-G4, G9, Ontology). |
+| 2026-11-18 | **Credit amounts:** adding a test 10 credits; completing a prep session 1 credit per multiple-choice question and 3 per written question answered; entering a post-test mark 10 credits; "finishing early" removed as a credit activity (AC-G4). |
+| 2026-11-18 | **Parent web sessions:** a parent stays signed in on the web until they sign out, also on a shared computer linked to their children; only sensitive financial actions (checkout, card update, cancel, reactivate) need a recent sign-in (AC-A1c). |
+| 2026-11-18 | **Website structure:** slaag.co.za is a family-focused umbrella home page with register and parent/child sign-in; test prep has its own page at slaag.co.za/toetse. A linked computer shows the child picker and parent entry at the top, then the rest of the home page (AC-B9). |
 
 ## Interview Transcript
 <details>

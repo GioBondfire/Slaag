@@ -69,6 +69,9 @@ Statuses: pending · in-progress · awaiting-evidence · done · deferred: <reas
 | 2026-11-16 | 8 | Deferred with triggers (Debt Ledger D1–D7): per-child tuning, statistical knowledge tracing, diagram-labelling questions, retention deletion job, second-brand rehearsal, bulk importance edit, full coverage dashboard | Not needed before launch; seams kept |
 | 2026-11-16 | 8 | No circuit breaker: the pilot date moves rather than scope | User decision |
 | 2026-11-16 | Post-journey | Linked devices use 30-minute access tokens; revocation takes effect within 30 minutes (supersedes "device checked on every request") | Avoids a store lookup per request |
+| 2026-11-17 | Revision | Missed sessions can be done or skipped; unstarted sessions expire at the assessment's time | PRD AC-P13, P14 |
+| 2026-11-17 | Revision | Readiness is session-based (coverage share × score, most recent wins per fact); `AssessmentReadiness` aggregate, `Readiness` module (S13) | PRD AC-E25–E30 |
+| 2026-11-17 | Revision | Readiness shown as a progress bar to child and parent on the assessment detail and list pages; detail and list queries return % + `ready` flag | PRD AC-E31 |
 
 ## Journey Close (2026-11-16)
 All 8 phases done; team-topologies skipped (one team). Exit checklist:

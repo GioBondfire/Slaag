@@ -109,7 +109,7 @@ PRD AC-P1–P4, P9–P10, C11, E13–E14, O1.
 | **Family** | Household, children (name, grade, school, subjects with textbook), brand memberships (language, consent, entry point), school reference data | Supporting |
 | **Billing & Campaigns** | Subscription lifecycle per brand membership, fee and discount, partners, campaigns, membership numbers, fee reversion | Supporting (payment processing itself is generic, behind a translation layer) |
 | **Identity & Access** | Parent sign-in identity shared across brands, account linking, staff and reviewer roles, device-link codes, linked devices | Generic; device linking is supporting |
-| **Rewards** | Credit ledger, levels, badges, cosmetics, streaks, parent reward goals | Supporting |
+| **Rewards** | Credit ledger, levels, badges, cosmetics, parent reward goals | Supporting |
 | **Notifications** | Alert preferences (mutes per type and channel), push and email delivery, weekly digest | Generic |
 | **Platform Config** | Brands, allowed and default languages, language resolution, message catalogues | Supporting |
 
@@ -139,7 +139,7 @@ Parent dashboard, readiness views, partner reports and content coverage are **re
 | LLM grading provider → Prep | Anti-Corruption Layer | Borderline-answer evaluation as a Verdict proposal against the rubric |
 | Identity & Access → Family, Prep, Rewards, Notifications | Customer–Supplier | `ParentId`, `ChildId`, `DeviceId`; an authenticated actor |
 | Family → Prep, Rewards, Notifications | Customer–Supplier | Child grade, active subjects with textbook, family language per brand |
-| Prep → Notifications, Rewards | Domain events (Published Language) | `AssessmentAdded`, `AssessmentChanged` (with actor), `SessionScheduled`, `SessionMissed`, `SessionCompleted`, `PortionCompleted`, `StrategySwitched`, `ResultRecorded` |
+| Prep → Notifications, Rewards | Domain events (Published Language) | `AssessmentAdded`, `AssessmentChanged` (with actor), `SessionScheduled`, `SessionMissed`, `SessionSkipped`, `SessionExpired`, `SessionCompleted` (with score % and the assessment's new readiness %), `PortionCompleted`, `StrategySwitched`, `ResultRecorded` |
 | Family → all | Domain event | `FamilyErasureDue`: every context erases its own data (AC-A16–A17) |
 | Platform Config → all | Open Host Service; downstream conformist | Brand record, allowed/default languages, message lookup |
 
@@ -148,9 +148,10 @@ Other aggregates are referenced by ID only; consistency between aggregates is ev
 
 | Context | Aggregate (root) | Invariants |
 |---|---|---|
-| Prep | **Assessment** | Holds the scope as selected plus the resolved fact set; exactly one active strategy, with history (parent's choice beats child's); portions are ordered and cover the scope; at most **one** suggested next session; after the date it stops suggesting and accepts one **Result** |
-| Prep | **PrepSession** | Scheduled → Started → Completed, or **Missed** 2 h after the scheduled time; holds its responses; LLM grading spend within the per-session cost cap |
+| Prep | **Assessment** | Holds the scope as selected plus the resolved fact set; exactly one active strategy, with history (parent's choice beats child's); portions are ordered and cover the scope; at most **one** suggested next session; after the date it stops suggesting and accepts one **Result**; at the assessment's time it records the **final readiness %** beside the Result |
+| Prep | **PrepSession** | Scheduled → Started → Completed; Scheduled → **Missed** 2 h after the scheduled time, and a Missed session can still be Started or **Skipped**; at the assessment's time every Scheduled or Missed session becomes **Expired** (Started ones may finish); Completed, Skipped and Expired are final; its **coverage** (resolved fact IDs) is fixed when it starts and every question is drawn from it; its **score %** is set once, on completion (Close Verdicts left out); holds its responses; LLM grading spend within the per-session cost cap |
 | Prep | **AssessmentMastery** | One estimate per fact per assessment, never carried over; changes only through graded responses; a **Close** Verdict is neutral (no change; the fact is asked again later); duplicate facts share an estimate; an elaborating fact is drilled only after its keyword is mastered. Kept apart from Assessment because it is written on every answer |
+| Prep | **AssessmentReadiness** | One entry per fact per assessment: the score %, session ID and completed-at of the **most recent completed session whose coverage includes the fact**; an entry is replaced only by a session with a later completed-at (ties broken by session ID), so arrival order doesn't matter; each session applied once; facts with no entry count as 0%. Kept apart from `AssessmentMastery` (written per answer) and `Assessment` (version-checked for suggestions) because it is written once per completed session |
 | Prep | **LearnerTuning** | One per child: strategy cut-offs and portion sizes |
 | Content | **Textbook** | Index tree confirmed once |
 | Content | **Page** | Re-upload replaces the page and sends its facts back to Gate 1 |
@@ -167,7 +168,7 @@ Other aggregates are referenced by ID only; consistency between aggregates is ev
 | Identity | **DeviceLinkCode** | Single use, one child, valid 15 minutes |
 | Identity | **LinkedDevice** | Holds a long-lived device credential used only to obtain **30-minute access tokens**; once revoked, it can't obtain a new access token, so it stops working within 30 minutes |
 | Rewards | **CreditLedger** | One per child; credits only from credit-table activities |
-| Rewards | **Streak**, **RewardGoal** | One streak per child; goal progress derived from the ledger |
+| Rewards | **RewardGoal** | Goal progress derived from the ledger |
 
 ## Domain Glossary (Ubiquitous Language)
 | Term | Meaning | Code name |
@@ -187,12 +188,19 @@ Other aggregates are referenced by ID only; consistency between aggregates is ev
 | Result | After the test date: the child's rating (tough / ok / good) and optional score | `Result` |
 | Grade | The child's school grade (4–7) only | `Grade` |
 | Mastery | Estimate that a child knows one fact, per assessment | `Mastery` |
-| Readiness | Importance-weighted mastery of an assessment's Core facts | `Readiness` |
+| Readiness | The assessment's readiness %: for each in-scope fact, the score % of the most recent completed session covering it, weighted by the fact's importance weight, over the scope's total weighted fact count. Starts at 0%. Not the same as Mastery | `Readiness` |
+| Coverage | The part of an assessment's scope a session is planned on (a topic, a portion, an ad-hoc subset or the whole scope), resolved to fact IDs when the session starts | `Coverage` |
+| Coverage share | A coverage's weighted fact count ÷ the scope's weighted fact count | `Coverage.share()` |
+| Weighted fact count | The sum of the importance weights of a set of facts | — |
+| Session score | A completed session's credit ÷ answers marked (Correct 1, Partial = partial credit, Incorrect 0; Close left out) | `SessionScore` |
+| Final readiness | The readiness % recorded at the assessment's time, kept beside the Result | `finalReadiness` |
 | Runway | Prep days remaining ÷ importance- and difficulty-weighted scope size; never shown to users | `Runway` |
 | Strategy | How to prepare: Incremental, Standard or Last-minute | `PrepStrategy` |
 | Portion | An ordered slice of the scope under Incremental, with a study-by date | `Portion` |
 | Session | A prep session only (diagnostic, system, ad-hoc, last-minute, portion, cumulative review) | `PrepSession` |
-| Missed session | A scheduled session not started within 2 hours | `SessionMissed` |
+| Missed session | A scheduled session not started within 2 hours; it can still be done or skipped until it expires | `SessionMissed` |
+| Skipped session | A missed session the child or parent chose not to do; triggers a re-plan | `SessionSkipped` |
+| Expired session | A session not in progress or completed by the assessment's time; can no longer be started | `SessionExpired` |
 | Subscription | A family's paid plan for one brand, with its lifecycle (Billing only) | `Subscription` |
 | Provider subscription | The payment provider's own record; only inside the translation layer | `ProviderSubscription` |
 | Access | Whether a brand membership's children may use the product; all other contexts see only this | `Access` |
@@ -216,7 +224,7 @@ One system of record, **partitioned logically by context**. Each context owns it
 | Family | Relational: family → children → subject enrolments; family × brand memberships | Children shared across brands |
 | Billing & Campaigns | Relational, plus **append-only** status, discount and fee histories, plus an **inbox of provider events** for deduplication | AC-A26, A37 |
 | Content | Relational + **trees** (index tree) + **shallow typed links** (one hop; no graph store needed); **append-only versions**, published versions immutable | Longest-lived, most valuable data; not hard-deleted except for legal reasons |
-| Prep | `Assessment` as a self-contained aggregate (scope, portions, strategy history); **append-only response log** per session; **mastery** keyed by (assessment, fact), updated per answer | Hottest writes |
+| Prep | `Assessment` as a self-contained aggregate (scope, portions, strategy history); **append-only response log** per session; **mastery** keyed by (assessment, fact), updated per answer; **readiness entries** keyed by (assessment, fact), updated once per completed session | Hottest writes |
 | Rewards | **Append-only credit ledger**; balance derived | |
 | Notifications | Preferences + delivery log | |
 | Platform Config | Small, read-mostly configuration | Cached |
@@ -224,7 +232,7 @@ One system of record, **partitioned logically by context**. Each context owns it
 **Traceability:** every learner response records the exact **question version and rubric version** used (AC-C22; grader-vs-teacher agreement, AC-E9).
 
 ### Fact set of an assessment: re-resolved live
-The `Assessment` keeps the scope as selected. Its fact set is re-resolved from the **current published catalogue** each time a session is planned. Mastery is keyed by a **fact ID that is stable across versions**: an edited fact keeps its mastery; a split or merged fact gets new IDs and starts fresh; a removed fact drops out; a newly approved fact enters as unmastered (AC-C28, AC-P12).
+The `Assessment` keeps the scope as selected. Its fact set is re-resolved from the **current published catalogue** each time a session is planned. Mastery is keyed by a **fact ID that is stable across versions**: an edited fact keeps its mastery; a split or merged fact gets new IDs and starts fresh; a removed fact drops out; a newly approved fact enters as unmastered (AC-C28, AC-P12). Readiness entries follow the same rule: they are keyed by the stable fact ID and the readiness % is calculated against the **current** fact set and weights, so added facts count as 0%, removed facts drop out and weight changes apply at once (PRD AC-E30).
 
 ### Paths that must not race (serialized writes)
 Every rule is enforced **explicitly**, by a conditional update, a uniqueness rule or a per-aggregate version check. None relies on the store's default isolation level.
@@ -240,11 +248,13 @@ Every rule is enforced **explicitly**, by a conditional update, a uniqueness rul
 | 7 | Campaign discount once per family per brand | Concurrent checkouts | Uniqueness on (family, brand) |
 | 8 | One suggested next session; parent's strategy choice wins | Parent and child edit at once | Version check on `Assessment` |
 | 9 | Missed vs Started | Child starts while the missed-session job runs | Conditional Scheduled → Missed only if not started |
+| 9a | Expired vs Started or Skipped | Child starts or skips while the expiry job runs at the assessment's time | Conditional Scheduled/Missed → Expired only if not started or skipped; start and skip are rejected once Expired |
 | 10 | Each answer counted once in mastery | Background answer sync retries | Client-generated response ID; response and mastery update in one transaction |
 | 11 | LLM cost cap per session | Two borderline answers at once | Conditional increment on the session's spend |
 | 12 | Credits once per activity | Redelivered event | Triggering event ID is the ledger entry key |
 | 13 | A revoked device can't obtain a new access token | A refresh races the revocation | Refresh is a conditional check against the `LinkedDevice` record (only non-revoked devices get a token). Requests themselves are verified from the 30-minute access token alone, with no store lookup, so a revoked device keeps working for **at most 30 minutes** |
 | 14 | Suspension blocks children immediately | Stale copy of Access | Access read from Billing's published query at request time; never copied |
+| 15 | Most recent session wins per fact (readiness) | Two sessions for one assessment complete close together, or a session finished offline syncs after a later one | Writes to `AssessmentReadiness` serialized; an entry is replaced only if the incoming completed-at is later; the session ID makes re-delivery a no-op. Completed-at is the device-reported time, clamped between the session's server start time and its server receipt time |
 
 ### Consistency between contexts
 - Domain events use a **transactional outbox**: an event is saved in the same transaction as its state change and delivered **at least once** through the work queue. **Every handler is idempotent**, keyed by event ID. Delay is seconds, inside the 5-minute alert limits (AC-O1, O4).
@@ -254,7 +264,8 @@ Every rule is enforced **explicitly**, by a conditional update, a uniqueness rul
 | Read model | Sync | Staleness |
 |---|---|---|
 | Parent dashboard, session log | Computed on read from Prep's published queries | None |
-| Readiness % | Maintained by Prep in the same transaction as mastery | None |
+| Readiness % | Calculated on read by `Readiness` from the assessment's readiness entries, the current fact set and current weights; entries are written in the same transaction as the session's completion. Read by the assessment detail page, the assessment list (one per assessment), the parent dashboard and alerts (PRD AC-E31) | None. If the list page becomes slow (many assessments per child, each needing its fact set), cache the % on `Assessment`, refreshed on session completion, scope change and weight change |
+| Final readiness | Recorded on `Assessment` by the expiry job at the assessment's time; recorded once more if a session that was in progress then is completed | Fixed after the assessment |
 | Content coverage | Computed on read inside Content | None |
 | Weekly digest | Scheduled batch, Sunday evening | Weekly |
 | Partner & campaign reports | Scheduled batch, daily | ≤ 24 h |
@@ -271,13 +282,13 @@ Each context exposes one small published interface that hides a lot behind it; p
 
 | Context | Published interface (in short) | Hides |
 |---|---|---|
-| Prep | add/change assessment, switch strategy, start/finish session, submit answer, record result, dashboard queries | Planning, strategies, importance, mastery, marking, LLM grading, cost cap |
-| Content | `ContentCatalogue`: resolve scope, session bundle, report a problem; back office: upload, review, generate, publish | AI pipeline, versioning, review gates, page reading, image storage |
+| Prep | add/change assessment, switch strategy, start/finish session, submit answer, record result, assessment detail and assessment list queries for child and parent (each with readiness % and whether it has reached "ready"), dashboard queries (incl. per-topic readiness breakdown) | Planning, strategies, importance, mastery, readiness, marking, LLM grading, cost cap |
+| Content | `ContentCatalogue`: resolve scope, session bundle, report a problem; back office: upload, review, generate, publish. | AI pipeline, versioning, review gates, page reading, image storage |
 | Billing & Campaigns | checkout, handle provider event, cancel, reactivate, start card update, `access(membership)` | Lifecycle state machine, provider quirks, discounts, reversion |
 | Identity & Access | sign-in flows, issue/redeem link code, refresh device access token, revoke device, authenticate request | Provider sign-in, credentials, token issuing and verification, rate limits |
 | Family | register, add child, enrol subject, directory queries | Consent, memberships, schools |
 | Notifications | `notify(recipient, alertType, payload)` + event handlers, set mutes | Channels, devices, templates, digest |
-| Rewards | event handlers, set goal, balance/goal queries | Credit table, levels, streaks |
+| Rewards | event handlers, set goal, balance/goal queries | Credit table, levels |
 | Platform Config | resolve brand, resolve language, `Messages.render(messageKey, params, {brand, language})` | Brand records, fallback rules, message catalogues |
 
 ### Consolidations
@@ -286,7 +297,7 @@ Each context exposes one small published interface that hides a lot behind it; p
 | S1 | Planning split into steps by time, as thin classes sharing the same knowledge | Prep | One deep **`PrepPlan`**: `plan(assessment, mastery, today) → decision {strategy, portion, nextSession, messageKeys}`; strategies are plug-ins inside it (AC-E20); runway never leaves it |
 | S2 | Grading knowledge leaking through the rubric format between Content and Prep | Content ↔ Prep | One **`Marking`** module in Prep: `mark(liveQuestion, answer, sessionBudget) → Verdict` for all question types; the rubric format is defined once, versioned, in the content catalogue's published contract |
 | S3 | Importance semantics duplicated across runway, selection, spacing, last-minute exclusion, readiness, weak keywords | Prep | One **`Importance`** policy turns tier + weight into priority, spacing and readiness weight; Content only assigns tiers and weights |
-| S4 | Fact-link semantics re-implemented in several places | Prep | Hidden inside one **`Mastery`** module (`record`, `estimate`, `readiness`); Content only stores typed links |
+| S4 | Fact-link semantics re-implemented in several places | Prep | Hidden inside one **`Mastery`** module (`record`, `estimate`); Content only stores typed links. *Revised 2026-11-17:* readiness moved out to `Readiness` (S13) |
 | S5 | One port per need between contexts → thin pass-throughs | All contexts | **One published interface per context** (table above); `LearnerTuning` internal to Prep |
 | S6 | Brand/language lookup and fallback repeated in every channel | All channels | One **`Messages`** module (Platform Config) used by every presenter and template |
 | S7 | Alert routing spread across producers | Notifications | One **`notify()`**; the event-to-alert mapping lives only in Notifications |
@@ -295,8 +306,25 @@ Each context exposes one small published interface that hides a lot behind it; p
 | S10 | Draft → review → approve → publish → hide built separately for each content item type | Content | One general **`Review & Versioning`** module for any content item; Gate 1 and Gate 2 are policies on it |
 | S11 | Scheduled jobs holding domain rules | Several | Jobs are **thin triggers** calling use cases; rules stay in aggregates |
 | S12 | Settings scattered | Prep | One **`PrepSettings`** with decided defaults; per-child tuning overrides |
+| S13 | Readiness arithmetic (coverage share, session score, most-recent-wins, partial credit, Close exclusion) spread across session completion, the dashboard, alerts and the digest | Prep | One deep **`Readiness`** module: `apply(entries, sessionId, coverage, score, completedAt) → entries` and `percent(entries, factSet, importance) → {total, perTopic}`. Pure functions; weights come only from `Importance`, partial credit only from `PrepSettings`. Every reader calls `percent`; nothing else computes readiness |
 
 **Deliberately not merged:** Marking stays out of Content; Rewards and Notifications stay out of Prep (separate knowledge, separate reasons to change).
+
+### Readiness calculation (PRD AC-E25–E30)
+Readiness is **session-based**: it reflects how the child scored, not the engine's internal mastery estimates. Mastery decides what to ask next; readiness tells the parent how prepared the child is.
+
+1. **Coverage is fixed at session start.** `PrepPlan` (or the child, for an ad-hoc session) chooses whole index nodes: a topic, a portion, a subset or the whole scope. They are resolved to fact IDs and stored on the `PrepSession`. Question selection draws only from the coverage, so the score is a fair score for every fact covered.
+2. **Score on completion.** Session score = Σ credit ÷ answers marked (Correct 1, Partial = `PrepSettings.partialCredit`, Incorrect 0; Close left out). A session with no marked answers is completed without a score and leaves readiness unchanged.
+3. **Apply per fact, most recent wins.** In the same transaction as `PrepSession` → Completed, `Readiness.apply` sets each covered fact's entry to {score, session ID, completed-at} unless the entry already holds a later session (invariant 15).
+4. **Calculate on read.** `percent` = Σ over the current fact set of weight(f) × score(f) ÷ Σ weight(f); facts without an entry score 0. The same entries roll up per topic for the dashboard.
+
+Keeping one entry per fact (not per session) makes the rule exact for the cases in the PRD: disjoint coverages add up pro rata, and a later session that covers earlier ones fully (a cumulative review) or partly (an ad-hoc subset) replaces their scores only where it covers them. The planner keeps coverages on whole index nodes, so partial overlaps are rare, but the calculation stays correct when they happen.
+
+**Worked check (equal weights):** topic 1 = 100 facts, topic 2 = 300. Session 1 on topic 1 scores 100% → 25%. Session 2 on topic 2 scores 50% → 62.5%. Review on both scores 80% → 80%. Ad-hoc on topic 1 scores 90% → 82.5%. These four steps are a required domain unit test.
+
+**Display (PRD AC-E31):** the child and the parent see the same readiness % as a progress bar on the assessment detail page and the assessment list. The query returns the % and a `ready` flag (threshold from `PrepSettings`); channels only draw the bar, and every word on it comes from `Messages`. No channel works out readiness itself.
+
+**Missed, skipped and expired sessions** never have a score and never change readiness. A session in progress at the assessment's time may still be completed and counts.
 
 ## Design Conventions
 Adopted 2026-11-16 (Phase 5); apply in every code review.
@@ -334,6 +362,7 @@ Adopted 2026-11-16 (Phase 5); apply in every code review.
 | Swap a provider | One adapter | Adapter contract tests |
 | Rubric format change | Catalogue contract version + `Marking` | Rubric version contract tests |
 | **New question type** | Content generation + `Marking` + client rendering (3 places; inherent to the problem) | Question type defined once in the catalogue contract; clients render from it |
+| Change to how readiness is calculated | `Readiness` only | Readiness unit tests (worked check above) |
 | Mobile API change | Channel adapter; versions N and N-1 supported | Mobile API contract tests (N, N-1) |
 
 ## v1 Scope & Staging
@@ -343,7 +372,7 @@ Signed off 2026-11-16 (Phase 8). The time is fixed (pilot January 2027, launch F
 
 | Stage | In scope |
 |---|---|
-| **Pilot (January 2027)** | Parent sign-in and account linking; family, children, schools, subjects; device linking. **Full billing lifecycle** (pilot is paid): checkout, webhooks, Overdue → Suspended → reactivation, cancellation, card update and expiry warnings. **Content pipeline** for the **most-used textbook per subject per grade, Term 1**, including the **AI index-tree proposal** from the table-of-contents photo and **meaning-based duplicate detection** for "generate more questions"; simple back-office tools (one-by-one importance edits, coverage as a table of counts). **Prep:** all three strategies (Incremental, Standard, Last-minute), every technique, a **simple mastery rule** behind `Mastery`, the two-step grader. Per-event alerts, missed-session detection, parent dashboard. **Full gamification** (credits, celebration, streaks, levels, badges, cosmetics, parent reward goals). Brand and language seams |
+| **Pilot (January 2027)** | Parent sign-in and account linking; family, children, schools, subjects; device linking. **Full billing lifecycle** (pilot is paid): checkout, webhooks, Overdue → Suspended → reactivation, cancellation, card update and expiry warnings. **Content pipeline** for the **most-used textbook per subject per grade, Term 1**, including the **AI index-tree proposal** from the table-of-contents photo and **meaning-based duplicate detection** for "generate more questions"; simple back-office tools (one-by-one importance edits, coverage as a table of counts). **Prep:** all three strategies (Incremental, Standard, Last-minute), every technique, a **simple mastery rule** behind `Mastery`, the two-step grader. Per-event alerts, missed-session detection, parent dashboard. **Full gamification** (credits, celebration, levels, badges, cosmetics, parent reward goals; streaks are a future consideration, see the PRD). Brand and language seams |
 | **Launch (February 2027)** | The other launch textbooks (Term 1). **Partner campaigns:** partners, campaigns, co-branded landing pages, codes, membership numbers, discounts, **automatic fee reversion**, **full partner reporting** (AC-A35). **Weekly digest** |
 | **After launch** | The Debt Ledger below (D1–D7), each with its revisit trigger |
 
@@ -364,7 +393,7 @@ Deliberately deferred work (Phase 8, 2026-11-16). Each keeps its seam from day 1
 | # | Deferred | Seam kept from day 1 | Revisit trigger | Owner | Priority |
 |---|---|---|---|---|---|
 | D1 | Per-child tuning of strategy cut-offs and portion sizes (AC-E20, E24) | Results and strategy history recorded; defaults in `PrepSettings` | ≥ 3 Results for ~30% of active children | Team | P2 |
-| D2 | Statistical knowledge-tracing model | `Mastery` interface; simple, explainable rule behind it | Pilot data shows the rule's readiness disagrees with test Results | Team | P2 |
+| D2 | Statistical knowledge-tracing model | `Mastery` interface; simple, explainable rule behind it | Pilot data shows the rule's mastery estimates disagree with session scores or test Results | Team | P2 |
 | D3 | "Label the diagram" question type (AC-C9, C13) | Diagram facts extracted and reviewed; question type defined once in the catalogue contract | Core question types stable in production and grader agreement ≥ 90% | Team | P3 |
 | D4 | Automated 12-month retention deletion with 30-day warning (AC-A16) | Suspension and cancellation dates recorded; self-service deletion (AC-A17) live | December 2027 (2 months before the earliest possible warning) | Team | P1 when triggered |
 | D5 | Test second-brand rehearsal (AC-B8) | Brand resolved at the edge from a config record; static check against hard-coded brand | Decision to start brand #2 | User | P2 |
@@ -386,7 +415,7 @@ Deliberately deferred work (Phase 8, 2026-11-16). Each keeps its seam from day 1
 | 2026-11-16 | **Terms fixed:** Verdict (answer outcome), Result (post-test rating + score), Grade (school grade only), Access, Session (prep only), Scope vs fact set, Mastery vs Readiness | Removes the PRD's double meanings of "grade", "mark", "subscription", "session" | Keep PRD wording as is |
 | 2026-11-16 | **AssessmentMastery is its own aggregate,** separate from Assessment | Written on every answer; keeps Assessment small and avoids write contention | Mastery inside Assessment |
 | 2026-11-16 | **Scale up one system of record vertically; no replicas, shards or regions in year 1** | Estimates show < ~100 GB/year and at most a few hundred writes/s at 10,000 families | Read replicas or sharding up front (operational cost with no load to justify it) |
-| 2026-11-16 | **Adopt now: async work queue** for push/email fan-out, the AI content pipeline and scheduled jobs (missed-session check, daily runway recalculation, weekly digest, retention/erasure, fee reversion) | Absorbs the session-due burst and keeps slow or bulk work out of user requests | Doing fan-out and jobs inside requests |
+| 2026-11-16 | **Adopt now: async work queue** for push/email fan-out, the AI content pipeline and scheduled jobs (missed-session check, session expiry at the assessment's time, daily runway recalculation, weekly digest, retention/erasure, fee reversion) | Absorbs the session-due burst and keeps slow or bulk work out of user requests | Doing fan-out and jobs inside requests |
 | 2026-11-16 | **Adopt now: prefetch each session's question bundle; send answers in the background** | Absorbs the long round trip from users to the server and the session-due burst | Fetch one question at a time |
 | 2026-11-16 | **Adopt now: cache published content by version** (inside the app) **and an edge cache** for static files, page images and diagram crops | Published versions never change, so cache invalidation is trivial; images dominate egress | Shared cache cluster (deferred) |
 | 2026-11-16 | **Borderline answers are graded synchronously; the child waits for the Verdict.** The LLM call has a strict timeout and a cap on concurrent calls; on timeout, cap or cost cap the Verdict is **Close** (AC-E11–E12) | Simplest experience for the child; ~25 calls in flight at peak is manageable | Model answer first, Verdict delivered later through the queue |
@@ -416,3 +445,6 @@ Deliberately deferred work (Phase 8, 2026-11-16). Each keeps its seam from day 1
 | 2026-11-16 | **Not built for v1 (deferred with triggers):** per-child tuning, statistical knowledge tracing, "label the diagram" questions, retention deletion job, second-brand rehearsal, bulk importance edit, full coverage dashboard; see [Debt Ledger](#debt-ledger) | No data, no users or no deadline needs them before launch; each keeps its seam | Building them before the pilot |
 | 2026-11-16 | **Mastery starts as a simple, explainable rule** behind the `Mastery` interface | Nothing to fit a statistical model to before the pilot; the interface doesn't change when it is swapped | Statistical knowledge tracing before the pilot |
 | 2026-11-16 | **No circuit breaker:** if pilot readiness is at risk, the pilot date moves rather than scope | User decision | Pre-agreed order of cuts from pilot to launch |
+| 2026-11-17 | **Missed is no longer final:** a Missed session can be Started or Skipped; Scheduled and Missed sessions become Expired at the assessment's time (PRD AC-P13, P14) | User requirement: children who miss the slot can still prep or skip it | Missed as a final state |
+| 2026-11-17 | **Readiness is session-based** (PRD AC-E25–E30): per fact, the score % of the most recent completed session covering it, weighted by importance, calculated on read against the current fact set; new `AssessmentReadiness` aggregate and `Readiness` module (S13); final readiness recorded beside the Result | User requirement: a readiness figure parents can follow that rises with completed prep and reflects the latest outcome per part of the scope | Readiness from mastery estimates (opaque to parents, moves per answer); one stored total updated per session (breaks on scope or weight changes and on out-of-order sync); per-session records summed (wrong when sessions overlap) |
+| 2026-11-17 | **Readiness shown as a progress bar** to child and parent on the assessment detail and list pages (PRD AC-E31); Prep's detail and list queries return the % and a `ready` flag; calculated on read, with a cache on `Assessment` as the fallback if list views slow down | One readiness figure everywhere; channels stay thin | Each channel calculating readiness; caching the % from day 1 (more to keep in sync on scope and weight changes) |
