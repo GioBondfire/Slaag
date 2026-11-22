@@ -131,7 +131,8 @@ Parent dashboard, readiness views, partner reports and content coverage are **re
 
 | Upstream → Downstream | Pattern | What crosses |
 |---|---|---|
-| Content → Prep | Open Host Service + Published Language (**content catalogue**) | Approved, live versions only: fact references (tier, weight, difficulty, links), live questions with model answer and rubric, scope → fact-set resolution. Never pages, drafts or review state (PRD AC-C24) |
+| Content → Prep | Open Host Service + Published Language (**content catalogue**) | Approved, live versions only: scope → fact-set resolution; fact references with their **in-scope anchors** and **effective importance** (`effectiveImportance`, defined once in the catalogue contract), difficulty, links and lineage; live questions with their **anchor IDs**, model answer and rubric. Never pages, verbatim text, drafts or review state (PRD AC-C24) |
+| Content → Prep | Domain events (Published Language) | `FactsMerged {from[], into}`, `FactSplit {from, into[]}`: Prep carries mastery over (see [Content: facts, anchors and lineage](#content-facts-anchors-and-lineage)) |
 | Prep → Content | Customer–Supplier | Problem reports on a question (AC-C21) |
 | Billing & Campaigns → all | Published Language | **Access** per brand membership (`AccessGranted` / `AccessSuspended`). Subscription states never leave Billing |
 | Payment provider → Billing | Anti-Corruption Layer | Provider subscriptions and webhooks translated into Billing events; provider terms never pass the translator |
@@ -150,12 +151,12 @@ Other aggregates are referenced by ID only; consistency between aggregates is ev
 |---|---|---|
 | Prep | **Assessment** | Holds the scope as selected plus the resolved fact set; exactly one active strategy, with history (parent's choice beats child's); portions are ordered and cover the scope; at most **one** suggested next session; after the date it stops suggesting and accepts one **Result** |
 | Prep | **PrepSession** | Scheduled → Started → Completed, or **Missed** 2 h after the scheduled time; holds its responses; LLM grading spend within the per-session cost cap |
-| Prep | **AssessmentMastery** | One estimate per fact per assessment, never carried over; changes only through graded responses; a **Close** Verdict is neutral (no change; the fact is asked again later); duplicate facts share an estimate; an elaborating fact is drilled only after its keyword is mastered. Kept apart from Assessment because it is written on every answer |
+| Prep | **AssessmentMastery** | One estimate per fact per assessment, never carried over to another assessment; changes only through graded responses, or through **fact lineage** (a split fact's children inherit its estimate; a merged fact takes the **lower** of its parents' estimates); a **Close** Verdict is neutral (no change; the fact is asked again later); duplicate facts share an estimate; an elaborating fact is drilled only after its keyword is mastered. Kept apart from Assessment because it is written on every answer |
 | Prep | **LearnerTuning** | One per child: strategy cut-offs and portion sizes |
 | Content | **Textbook** | Index tree confirmed once |
-| Content | **Page** | Re-upload replaces the page and sends its facts back to Gate 1 |
-| Content | **Fact** | 1–2 paraphrases; exactly one tier with a weight; typed links (elaborates / duplicates / part of / related) by fact ID; only approved facts feed generation |
-| Content | **Question** | Can't go live without an approved model answer and rubric, versioned together; ≥3 open problem reports hide it |
+| Content | **Page** | Re-upload replaces the page; each anchor on the old page version is re-matched to the new one (lightweight review, keeping its `AnchorId`) or left for a teacher to resolve |
+| Content | **Fact** | Stable `FactId`; one canonical statement; 1–2 paraphrases; **one or more `SourceAnchor`s** (entities inside the aggregate, each with a stable `AnchorId`, its own verbatim text and **its own tier and weight**); typed links (elaborates / duplicates / part of / related) by fact ID; a merge or split creates new `FactId`s and records lineage, and a merged fact keeps every anchor of the facts it replaces; only approved facts feed generation |
+| Content | **Question** | Records the **anchor(s)** it was written from; can't go live without an approved model answer and rubric, versioned together; ≥3 open problem reports hide it; re-pointed to the new fact and sent back through Gate 2 when its fact is merged or split |
 | Content | **ReviewBatch** | Gate 2 sampling: ~10% sample with ≥95% pass, otherwise review the whole batch |
 | Billing | **Subscription** | One per brand membership; lifecycle state machine; each provider event applied exactly once and late events never move it to a wrong state; at most one overdue email and one suspension email per failure episode; at most one discount, a campaign discount once per family per brand; fee history |
 | Billing | **Campaign** | Sign-up window and cap; pausing or ending stops new sign-ups only |
@@ -175,11 +176,17 @@ Other aggregates are referenced by ID only; consistency between aggregates is ev
 | Assessment | A test or exam a child prepares for: type, subject, date, scope | `Assessment` |
 | Scope | What the user selected for an assessment: index nodes or page ranges | `Scope` |
 | Fact set | The approved facts a scope resolves to | `FactSet` |
-| Fact | A small, self-contained, verbatim statement from a textbook page; the unit of mastery | `Fact` (Content), `FactRef` (Prep) |
+| Fact | A small, self-contained statement of one idea, held as one canonical statement and found in one or more sources; the unit of mastery | `Fact` (Content), `FactRef` (Prep) |
+| Canonical statement | The fact's one authoritative wording, normally its primary anchor's verbatim text | `canonicalStatement` |
+| Source anchor | Where a fact appears: source document (with its metadata), page version, section and page region, with the verbatim text there, index node, CAPS node, position type, importance signal and importance | `SourceAnchor`, `AnchorId` |
+| Re-anchoring | Matching an existing anchor to a replaced page version, or adding an anchor in another source; reviewed lightly | `reanchor()` |
+| Fact lineage | Which retired facts a fact was merged or split from | `FactLineage` |
+| Effective importance | The importance of a fact within a scope: its strongest anchor in scope, or the strongest anchor of a preferred type | `effectiveImportance()` |
+| Anchor preference | An optional filter on anchor types for a prep or generation run (e.g. keywords only) | `AnchorPreference` |
 | Paraphrase | One of 1–2 restatements of a fact that keep its key terms | `Paraphrase` |
-| Importance tier / weight | Core, Supporting or Peripheral, plus a weight within the tier | `ImportanceTier`, `weight` |
+| Importance tier / weight | Core, Supporting or Peripheral, plus a weight within the tier; held **per anchor** | `ImportanceTier`, `weight` |
 | Fact link | A typed relation: elaborates, duplicates, part of, related | `FactLink` |
-| Question | An item generated from fact(s), with a model answer and rubric | `Question` (Content), `LiveQuestion` (Prep) |
+| Question | An item generated from fact(s) and written from specific anchor(s), with a model answer and rubric | `Question` (Content), `LiveQuestion` (Prep) |
 | Model answer | The answer written only from the source fact(s), shown after answering | `ModelAnswer` |
 | Rubric | Criteria defining Correct / Partial / Incorrect for a question | `Rubric` |
 | Verdict | The grader's outcome for one answer: Correct, Partial, Incorrect or Close (undecided) | `Verdict` |
@@ -224,7 +231,31 @@ One system of record, **partitioned logically by context**. Each context owns it
 **Traceability:** every learner response records the exact **question version and rubric version** used (AC-C22; grader-vs-teacher agreement, AC-E9).
 
 ### Fact set of an assessment: re-resolved live
-The `Assessment` keeps the scope as selected. Its fact set is re-resolved from the **current published catalogue** each time a session is planned. Mastery is keyed by a **fact ID that is stable across versions**: an edited fact keeps its mastery; a split or merged fact gets new IDs and starts fresh; a removed fact drops out; a newly approved fact enters as unmastered (AC-C28, AC-P12).
+The `Assessment` keeps the scope as selected. Its fact set is re-resolved from the **current published catalogue** each time a session is planned. Mastery is keyed by a **fact ID that is stable across versions and re-anchoring**: an edited or re-anchored fact keeps its mastery; a split or merged fact gets new IDs and **carries its mastery over** (children of a split inherit the parent's estimate; a merged fact takes the lower of its parents' estimates); a removed fact drops out; a newly approved fact enters as unmastered (AC-C28, AC-C29, AC-P12).
+
+### Content: facts, anchors and lineage
+Adopted 2026-11-22.
+
+```
+Fact (stable FactId; merge or split creates new IDs and records lineage)
+ ├─ canonical statement, 1–2 paraphrases, type, key terms, links
+ ├─ lineage: mergedFrom[] / splitFrom (retired FactIds)
+ └─ SourceAnchor[]  (one or more; stable AnchorId)
+      ├─ source: source document (+ metadata), page version, section, page region
+      ├─ verbatim text as it appears there
+      ├─ index node + CAPS cross-reference
+      ├─ position type + importance signal
+      └─ importance: tier + weight
+```
+
+- **A fact doesn't belong to a page; its anchors do.** Scope resolution goes scope → anchors on those pages or index nodes → their facts. Traceability (AC-C22) goes question → anchor(s) → fact → page version → upload → source document.
+- **Page replaced:** extraction of the new page produces candidates; reconciliation (AI proposes, a teacher confirms) matches each to an existing anchor, which moves to the new page version and keeps its `AnchorId` and `FactId`. This **re-anchoring** gets a lightweight "confirm match" review; a changed canonical statement goes through full Gate 1, and its questions through Gate 2. Unmatched candidates become new facts; an old anchor with no match is resolved by a teacher (retire it, or re-anchor elsewhere); a fact left with no anchor is retired.
+- **Additional source:** a new anchor is attached to the existing fact instead of creating a second fact (lightweight review).
+- **Merge:** creates a new `FactId` that takes over **every anchor** of the merged facts; the old facts are retired with `mergedInto`. **Split:** creates new `FactId`s; the teacher assigns or divides the anchors. Both publish lineage events, and the catalogue exposes lineage as the source of truth if an event is missed.
+- **Mastery carry-over** (owned by `Mastery` in Prep, idempotent, for every active assessment holding the old facts): a split fact's children **inherit** its estimate; a merged fact takes the **lower** of its parents' estimates.
+- **Effective importance** is defined once, in the catalogue's published contract: `effectiveImportance(fact, scope, anchorPreference?) → { anchor, tier, weight }`. With no preference, the **strongest anchor in scope** wins; with a preference (e.g. margin keywords only), the strongest anchor of that type wins, and a fact with no such anchor in scope drops out. Content uses it for generation defaults (AC-C13); Prep uses it for prep plans.
+- **Questions record the anchor(s) they were written from.** Prep only uses questions whose anchors are in the source document the child is enrolled with for that subject. When a fact is merged or split, its questions are re-pointed to the new fact and go back through Gate 2.
+- **Coverage** includes, per source document, the facts in scope that have **no live question anchored in that document**; generation for that document closes the gap.
 
 ### Paths that must not race (serialized writes)
 Every rule is enforced **explicitly**, by a conditional update, a uniqueness rule or a per-aggregate version check. None relies on the store's default isolation level.
@@ -272,7 +303,7 @@ Each context exposes one small published interface that hides a lot behind it; p
 | Context | Published interface (in short) | Hides |
 |---|---|---|
 | Prep | add/change assessment, switch strategy, start/finish session, submit answer, record result, dashboard queries | Planning, strategies, importance, mastery, marking, LLM grading, cost cap |
-| Content | `ContentCatalogue`: resolve scope, session bundle, report a problem; back office: upload, review, generate, publish | AI pipeline, versioning, review gates, page reading, image storage |
+| Content | `ContentCatalogue`: resolve scope (facts with in-scope anchors and `effectiveImportance`), session bundle (questions anchored in the child's source document), fact lineage, report a problem; back office: upload, review, re-anchor, generate, publish | AI pipeline, versioning, review gates, page reading, reconciliation, image storage |
 | Billing & Campaigns | checkout, handle provider event, cancel, reactivate, start card update, `access(membership)` | Lifecycle state machine, provider quirks, discounts, reversion |
 | Identity & Access | sign-in flows, issue/redeem link code, refresh device access token, revoke device, authenticate request | Provider sign-in, credentials, token issuing and verification, rate limits |
 | Family | register, add child, enrol subject, directory queries | Consent, memberships, schools |
@@ -285,7 +316,7 @@ Each context exposes one small published interface that hides a lot behind it; p
 |---|---|---|---|
 | S1 | Planning split into steps by time, as thin classes sharing the same knowledge | Prep | One deep **`PrepPlan`**: `plan(assessment, mastery, today) → decision {strategy, portion, nextSession, messageKeys}`; strategies are plug-ins inside it (AC-E20); runway never leaves it |
 | S2 | Grading knowledge leaking through the rubric format between Content and Prep | Content ↔ Prep | One **`Marking`** module in Prep: `mark(liveQuestion, answer, sessionBudget) → Verdict` for all question types; the rubric format is defined once, versioned, in the content catalogue's published contract |
-| S3 | Importance semantics duplicated across runway, selection, spacing, last-minute exclusion, readiness, weak keywords | Prep | One **`Importance`** policy turns tier + weight into priority, spacing and readiness weight; Content only assigns tiers and weights |
+| S3 | Importance semantics duplicated across runway, selection, spacing, last-minute exclusion, readiness, weak keywords | Prep (+ catalogue contract) | Choosing which anchor's importance applies is **`effectiveImportance`**, defined once in the catalogue contract and used by both Content (generation defaults) and Prep. One **`Importance`** policy in Prep turns the effective tier + weight into priority, spacing and readiness weight; Content only assigns tiers and weights per anchor |
 | S4 | Fact-link semantics re-implemented in several places | Prep | Hidden inside one **`Mastery`** module (`record`, `estimate`, `readiness`); Content only stores typed links |
 | S5 | One port per need between contexts → thin pass-throughs | All contexts | **One published interface per context** (table above); `LearnerTuning` internal to Prep |
 | S6 | Brand/language lookup and fallback repeated in every channel | All channels | One **`Messages`** module (Platform Config) used by every presenter and template |
@@ -340,7 +371,7 @@ Adopted 2026-11-16 (Phase 5); apply in every code review.
 ## v1 Scope & Staging
 Signed off 2026-11-16 (Phase 8). The time is fixed (pilot January 2027, launch February 2027); scope was cut to fit, never the expensive-to-reverse decisions.
 
-**Never cut (expensive to reverse; all in v1):** brand and language resolved at the edge, with no hard-coded text or brand; one parent identity across brands with per-brand memberships; stable fact IDs, immutable content versions, responses recording question and rubric versions; outbox, idempotency and the 14 no-race invariants; Access as Billing's only published state; device linking; POPIA consent and self-service family deletion; outcomes (Results, strategy history) recorded from day 1.
+**Never cut (expensive to reverse; all in v1):** brand and language resolved at the edge, with no hard-coded text or brand; one parent identity across brands with per-brand memberships; stable fact and anchor IDs, fact lineage with mastery carry-over, immutable content versions, responses recording question and rubric versions; outbox, idempotency and the 14 no-race invariants; Access as Billing's only published state; device linking; POPIA consent and self-service family deletion; outcomes (Results, strategy history) recorded from day 1.
 
 | Stage | In scope |
 |---|---|
@@ -417,4 +448,9 @@ Deliberately deferred work (Phase 8, 2026-11-16). Each keeps its seam from day 1
 | 2026-11-16 | **Not built for v1 (deferred with triggers):** per-child tuning, statistical knowledge tracing, "label the diagram" questions, retention deletion job, second-brand rehearsal, bulk importance edit, full coverage dashboard; see [Debt Ledger](#debt-ledger) | No data, no users or no deadline needs them before launch; each keeps its seam | Building them before the pilot |
 | 2026-11-16 | **Mastery starts as a simple, explainable rule** behind the `Mastery` interface | Nothing to fit a statistical model to before the pilot; the interface doesn't change when it is swapped | Statistical knowledge tracing before the pilot |
 | 2026-11-16 | **No circuit breaker:** if pilot readiness is at risk, the pilot date moves rather than scope | User decision | Pre-agreed order of cuts from pilot to launch |
+| 2026-11-22 | **Facts have one or more source anchors;** a source is a source document with its metadata, page version, section and region; each anchor holds its own verbatim text and its own importance; the fact holds one canonical statement. See [Content: facts, anchors and lineage](#content-facts-anchors-and-lineage) | Fact IDs (and mastery) survive re-photographed pages and additional sources; importance can differ by source and be chosen at consumption | Facts owned by one page (re-upload resets mastery); importance per fact (loses source-specific signals) |
+| 2026-11-22 | **Re-anchoring keeps fact and anchor IDs and gets a lightweight review;** a changed canonical statement still gets full Gate 1 | Teacher time goes to real changes | Full Gate 1 for every fact on a replaced page |
+| 2026-11-22 | **Merge and split create new fact IDs, record lineage and carry mastery over:** split children inherit, a merge takes the lower estimate; a merged fact keeps all anchors of the facts it replaces | Mastery continuity is crucial (user decision); the lower estimate never overstates readiness | Starting fresh (replaces the 2026-11-16 rule); keeping one old ID on merge |
+| 2026-11-22 | **`effectiveImportance` is defined in the catalogue contract:** strongest anchor in scope, or strongest anchor of a preferred type | One rule shared by question generation and prep | Separate rules in Content and Prep |
+| 2026-11-22 | **Questions record their anchors; prep only uses questions anchored in the child's enrolled source document** | Questions stay textbook-specific while facts and mastery are shared across sources | Questions tied only to facts |
 | 2026-11-22 | **"Inbound adapters" and "outbound adapters"** name the two halves of the adapter ring; our own apps go through inbound adapters like any outside caller, as one thin translation step | Names the direction of each edge; the Android app runs on untrusted devices with old versions in use, and several channels share one set of use cases | "Delivery" (doesn't say inbound), "driving/driven adapters" (less obvious), "interface layer" (clashes with TypeScript `interface`), "gateway" (usually means outbound) |

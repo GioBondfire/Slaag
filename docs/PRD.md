@@ -28,7 +28,7 @@ Confirmed in Round 0 (2026-11-10). Platform note: native store apps were first d
 | Component | Status | Description | Coverage / Deferral Note |
 |-----------|--------|-------------|--------------------------|
 | Accounts & Family Setup | active | Parent social login, family subscription via PayFast (web-only checkout), web account and subscription management, webhook-driven billing lifecycle, parent-owned child accounts, school/grade/province/textbooks, partner campaigns with time-limited member discounts | AC-A1…A37 |
-| Content & Question Bank | active | Ingestion of photographed textbook PDFs into reviewed, importance-weighted facts (verbatim + paraphrased), indexed to the textbook and cross-referenced to CAPS; curator-initiated question generation; risk-based review | AC-C1…C28 |
+| Content & Question Bank | active | Ingestion of photographed textbook PDFs into reviewed, importance-weighted facts (verbatim + paraphrased), indexed to the textbook and cross-referenced to CAPS; curator-initiated question generation; risk-based review | AC-C1…C31 |
 | Test/Exam Planner | active | Add test/exam (date + scope), parent review/edit, rule-based next-session suggestion, post-test rating and marks | AC-P1…P12 |
 | Prep Session Engine | active | Full adaptive engine with every technique; strategy layer (Incremental / Standard / Last-minute) chosen by runway ratio; language-model-based grading of written answers against rubrics | AC-E1…E24 |
 | Parent Oversight & Alerts | active | Email + push alerts, missed-session detection, weekly digest, per-child dashboard | AC-O1…O7 |
@@ -163,7 +163,7 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 - [ ] AC-C2: Before content is uploaded, the curator uploads a photo PDF of the textbook's **table of contents**. Slaag proposes the textbook's **index tree** (term > topic > subtopic, with page ranges) and a suggested **CAPS mapping** for each node; a person confirms or corrects it once.
 - [ ] AC-C3: The curator uploads **PDFs of phone photos** (no text layer) and tags each upload with **grade** and **textbook**, plus optional **section and page range(s)**. Pages are placed in the textbook's index tree automatically.
 - [ ] AC-C4: Each page is read by OCR (Afrikaans and English) and kept linked to its page image. Pages that read poorly (blur, skew, glare, cut-off text) are **flagged for re-photographing**.
-- [ ] AC-C5: **Re-uploading a page replaces it entirely.** All facts from the old version go back through Gate 1, and questions built on them go back through Gate 2.
+- [ ] AC-C5: **Re-uploading a page replaces it entirely.** Facts from the old version keep their IDs: each of their anchors is matched to the new page version and confirmed in a lightweight review (AC-C29). A fact whose statement changes goes back through full Gate 1, and questions built on it go back through Gate 2.
 - [ ] AC-C6: Each textbook shows coverage in the back office: pages uploaded, flagged, extracted, facts approved, and questions generated and live. ***Staging:** v1 shows a table of counts per textbook; the full coverage dashboard is deferred (D7). See [Architecture → Debt Ledger](logical-design/ARCHITECTURE.md#debt-ledger).*
 
 #### Facts
@@ -173,8 +173,8 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 - [ ] AC-C10: **Gate 1:** a teacher reviews **every** fact and its paraphrases next to the page photo, and can approve, edit, merge, split or reject. They also confirm or change the fact's importance and links (AC-C25–C28). Only approved facts can be used to generate questions.
 
 #### Fact importance & relationships
-- [ ] AC-C25: Every fact has an **importance tier**: **Core** (must know; likely to be tested), **Supporting** (useful detail) or **Peripheral** (very unlikely to need memorising), plus a numeric **weight** within its tier, for fine ranking.
-- [ ] AC-C26: During extraction, AI **proposes** each fact's tier and weight from textbook signals, and records the signal used:
+- [ ] AC-C25: Every fact has an **importance tier** on each of its anchors (AC-C29): **Core** (must know; likely to be tested), **Supporting** (useful detail) or **Peripheral** (very unlikely to need memorising), plus a numeric **weight** within its tier, for fine ranking.
+- [ ] AC-C26: During extraction, AI **proposes** each anchor's tier and weight from textbook signals, and records the signal used:
   - **explicit keywords and definitions in the side margins** (keyword boxes) → **Core, highest weight**
   - bold or highlighted terms, headings, summary or "remember" boxes, and facts covered by end-of-chapter questions → Core or Supporting
   - ordinary body text → Supporting
@@ -187,7 +187,10 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 
   The keyword fact stays the anchor; elaborating facts get their own tier, usually lower.
 - [ ] AC-C28: Teachers can adjust tier, weight and links per fact at Gate 1, and curators can bulk-adjust them for a whole index node (e.g. mark an enrichment section Peripheral). Changes are versioned and take effect in prep plans from the next session. ***Staging:** per-fact edits are in v1; bulk adjustment per index node is deferred (D6). See [Architecture → Debt Ledger](logical-design/ARCHITECTURE.md#debt-ledger).*
-- [ ] AC-C11: A test scope given as page ranges or index-tree selections resolves to the approved facts on those pages or nodes.
+- [ ] AC-C11: A test scope given as page ranges or index-tree selections resolves to the approved facts **anchored** on those pages or nodes.
+- [ ] AC-C29: **A fact can appear in more than one source.** Each place it appears is a **source anchor**: the source document with its metadata, page, section and page area, with the verbatim text there, its index and CAPS references, position type, and its own importance tier and weight. The fact holds one canonical statement and its paraphrases. Fact IDs survive re-uploads and additional sources (re-anchoring, lightweight review). Merging or splitting facts creates new fact IDs, keeps the link to the old ones, and **carries mastery over**: split facts inherit the original's mastery; a merged fact takes the lower of the merged facts' mastery. A merged fact keeps the anchors of all the facts it replaces.
+- [ ] AC-C30: A fact's **effective importance** for a scope is its strongest anchor in that scope, or the strongest anchor of a preferred type when one is set (e.g. keywords only). The same rule sets question-generation defaults (AC-C13) and prep priorities.
+- [ ] AC-C31: Every question records the **anchor(s)** it was written from. Prep only uses questions anchored in the textbook the child is enrolled with for that subject; coverage shows facts with no live question anchored in a given textbook.
 
 #### Question generation
 - [ ] AC-C12: Question generation is **started by the curator**, for a selected scope (textbook, index node(s) or page range) of approved facts. It never runs automatically.
@@ -209,7 +212,7 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 - [ ] AC-C19: Teacher reviewers work through queues for facts and questions: approve, edit or reject, and set difficulty and topic weight.
 - [ ] AC-C20: Every content change is versioned; only approved versions are live.
 - [ ] AC-C21: Parents and children can "report a problem" on any question. The report sends the item back to review, and an item with 3 or more open reports is hidden automatically until reviewed.
-- [ ] AC-C22: Content is traceable end to end: question → fact(s) → page → upload → textbook.
+- [ ] AC-C22: Content is traceable end to end: question → anchor(s) → fact(s) → page → upload → textbook.
 - [ ] AC-C23: Launch content is staged: Term 1 content for the launch textbooks is finished first.
 - [ ] AC-C24: Textbook page photos and verbatim text are visible only to Slaag staff and reviewers; learners see questions, model answers and diagram crops only.
 
@@ -377,11 +380,12 @@ Greenfield: the repo currently contains only tooling and planning docs.
 | IndexNode | core domain | level (term/topic/subtopic), title, page range | belongs to SourceDocument (primary index tree); maps to CAPSNode |
 | CAPSNode | supporting | grade, subject, term, topic, subtopic | cross-referenced by IndexNodes and Facts |
 | Upload | supporting | PDF, grade, textbook, section, page ranges, uploaded by | produces Pages |
-| Page | supporting | page number, image, OCR text, quality flag, version | belongs to SourceDocument; has Facts |
-| Fact | core domain | verbatim text, type, key terms, page area, position type (margin keyword, body, summary…), importance tier (Core/Supporting/Peripheral), weight, importance signal, index node, CAPS node, review status, language | from Page; has Paraphrases; FactLinks (elaborates / duplicates / part of / related) to other Facts; source of Questions; unit of mastery |
+| Page | supporting | page number, image, OCR text, quality flag, version | belongs to SourceDocument; has SourceAnchors |
+| Fact | core domain | stable ID, canonical statement, type, key terms, review status, language, lineage (merged from / split from) | has 1+ SourceAnchors; has Paraphrases; FactLinks (elaborates / duplicates / part of / related) to other Facts; source of Questions; unit of mastery |
+| SourceAnchor | core domain | stable ID, source document + metadata, page version, section, page area, verbatim text, position type (margin keyword, body, summary…), importance signal, importance tier (Core/Supporting/Peripheral), weight, index node, CAPS node | belongs to Fact; on a Page; written from by Questions |
 | Paraphrase | supporting | text, review status | 1–2 per Fact |
 | GenerationRun | supporting | curator, scope, options (count, types, verbatim/paraphrase), created count, time | creates Questions |
-| Question | core domain | type, difficulty, review status, language, based on (verbatim/paraphrase) | generated from Fact(s) by a GenerationRun; has ModelAnswer; has ContentVersions |
+| Question | core domain | type, difficulty, review status, language, based on (verbatim/paraphrase) | generated from Fact(s) and written from SourceAnchor(s) by a GenerationRun; has ModelAnswer; has ContentVersions |
 | ModelAnswer | supporting | text, source fact references, based on (verbatim/paraphrase) | belongs to Question; generated with it |
 | Rubric | supporting | correct / partial / incorrect criteria, weighted key points, accepted alternatives, known misconceptions, partial-credit rules | belongs to Question; applied by the grader; versioned |
 | ContentVersion | supporting | version, author, status (draft/approved/hidden) | versions Facts, Paraphrases, Questions, ModelAnswers, Rubrics |
@@ -392,7 +396,7 @@ Greenfield: the repo currently contains only tooling and planning docs.
 | ScopePortion | supporting | order, topics, page range, study-by date, status, mastery | belongs to Assessment (Incremental); has PrepSessions |
 | PrepSession | core domain | kind (diagnostic/system/ad-hoc/last-minute/portion/cumulative review), scheduled time, status, score, duration | belongs to Assessment (and optionally a ScopePortion); contains LearnerResponses |
 | LearnerResponse | core domain | answer text/choice, grade (correct/partial/incorrect, or close if undecided), rubric criteria met/missed, evaluator used, confidence | belongs to PrepSession; updates AssessmentMastery |
-| AssessmentMastery | core domain | per-fact mastery estimate, rolled up to subtopic/topic | belongs to Assessment (not carried over) |
+| AssessmentMastery | core domain | per-fact mastery estimate, rolled up to subtopic/topic | belongs to Assessment (not carried over to other assessments; carried over through fact merges and splits, AC-C29) |
 | Alert | supporting | type, channel, mute settings | sent to Parent/Child Devices |
 | Device | supporting | push token, platform (Android/web browser), linked child profiles, linked-at, revoked flag | belongs to Parent and/or linked to Child via DeviceLink |
 | DeviceLink | supporting | one-time code, QR payload, child, expires-at (15 min), used-at | created by Parent; consumed by Device to link a Child |
@@ -439,6 +443,7 @@ Greenfield: the repo currently contains only tooling and planning docs.
 | 2026-11-16 | **Pilot pricing:** the open assumption that the January 2027 pilot is free is removed. |
 | 2026-11-16 | **Grader:** the keyword/similarity first step is removed; every written answer goes straight to language-model evaluation against the rubric, with a confidence threshold that escalates to a more capable model, and the cost cap unchanged (Constraints, AC-E8, E11, Technical Context, Ontology). |
 | 2026-11-16 | **Hosting:** the South African hosting requirement (Round 18) is removed; international hosting is allowed, subject to POPIA's cross-border transfer conditions (Constraints, Technical Context). |
+| 2026-11-22 | **Facts and source anchors:** a fact can appear in several sources, each a source anchor with its own verbatim text and importance; fact IDs survive re-uploads (lightweight re-anchoring review); merges and splits carry mastery over; effective importance is the strongest anchor in scope (or of a preferred type); questions record their anchors and prep uses only questions anchored in the child's textbook (AC-C5, C11, C22, C25, C29–C31; Ontology). |
 
 ## Interview Transcript
 <details>
