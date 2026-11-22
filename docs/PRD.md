@@ -189,7 +189,7 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 - [ ] AC-C11: A test scope given as page ranges or index-tree selections resolves to the approved facts **anchored** on those pages or nodes.
 - [ ] AC-C29: **A fact can appear in more than one source.** Each place it appears is a **source anchor**: the source document with its metadata, page, section and page area, with the verbatim text there, its index and CAPS references, position type, and its own importance tier and weight. The fact holds one canonical statement and its paraphrases. Fact IDs survive re-uploads and additional sources (re-anchoring, lightweight review). Merging or splitting facts creates new fact IDs, keeps the link to the old ones, and **carries mastery over**: split facts inherit the original's mastery; a merged fact takes the lower of the merged facts' mastery. A merged fact keeps the anchors of all the facts it replaces.
 - [ ] AC-C30: A fact's **effective importance** for a scope is its strongest anchor in that scope, or the strongest anchor of a preferred type when one is set (e.g. keywords only). The same rule sets question-generation defaults (AC-C13) and prep priorities.
-- [ ] AC-C31: Every question records the **anchor(s)** it was written from. Prep only uses questions anchored in the textbook the child is enrolled with for that subject; coverage shows facts with no live question anchored in a given textbook.
+- [ ] AC-C31: Every question records the **anchor(s)** it was written from. A question is live only while its own approved version, its facts and **the anchors it was written from** are live; work on another source never takes it offline. Prep only uses questions anchored in the textbook the child is enrolled with for that subject; coverage shows facts with no live question anchored in a given textbook.
 
 #### Question generation
 - [ ] AC-C12: Question generation is **started by the curator**, for a selected scope (textbook, index node(s) or page range) of approved facts. It never runs automatically.
@@ -209,7 +209,7 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 #### Question review & quality
 - [ ] AC-C18: **Gate 2, risk-based:** questions of mechanical types (multiple choice, true/false, fill in the blank, step ordering) go live after a teacher reviews a random **~10% sample per textbook** and **≥ 95%** pass. If the sample fails, the whole batch is reviewed. Judgement types (written definitions, "why" answers, paragraph questions, diagram labelling) are **always fully reviewed**.
 - [ ] AC-C19: Teacher reviewers work through queues for facts and questions: approve, edit or reject, and set difficulty and topic weight.
-- [ ] AC-C20: Every content change is versioned; only approved versions are live.
+- [ ] AC-C20: Every content change is versioned; only approved versions are live, and a draft never takes the approved version offline. A fact's core (statement, paraphrases) and each of its source anchors are versioned and reviewed separately, so one source can go live while another is still in review. When a fact-core edit is approved, the reviewer marks it **minor** (its questions stay live and are queued for Gate 2) or **material** (its questions are taken offline until Gate 2).
 - [ ] AC-C21: Parents and children can "report a problem" on any question. The report sends the item back to review, and an item with 3 or more open reports is hidden automatically until reviewed.
 - [ ] AC-C22: Content is traceable end to end: question → anchor(s) → fact(s) → page → upload → textbook.
 - [ ] AC-C23: Launch content is staged: Term 1 content for the launch textbooks is finished first.
@@ -382,7 +382,7 @@ Greenfield: the repo currently contains only tooling and planning docs.
 | Page | supporting | page number, image, OCR text, quality flag, version | belongs to SourceDocument; has SourceAnchors |
 | Fact | core domain | stable ID, canonical statement, type, key terms, review status, language, lineage (merged from / split from) | has 1+ SourceAnchors; has Paraphrases; FactLinks (elaborates / part of / related) to other Facts; created by approving a FactCandidate; source of Questions; unit of mastery |
 | FactCandidate | supporting | proposed statement, paraphrases, anchor, importance, links, reconciliation proposal (new / re-anchor / additional anchor), resolution | produced by extraction from a Page; resolved at Gate 1 into a Fact, an anchor on an existing Fact, or rejected |
-| SourceAnchor | core domain | stable ID, source document + metadata, page version, section, page area, verbatim text, position type (margin keyword, body, summary…), importance signal, importance tier (Core/Supporting/Peripheral), weight, index node, CAPS node | belongs to Fact; on a Page; written from by Questions |
+| SourceAnchor | core domain | stable ID, source document + metadata, page version, section, page area, verbatim text, position type (margin keyword, body, summary…), importance signal, importance tier (Core/Supporting/Peripheral), weight, index node, CAPS node | references one Fact; versioned and reviewed separately; on a Page; written from by Questions |
 | Paraphrase | supporting | text, review status | 1–2 per Fact |
 | GenerationRun | supporting | curator, scope, options (count, types, verbatim/paraphrase), created count, time | creates Questions |
 | Question | core domain | type, difficulty, review status, language, based on (verbatim/paraphrase) | generated from Fact(s) and written from SourceAnchor(s) by a GenerationRun; has ModelAnswer; has ContentVersions |
@@ -445,6 +445,7 @@ Greenfield: the repo currently contains only tooling and planning docs.
 | 2026-11-16 | **Hosting:** the South African hosting requirement (Round 18) is removed; international hosting is allowed, subject to POPIA's cross-border transfer conditions (Constraints, Technical Context). |
 | 2026-11-22 | **Facts and source anchors:** a fact can appear in several sources, each a source anchor with its own verbatim text and importance; fact IDs survive re-uploads (lightweight re-anchoring review); merges and splits carry mastery over; effective importance is the strongest anchor in scope (or of a preferred type); questions record their anchors and prep uses only questions anchored in the child's textbook (AC-C5, C11, C22, C25, C29–C31; Ontology). |
 | 2026-11-22 | **Fact candidates, publishing, links:** extraction produces fact candidates that become facts only at Gate 1; approved items go live one by one; the "duplicates" fact link is dropped in favour of anchors (AC-C7, C10, C27, E22; Ontology). |
+| 2026-11-22 | **Anchor versioning and the question live rule:** anchors are versioned and reviewed separately from the fact core; a question stays live while its own facts and anchors are live; fact-core edits are marked minor or material (AC-C20, C31; Ontology). |
 
 ## Interview Transcript
 <details>
