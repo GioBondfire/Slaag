@@ -38,7 +38,7 @@ Statuses: pending · in-progress · awaiting-evidence · done · deferred: <reas
 | 2026-11-16 | Intake | Run all 8 phases; skip team-topologies | One small team; launch Feb 2027 makes every phase relevant |
 | 2026-11-16 | Intake | Proceed without prior validation; the Jan 2027 pilot is the validation | Launch date is fixed; design for change instead |
 | 2026-11-16 | 1 | Modular monolith with strict module boundaries | One small team; no proven seams; matches the approach already chosen in TECH-STACK.md |
-| 2026-11-16 | 1 | Boundary map accepted: full at delivery, data store, payment provider, AI content, LLM grader; partial at notifications, identity, object storage, clock; collapsed for reference data | Boundaries where change or vendor risk is likely; ceremony avoided elsewhere |
+| 2026-11-16 | 1 | Boundary map accepted: full at inbound adapters, data store, payment provider, AI content, LLM grader; partial at notifications, identity, object storage, clock; collapsed for reference data | Boundaries where change or vendor risk is likely; ceremony avoided elsewhere |
 | 2026-11-16 | 1 | First layered feature: "Add a test → suggest the next session" | Exercises Planner, Content scope resolution, strategy plug-ins and the notification reaction |
 | 2026-11-16 | 2 | Planner + Prep Engine merged into one **Prep** context; 8 contexts in total | Shared language and model; splitting forces a shared kernel |
 | 2026-11-16 | 2 | Content is one context exposing a published content catalogue | Prep sees approved live versions only |

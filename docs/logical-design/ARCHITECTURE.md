@@ -54,7 +54,7 @@ Source-code dependencies point inward only. Nothing in an inner ring names anyth
 |---|---|---|
 | 1. Domain | Entities and pure policies per module (e.g. `Assessment`, `PrepPlan` with its `PrepStrategy` plug-ins, `Importance`, `Mastery`, `Marking`) | Nothing outside the domain |
 | 2. Application | One use case per operation (e.g. `AddAssessment`, `RecalculateRunway`); request/response models; **ports** owned by the use case (repositories, gateways, `Clock`, `Notifier`, event publisher) | Domain |
-| 3. Adapters | Channel controllers and presenters (web, mobile API per version, back office); repository implementations; provider gateways and translators; event handlers; scheduled-trigger adapters | Application, Domain |
+| 3. Adapters | **Inbound adapters** (the outside calling in): web, mobile-API-per-version and back-office endpoints with their presenters; job, event and scheduled-trigger handlers. **Outbound adapters** (use cases calling out): repository implementations; provider gateways and translators; `MediaStore`, `Notifier` and publisher implementations | Application, Domain |
 | 4. Drivers | Frameworks, the data store, provider SDKs, the job runner; the **composition root** that wires every concrete implementation | Everything |
 
 **Data crossing boundaries.** Plain request/response models only. The data store's records, provider payloads and channel request objects never cross inward. Use cases return **message keys**, never text; presenters localise them to the family's language and brand.
@@ -68,7 +68,7 @@ Source-code dependencies point inward only. Nothing in an inner ring names anyth
 ### Boundary map
 | Part likely to change | Boundary | Why |
 |---|---|---|
-| Delivery channels (web, mobile API v1/v2, back office) | Full: controllers + presenters | Three channels already; the mobile API is versioned |
+| Inbound adapters (web, mobile API v1/v2, back office) | Full: one thin inbound adapter per entry point + presenters | Three channels already; the mobile API is versioned |
 | Transactional data store | Full: repository port per module | Core testable without the store; data outlives code |
 | Payment provider | Full + anti-corruption translator (`BillingGateway`, webhook translator) | Unusual states and webhooks; one merchant per brand; highest vendor risk |
 | AI content provider | Full: `ContentAI` port | Models and providers change fast; expensive work |
@@ -79,12 +79,12 @@ Source-code dependencies point inward only. Nothing in an inner ring names anyth
 | Clock, scheduled triggers | Partial: `Clock` port + trigger adapter | All date logic testable |
 | Brand and language | Resolved at the edge into the request context; the core sees IDs/keys only | PRD AC-B1: no code may assume a brand |
 | Prep strategies | Plug-in boundary inside the core | PRD AC-E20: add strategies without changing planner, grader or runner |
-| Plain reference data (school list, credit table, partner records) | Collapsed: controller → repository | No business rules to protect |
+| Plain reference data (school list, credit table, partner records) | Collapsed: inbound adapter → repository | No business rules to protect |
 
 ### First feature layered: "Add a test → suggest the next session"
 PRD AC-P1–P4, P9–P10, C11, E13–E14, O1.
 
-1. **Adapter:** the web or mobile-API controller resolves the request context and builds `AddAssessmentRequest { child, actor, type, subject, date, scope (index nodes | page ranges) }`.
+1. **Inbound adapter:** the web or mobile-API endpoint resolves the request context and builds `AddAssessmentRequest { child, actor, type, subject, date, scope (index nodes | page ranges) }`.
 2. **Use case `AddAssessment` (Prep, planning module):**
    - Access (whether this actor may act for this child) is already settled by the **request-context resolver** at the edge (Phase 5, S9); the use case asks Family's published interface whether the subject is active with a confirmed textbook.
    - **`ContentCatalogue`** (Content's published interface): scope → approved fact references with tier, weight, difficulty.
@@ -302,12 +302,13 @@ Each context exposes one small published interface that hides a lot behind it; p
 Adopted 2026-11-16 (Phase 5); apply in every code review.
 
 - [ ] **Domain names only.** Name modules, types, methods and events after [glossary](#domain-glossary-ubiquitous-language) concepts. Never `Manager`, `Helper`, `Util`, `Processor`. A name that resists is a design signal: raise it, don't work around it.
-- [ ] **Behaviour lives in aggregates;** use cases only coordinate (load, call, save, publish). No business rule in controllers, presenters, handlers or jobs.
+- [ ] **Behaviour lives in aggregates;** use cases only coordinate (load, call, save, publish). No business rule in inbound adapters, presenters, handlers or jobs.
 - [ ] **One module per piece of knowledge.** If a change forces edits in two modules in lockstep, merge them or extract the shared knowledge.
 - [ ] **Interface comments first.** Before implementing a module or published interface, write what it promises (inputs, outputs, invariants, failure behaviour), not how it works.
 - [ ] **Settings have decided defaults in one place** (e.g. `PrepSettings`); no new configuration parameter without a default and a reason.
 - [ ] **Jobs and event handlers are thin triggers** that call a use case, and are idempotent (see [Data & Consistency Decisions](#data--consistency-decisions)).
 - [ ] **Code in English, using the glossary's code names;** user-facing text only through `Messages`.
+- [ ] **Inbound and outbound adapters.** Everything that calls into a context goes through an **inbound adapter**: our own web app, Android app and back office included, since "external" means outside the core, not a third party. Everything a use case calls out to goes through a port implemented by an **outbound adapter**. Inbound adapters do one translation step only: validate input, resolve the request context, call one use case (or one query service), and present the result. No controller → handler → use-case stacks; in TanStack Start the server function *is* the inbound adapter. Calls between contexts in the same process go straight to the other context's published interface, with no serialisation. Commands go through use cases; screens that only read may call a query service over a read model directly. Don't name anything "delivery" or "mediator".
 - [ ] **Every outside service sits behind an interface we own** (table below). Provider IDs, prompts and payload formats live only in the adapter; the domain never stores a provider's own identifiers. Forking-road test: any provider can be swapped within a week.
 - [ ] **One source per contract:** the mobile API contract, domain event schemas, the rubric format and settings are each defined once; server and Android types are generated from that one source.
 - [ ] **Design by contract:** aggregates assert their invariants and fail immediately and loudly; every request is validated against its contract at the edge.
@@ -334,7 +335,7 @@ Adopted 2026-11-16 (Phase 5); apply in every code review.
 | Swap a provider | One adapter | Adapter contract tests |
 | Rubric format change | Catalogue contract version + `Marking` | Rubric version contract tests |
 | **New question type** | Content generation + `Marking` + client rendering (3 places; inherent to the problem) | Question type defined once in the catalogue contract; clients render from it |
-| Mobile API change | Channel adapter; versions N and N-1 supported | Mobile API contract tests (N, N-1) |
+| Mobile API change | Mobile-API inbound adapter; versions N and N-1 supported | Mobile API contract tests (N, N-1) |
 
 ## v1 Scope & Staging
 Signed off 2026-11-16 (Phase 8). The time is fixed (pilot January 2027, launch February 2027); scope was cut to fit, never the expensive-to-reverse decisions.
@@ -375,7 +376,7 @@ Deliberately deferred work (Phase 8, 2026-11-16). Each keeps its seam from day 1
 | Date | Decision | Why | Alternatives rejected |
 |---|---|---|---|
 | 2026-11-16 | **Modular monolith:** one deployable codebase and one system of record, with strict module boundaries; background work may run as a separate process from the same codebase | One small team; no proven context seams yet; keeps refactoring across modules cheap | Separate services (e.g. Content and Prep Engine deployed alone): operational load for one team, and a distributed monolith if seams are wrong |
-| 2026-11-16 | **Dependency Rule enforced through ports owned by use cases;** full boundaries at delivery, data store, payment provider, AI content provider and LLM grader; partial at notifications, identity, object storage and clock; collapsed for plain reference data | Full boundaries go where change or vendor risk is likely; the rest avoids ceremony | Collapse the data-store boundary (core not testable without the store); full boundaries everywhere (ceremony with no protection) |
+| 2026-11-16 | **Dependency Rule enforced through ports owned by use cases;** full boundaries at inbound adapters, data store, payment provider, AI content provider and LLM grader; partial at notifications, identity, object storage and clock; collapsed for plain reference data | Full boundaries go where change or vendor risk is likely; the rest avoids ceremony | Collapse the data-store boundary (core not testable without the store); full boundaries everywhere (ceremony with no protection) |
 | 2026-11-16 | **Brand and language resolved at the edge;** the core handles IDs and message keys only | Multi-brand and multi-language from day 1 without code changes (PRD AC-B1, X1) | Brand/language checks inside use cases (leaks "Slaag" and language assumptions inward) |
 | 2026-11-16 | **Modules interact only through published use cases and domain events** | Keeps future service seams open; prevents a shared-data monolith | Shared access to tables across modules |
 | 2026-11-16 | **Eight bounded contexts:** Prep, Content, Family, Billing & Campaigns, Identity & Access, Rewards, Notifications, Platform Config | Each has its own language and changes for its own reasons | One unified model (contradictory "Child", "Subscription", "Fact") |
@@ -416,3 +417,4 @@ Deliberately deferred work (Phase 8, 2026-11-16). Each keeps its seam from day 1
 | 2026-11-16 | **Not built for v1 (deferred with triggers):** per-child tuning, statistical knowledge tracing, "label the diagram" questions, retention deletion job, second-brand rehearsal, bulk importance edit, full coverage dashboard; see [Debt Ledger](#debt-ledger) | No data, no users or no deadline needs them before launch; each keeps its seam | Building them before the pilot |
 | 2026-11-16 | **Mastery starts as a simple, explainable rule** behind the `Mastery` interface | Nothing to fit a statistical model to before the pilot; the interface doesn't change when it is swapped | Statistical knowledge tracing before the pilot |
 | 2026-11-16 | **No circuit breaker:** if pilot readiness is at risk, the pilot date moves rather than scope | User decision | Pre-agreed order of cuts from pilot to launch |
+| 2026-11-22 | **"Inbound adapters" and "outbound adapters"** name the two halves of the adapter ring; our own apps go through inbound adapters like any outside caller, as one thin translation step | Names the direction of each edge; the Android app runs on untrusted devices with old versions in use, and several channels share one set of use cases | "Delivery" (doesn't say inbound), "driving/driven adapters" (less obvious), "interface layer" (clashes with TypeScript `interface`), "gateway" (usually means outbound) |
