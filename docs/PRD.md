@@ -167,10 +167,10 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 - [ ] AC-C6: Each textbook shows coverage in the back office: pages uploaded, flagged, extracted, facts approved, and questions generated and live. ***Staging:** v1 shows a table of counts per textbook; the full coverage dashboard is deferred (D7). See [Architecture → Debt Ledger](logical-design/ARCHITECTURE.md#debt-ledger).*
 
 #### Facts
-- [ ] AC-C7: AI extracts **facts**: short, self-contained statements, one idea each, **verbatim** in the textbook's wording. Each has a **type** (definition, fact, list item, process step, cause and effect, date or event, diagram/table label), **key terms** (bold or keyword terms flagged), its **source** (textbook, page, area of the page image), the **textbook index** (term, topic, subtopic, page), the **CAPS cross-reference**, its **position type on the page** (margin keyword/definition box, body text, heading, summary or "remember" box, caption, example or enrichment box, activity), and **links** to related facts.
+- [ ] AC-C7: AI extracts **fact candidates** (they become facts only when approved at Gate 1): short, self-contained statements, one idea each, **verbatim** in the textbook's wording. Each has a **type** (definition, fact, list item, process step, cause and effect, date or event, diagram/table label), **key terms** (bold or keyword terms flagged), its **source** (textbook, page, area of the page image), the **textbook index** (term, topic, subtopic, page), the **CAPS cross-reference**, its **position type on the page** (margin keyword/definition box, body text, heading, summary or "remember" box, caption, example or enrichment box, activity), and **links** to related facts.
 - [ ] AC-C8: For each verbatim fact, AI generates **1–2 linked paraphrased statements** with the same meaning in different words, keeping the textbook's key terms intact.
 - [ ] AC-C9: Diagrams and tables become labelled facts; the cropped image is stored and can be shown in questions. ***Staging:** diagram facts and crops are extracted and reviewed in v1; "label the diagram" questions are deferred (D3). See [Architecture → Debt Ledger](logical-design/ARCHITECTURE.md#debt-ledger).*
-- [ ] AC-C10: **Gate 1:** a teacher reviews **every** fact and its paraphrases next to the page photo, and can approve, edit, merge, split or reject. They also confirm or change the fact's importance and links (AC-C25–C28). Only approved facts can be used to generate questions.
+- [ ] AC-C10: **Gate 1:** a teacher reviews **every** fact candidate and its paraphrases next to the page photo. For each one, they approve it as a new fact, accept the proposed match to an existing fact (re-anchoring or an additional anchor, AC-C29), combine it with other candidates, edit it or reject it. Approved facts can later be edited, merged or split. Teachers also confirm or change importance and links (AC-C25–C28). Only approved facts can be used to generate questions, and each approved fact or question goes **live as soon as it is approved** (AC-C20).
 
 #### Fact importance & relationships
 - [ ] AC-C25: Every fact has an **importance tier** on each of its anchors (AC-C29): **Core** (must know; likely to be tested), **Supporting** (useful detail) or **Peripheral** (very unlikely to need memorising), plus a numeric **weight** within its tier, for fine ranking.
@@ -181,11 +181,10 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
   - examples, anecdotes, "did you know" and enrichment boxes → Peripheral
 - [ ] AC-C27: Facts are linked with **typed relationships**:
   - **elaborates**: a body-text fact that repeats a margin keyword and adds detail links to that keyword fact
-  - **duplicates**: restates the same knowledge; linked or merged so it isn't drilled twice
   - **part of**: the steps of a process or the items of a list
   - **related**
 
-  The keyword fact stays the anchor; elaborating facts get their own tier, usually lower.
+  The keyword fact stays the main reference; elaborating facts get their own tier, usually lower. There is no "duplicates" link: where the same knowledge is restated (on the same page, another page or another source), it is **one fact with several anchors** (AC-C29).
 - [ ] AC-C28: Teachers can adjust tier, weight and links per fact at Gate 1, and curators can bulk-adjust them for a whole index node (e.g. mark an enrichment section Peripheral). Changes are versioned and take effect in prep plans from the next session. ***Staging:** per-fact edits are in v1; bulk adjustment per index node is deferred (D6). See [Architecture → Debt Ledger](logical-design/ARCHITECTURE.md#debt-ledger).*
 - [ ] AC-C11: A test scope given as page ranges or index-tree selections resolves to the approved facts **anchored** on those pages or nodes.
 - [ ] AC-C29: **A fact can appear in more than one source.** Each place it appears is a **source anchor**: the source document with its metadata, page, section and page area, with the verbatim text there, its index and CAPS references, position type, and its own importance tier and weight. The fact holds one canonical statement and its paraphrases. Fact IDs survive re-uploads and additional sources (re-anchoring, lightweight review). Merging or splitting facts creates new fact IDs, keeps the link to the old ones, and **carries mastery over**: split facts inherit the original's mastery; a merged fact takes the lower of the merged facts' mastery. A merged fact keeps the anchors of all the facts it replaces.
@@ -256,7 +255,7 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 
 #### Importance-weighted prep
 - [ ] AC-E21: Question selection, spacing and repetition are **proportional to importance**: Core facts (above all margin keywords and definitions) are asked first, more often, and reviewed at shorter spaced intervals; Supporting facts less often; Peripheral facts only when time allows, and never in Last-minute sessions.
-- [ ] AC-E22: A fact linked as **elaborating** a keyword is only drilled after the keyword itself is mastered. A fact linked as a **duplicate** shares mastery with the fact it duplicates and is not drilled separately.
+- [ ] AC-E22: A fact linked as **elaborating** a keyword is only drilled after the keyword itself is mastered. A restatement of the same knowledge is an extra anchor on one fact (AC-C29), so it is never drilled separately.
 - [ ] AC-E23: An assessment counts as "ready" when the weighted mastery of its Core facts reaches a configurable threshold. Readiness % shown to parents is weighted by importance, so Peripheral facts barely affect it.
 - [ ] AC-E24: Importance tiers and weights are inputs that later per-child and outcome-based tuning (AC-E20) can learn from, e.g. which facts appeared to matter in tests children rated "tough". ***Staging:** deferred with per-child tuning (D1). See [Architecture → Debt Ledger](logical-design/ARCHITECTURE.md#debt-ledger).*
 
@@ -381,7 +380,8 @@ Greenfield: the repo currently contains only tooling and planning docs.
 | CAPSNode | supporting | grade, subject, term, topic, subtopic | cross-referenced by IndexNodes and Facts |
 | Upload | supporting | PDF, grade, textbook, section, page ranges, uploaded by | produces Pages |
 | Page | supporting | page number, image, OCR text, quality flag, version | belongs to SourceDocument; has SourceAnchors |
-| Fact | core domain | stable ID, canonical statement, type, key terms, review status, language, lineage (merged from / split from) | has 1+ SourceAnchors; has Paraphrases; FactLinks (elaborates / duplicates / part of / related) to other Facts; source of Questions; unit of mastery |
+| Fact | core domain | stable ID, canonical statement, type, key terms, review status, language, lineage (merged from / split from) | has 1+ SourceAnchors; has Paraphrases; FactLinks (elaborates / part of / related) to other Facts; created by approving a FactCandidate; source of Questions; unit of mastery |
+| FactCandidate | supporting | proposed statement, paraphrases, anchor, importance, links, reconciliation proposal (new / re-anchor / additional anchor), resolution | produced by extraction from a Page; resolved at Gate 1 into a Fact, an anchor on an existing Fact, or rejected |
 | SourceAnchor | core domain | stable ID, source document + metadata, page version, section, page area, verbatim text, position type (margin keyword, body, summary…), importance signal, importance tier (Core/Supporting/Peripheral), weight, index node, CAPS node | belongs to Fact; on a Page; written from by Questions |
 | Paraphrase | supporting | text, review status | 1–2 per Fact |
 | GenerationRun | supporting | curator, scope, options (count, types, verbatim/paraphrase), created count, time | creates Questions |
@@ -444,6 +444,7 @@ Greenfield: the repo currently contains only tooling and planning docs.
 | 2026-11-16 | **Grader:** the keyword/similarity first step is removed; every written answer goes straight to language-model evaluation against the rubric, with a confidence threshold that escalates to a more capable model, and the cost cap unchanged (Constraints, AC-E8, E11, Technical Context, Ontology). |
 | 2026-11-16 | **Hosting:** the South African hosting requirement (Round 18) is removed; international hosting is allowed, subject to POPIA's cross-border transfer conditions (Constraints, Technical Context). |
 | 2026-11-22 | **Facts and source anchors:** a fact can appear in several sources, each a source anchor with its own verbatim text and importance; fact IDs survive re-uploads (lightweight re-anchoring review); merges and splits carry mastery over; effective importance is the strongest anchor in scope (or of a preferred type); questions record their anchors and prep uses only questions anchored in the child's textbook (AC-C5, C11, C22, C25, C29–C31; Ontology). |
+| 2026-11-22 | **Fact candidates, publishing, links:** extraction produces fact candidates that become facts only at Gate 1; approved items go live one by one; the "duplicates" fact link is dropped in favour of anchors (AC-C7, C10, C27, E22; Ontology). |
 
 ## Interview Transcript
 <details>

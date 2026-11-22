@@ -7,7 +7,7 @@ Most tests sit in the inner rings, where they are fast and need no I/O. Few end-
 
 | Level | Covers | Runs against | Share |
 |---|---|---|---|
-| **Domain unit tests** | `PrepPlan` and every `PrepStrategy`, `Importance`, `Mastery` (incl. fact-link rules and Close = neutral), `Marking` step 1 and the mechanical question types, `Assessment` invariants. **`Subscription` state machine as a table:** every provider-neutral fact × every state, including duplicates and out-of-order delivery | In memory | Most |
+| **Domain unit tests** | `PrepPlan` and every `PrepStrategy`, `Importance`, `Mastery` (incl. fact-link rules, lineage carry-over (split inherits, merge takes the lower) and Close = neutral), `effectiveImportance` (strongest anchor in scope; anchor preference), `FactCandidate` resolution and re-anchoring, `Marking` step 1 and the mechanical question types, `Assessment` invariants. **`Subscription` state machine as a table:** every provider-neutral fact × every state, including duplicates and out-of-order delivery | In memory | Most |
 | **Use-case tests** | Each use case with fake ports and a fixed `Clock` | In memory | Many |
 | **Adapter contract tests** | One suite per port (`AnswerEvaluator`, `ContentAI`, `PaymentGateway`, provider-event translator, `PushSender`, `EmailSender`, `IdentityProvider`, `MediaStore`, `EventPublisher`, `FeatureFlags`), run against **both** the fake and the real adapter (provider sandbox) | Fake + sandbox | Per port |
 | **Between-context contract tests** | Each context's published interface; domain event schemas; rubric format versions; mobile API versions **N and N-1** | In memory | Per contract |
