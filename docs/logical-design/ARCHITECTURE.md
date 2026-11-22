@@ -151,15 +151,16 @@ Other aggregates are referenced by ID only; consistency between aggregates is ev
 |---|---|---|
 | Prep | **Assessment** | Holds the scope as selected plus the resolved fact set; exactly one active strategy, with history (parent's choice beats child's); portions are ordered and cover the scope; at most **one** suggested next session; after the date it stops suggesting and accepts one **Result** |
 | Prep | **PrepSession** | Scheduled → Started → Completed, or **Missed** 2 h after the scheduled time; holds its responses; LLM grading spend within the per-session cost cap |
-| Prep | **AssessmentMastery** | One estimate per fact per assessment, never carried over to another assessment; changes only through graded responses, or through **fact lineage** (a split fact's children inherit its estimate; a merged fact takes the **lower** of its parents' estimates); a **Close** Verdict is neutral (no change; the fact is asked again later); an elaborating fact is drilled only after its keyword is mastered. Kept apart from Assessment because it is written on every answer |
+| Prep | **AssessmentMastery** | One estimate per fact per assessment, never carried over to another assessment; changes only through graded responses, or through **fact lineage** (a split fact's children inherit its estimate; a merged fact takes the **lower** of its parents' estimates); a **Close** Verdict is neutral (no change; the fact is asked again later); an elaborating fact is drilled only after its keyword is mastered, **when the keyword fact is in the assessment's fact set**. Kept apart from Assessment because it is written on every answer |
 | Prep | **LearnerTuning** | One per child: strategy cut-offs and portion sizes |
 | Content | **Textbook** | Index tree confirmed once |
 | Content | **Page** | Re-upload replaces the page; each anchor on the old page version is re-matched to the new one (lightweight review, keeping its `AnchorId`) or left for a teacher to resolve |
-| Content | **Fact** | Stable `FactId`; the **fact core**: one canonical statement, 1–2 paraphrases, type, key terms; versioned and reviewed on its own, independently of its anchors; typed links (elaborates / part of / related) by fact ID, with no "duplicates" link (a restatement is another anchor on the same fact); a merge or split creates new `FactId`s and records lineage, and a merged fact keeps every anchor of the facts it replaces; only approved facts feed generation; created only by approving a `FactCandidate` |
+| Content | **Fact** | Stable `FactId`; the **fact core**: one canonical statement, 1–2 paraphrases, type, key terms; versioned and reviewed on its own, independently of its anchors; its typed links live in a separate `FactLinkSet`; a merge or split creates new `FactId`s and records lineage, and a merged fact keeps every anchor of the facts it replaces; only approved facts feed generation; created only by approving a `FactCandidate` |
 | Content | **SourceAnchor** | Its own aggregate, referencing one `FactId`; stable `AnchorId`; source document, page version, section, region, verbatim text, index and CAPS references, position type, signal, **tier and weight**; versioned and reviewed on its own, so one source can go live while another is still in review; re-anchoring, importance edits and region corrections create new anchor versions. A fact with no live anchor is in no scope |
 | Content | **FactCandidate** | Extraction output, reviewed at Gate 1; has no `FactId`. Carries a proposed statement, paraphrases, anchor (source, verbatim text, position type, signal, importance) and links, plus the reconciliation proposal (new fact / re-anchor an existing anchor / additional anchor on an existing fact). Resolved exactly once: approved as a new `Fact`, accepted as a match (anchor added to or moved on the existing fact), combined with other candidates, or rejected |
 | Content | **Question** | Records the **anchor(s)** it was written from; **live only while** its own approved version, the live core of each of its facts and **the anchors it was written from** are live (anchors in other sources don't matter); can't go live without an approved model answer and rubric, versioned together; ≥3 open problem reports hide it; re-pointed to the new fact and sent back through Gate 2 when its fact is merged or split |
-| Content | **ReviewBatch** | Gate 2 sampling: ~10% sample with ≥95% pass, otherwise review the whole batch |
+| Content | **FactLinkSet** | One per fact: its outgoing typed links (elaborates / part of with a position / related) to other facts by `FactId`; versioned and lightly reviewed as one item, apart from the fact core and anchors; no "duplicates" link (a restatement is another anchor on the same fact). A link is live only while both its facts are live (computed) |
+| Content | **ReviewBatch** | One per **generation run**: its mechanical-type questions; ~10% sample with ≥95% pass, otherwise review the whole batch; none of them go live until the batch passes |
 | Billing | **Subscription** | One per brand membership; lifecycle state machine; each provider event applied exactly once and late events never move it to a wrong state; at most one overdue email and one suspension email per failure episode; at most one discount, a campaign discount once per family per brand; fee history |
 | Billing | **Campaign** | Sign-up window and cap; pausing or ending stops new sign-ups only |
 | Billing | **Partner** | Belongs to one brand |
@@ -187,7 +188,9 @@ Other aggregates are referenced by ID only; consistency between aggregates is ev
 | Anchor preference | An optional filter on anchor types for a prep or generation run (e.g. keywords only) | `AnchorPreference` |
 | Paraphrase | One of 1–2 restatements of a fact that keep its key terms | `Paraphrase` |
 | Importance tier / weight | Core, Supporting or Peripheral, plus a weight within the tier; held **per anchor** | `ImportanceTier`, `weight` |
-| Fact link | A typed relation: elaborates, part of, related (restatements are anchors, not links) | `FactLink` |
+| Fact link | A typed relation between facts, independent of any source: elaborates (adds detail to a keyword fact's concept), part of (with a position), related. Restatements are anchors, not links | `FactLink`, `FactLinkSet` |
+| Version state | Draft → In review → Approved (live) → Superseded, or Rejected; per version | `VersionState` |
+| Hold | A reason an item is kept out of the catalogue (≥3 problem reports; material edit awaiting Gate 2) | `Hold` |
 | Fact candidate | A draft fact from extraction, awaiting Gate 1; has no fact ID until approved | `FactCandidate` |
 | Fact core | A fact's statement, paraphrases, type and key terms; versioned apart from its anchors | `FactCore` |
 | Minor / material edit | How an approved fact-core edit affects its questions: minor keeps them live (queued for Gate 2), material takes them out until Gate 2 | `EditImpact` |
@@ -261,6 +264,7 @@ SourceAnchor (aggregate; stable AnchorId; references one FactId; versioned)
 - **What a candidate matched to an existing fact can propose:** a new or moved anchor (light review: verbatim text, region, index node, importance); a change to the fact core (full Gate 1); or, unmatched, a new fact (full Gate 1).
 - **Question live rule:** a question is live while its own approved version, the live core of each of its facts and the anchors it was written from are live. Work on another source never takes it offline.
 - **Minor vs material fact-core edits:** whoever approves a fact-core edit marks it **minor** (its questions stay live and are queued for Gate 2) or **material** (its questions come out of the catalogue until Gate 2 clears them).
+- **Links describe knowledge, not layout:** all link types are between facts and hold in every source. Page layout (body text repeating a margin keyword) is only the extraction signal for proposing *elaborates*. How a source presents a fact (e.g. as a margin keyword) lives on its anchor. Prep applies the elaborates gate only when the keyword fact is in the assessment's fact set.
 - **No "duplicates" link:** where the same knowledge appears twice, it is one fact with two anchors.
 - **Publishing is per item:** a fact, question or edit goes live as soon as its version is approved; there are no catalogue releases. Prep sees it from the next session plan; caches stay keyed by item version.
 - **Page replaced:** extraction of the new page produces candidates; reconciliation (AI proposes, a teacher confirms) matches each to an existing anchor, which moves to the new page version and keeps its `AnchorId` and `FactId`. This **re-anchoring** gets a lightweight "confirm match" review; a changed canonical statement goes through full Gate 1, and its questions through Gate 2. Unmatched candidates become new facts; an old anchor with no match is resolved by a teacher (retire it, or re-anchor elsewhere); a fact left with no anchor is retired.
@@ -269,7 +273,33 @@ SourceAnchor (aggregate; stable AnchorId; references one FactId; versioned)
 - **Mastery carry-over** (owned by `Mastery` in Prep, idempotent, for every active assessment holding the old facts): a split fact's children **inherit** its estimate; a merged fact takes the **lower** of its parents' estimates.
 - **Effective importance** is defined once, in the catalogue's published contract: `effectiveImportance(fact, scope, anchorPreference?) → { anchor, tier, weight }`. With no preference, the **strongest anchor in scope** wins; with a preference (e.g. margin keywords only), the strongest anchor of that type wins, and a fact with no such anchor in scope drops out. Content uses it for generation defaults (AC-C13); Prep uses it for prep plans.
 - **Questions record the anchor(s) they were written from.** Prep only uses questions whose anchors are in the source document the child is enrolled with for that subject. When a fact is merged or split, its questions are re-pointed to the new fact and go back through Gate 2.
+- **Merge and split rewire links:** a merged fact takes the links of every merged fact, re-pointed to its new ID, and links between the merged facts are dropped; on a split, the teacher assigns each link to one of the new facts.
 - **Coverage** includes, per source document, the facts in scope that have **no live question anchored in that document**; generation for that document closes the gap.
+
+### Content: review and versioning
+Adopted 2026-11-22. One general **Review & Versioning** module (consolidation S10) serves every versioned item: the **fact core**, each **source anchor**, each fact's **link set**, and each **question** (with its model answer and rubric versioned together). A `FactCandidate` is not versioned; it is resolved once.
+
+| State | Values | Kept |
+|---|---|---|
+| **Version state** (per version) | Draft → In review → Approved, or Rejected; an approved version becomes Superseded when a newer one is approved | Stored, append-only |
+| **Item availability** (per item) | Live; **Held** with a reason (≥3 open problem reports; material edit awaiting Gate 2); **Retired** | Holds and retirement stored; whether dependencies are live is **computed** in the catalogue projection |
+
+```
+propose(item, content, basedOn: version) → draft version
+submit(version)                          → enters the queue its policy chooses
+approve(version, reviewer, edits?, editImpact?)
+reject(version, reviewer, reason)
+hold(item, reason) / release(item, reason) / retire(item, reason)
+liveVersion(item)
+```
+
+- **Policies per item type** decide review depth, the reviewer role and what approval triggers: **Gate 1** (full) for fact cores and new facts; **light review** for anchors and link sets; **Gate 2** for questions (judgement types fully reviewed; mechanical types in one `ReviewBatch` per generation run, sampled).
+- **One draft at a time per item.** A further edit joins the open draft or waits. Approving a draft based on version N when N+1 is live is refused; the editor rebases.
+- **Reviewers may approve their own edits** made while reviewing (AC-C10). Edits made outside review (e.g. by a curator) go to a reviewer's queue.
+- **Minor / material** applies to fact-core and link-set edits: material (e.g. adding or removing a step in a *part of* group) holds the affected questions until Gate 2; minor keeps them live and queues them for Gate 2.
+- **A draft never takes a live version offline;** only a hold or retirement does. Rolling back approves a new version copying an old one.
+- **Every transition is logged** (who, when, from, to, reason).
+- The module publishes `VersionApproved`, `ItemHeld`, `ItemReleased`, `ItemRetired`; the catalogue projection and its per-version cache update from them.
 
 ### Paths that must not race (serialized writes)
 Every rule is enforced **explicitly**, by a conditional update, a uniqueness rule or a per-aggregate version check. None relies on the store's default isolation level.
@@ -469,6 +499,8 @@ Deliberately deferred work (Phase 8, 2026-11-16). Each keeps its seam from day 1
 | 2026-11-22 | **Questions record their anchors; prep only uses questions anchored in the child's enrolled source document** | Questions stay textbook-specific while facts and mastery are shared across sources | Questions tied only to facts |
 | 2026-11-22 | **`SourceAnchor` is its own aggregate,** versioned and reviewed apart from the fact core; a question is live while its own version, its facts' cores and the anchors it was written from are live | One source can go live while another is in review; teachers on different sources of one fact don't conflict | Anchors inside the `Fact` aggregate (a draft anchor would make the whole fact a draft) |
 | 2026-11-22 | **Fact-core edits are marked minor or material** when approved: minor keeps its questions live (queued for Gate 2), material takes them out until Gate 2 | A typo fix shouldn't pull questions; a changed meaning must | Always keep live; always take out |
+| 2026-11-22 | **Review & Versioning:** one draft at a time per item; one Gate 2 batch per generation run; reviewers may approve their own edits made while reviewing; version state stored, dependency liveness computed. See [Content: review and versioning](#content-review-and-versioning) | No silent overwrites; a run is already one scope in one textbook; matches how Gate 1 works (AC-C10) | Parallel drafts with merging; batches per textbook; four-eyes on every edit |
+| 2026-11-22 | **Fact links get their own version stream** (one `FactLinkSet` per fact, light review, minor/material applies) and stay **between facts**, independent of source; layout is only the extraction signal for *elaborates* | Link edits don't disturb wording; links describe knowledge, anchors describe presentation | Links inside the fact core; unversioned links; *elaborates* between anchors |
 | 2026-11-22 | **Publish per item:** each fact, question or edit goes live as soon as its version is approved | Content reaches children as fast as teachers approve it; caching stays per item version | Catalogue releases per textbook |
 | 2026-11-22 | **Extraction produces `FactCandidate`s;** a `Fact` and its `FactId` exist only after Gate 1 approval; paraphrases sit inside the `Fact` | Rejected drafts never consume IDs; reconciliation proposals have a natural home; the core fact model holds only approved knowledge | Draft facts in a draft state (IDs for rejected drafts, review state inside the core model) |
 | 2026-11-22 | **The "duplicates" fact link is dropped;** restatements become additional anchors on one fact | One fact, one mastery record; no link semantics to share | Keeping a duplicates link alongside anchors |

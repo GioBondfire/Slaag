@@ -180,7 +180,7 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
   - ordinary body text → Supporting
   - examples, anecdotes, "did you know" and enrichment boxes → Peripheral
 - [ ] AC-C27: Facts are linked with **typed relationships**:
-  - **elaborates**: a body-text fact that repeats a margin keyword and adds detail links to that keyword fact
+  - **elaborates**: a fact that adds detail to the concept stated in a keyword fact links to that keyword fact. Links describe the knowledge and hold in every source; body text repeating a margin keyword is the signal extraction uses to propose this link
   - **part of**: the steps of a process or the items of a list
   - **related**
 
@@ -207,9 +207,9 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 - [ ] AC-C17: Every generation run is logged (who, when, scope, options used, number of questions created).
 
 #### Question review & quality
-- [ ] AC-C18: **Gate 2, risk-based:** questions of mechanical types (multiple choice, true/false, fill in the blank, step ordering) go live after a teacher reviews a random **~10% sample per textbook** and **≥ 95%** pass. If the sample fails, the whole batch is reviewed. Judgement types (written definitions, "why" answers, paragraph questions, diagram labelling) are **always fully reviewed**.
+- [ ] AC-C18: **Gate 2, risk-based:** questions of mechanical types (multiple choice, true/false, fill in the blank, step ordering) go live after a teacher reviews a random **~10% sample of each generation run's batch** and **≥ 95%** pass. If the sample fails, the whole batch is reviewed. Judgement types (written definitions, "why" answers, paragraph questions, diagram labelling) are **always fully reviewed**.
 - [ ] AC-C19: Teacher reviewers work through queues for facts and questions: approve, edit or reject, and set difficulty and topic weight.
-- [ ] AC-C20: Every content change is versioned; only approved versions are live, and a draft never takes the approved version offline. A fact's core (statement, paraphrases) and each of its source anchors are versioned and reviewed separately, so one source can go live while another is still in review. When a fact-core edit is approved, the reviewer marks it **minor** (its questions stay live and are queued for Gate 2) or **material** (its questions are taken offline until Gate 2).
+- [ ] AC-C20: Every content change is versioned; only approved versions are live, and a draft never takes the approved version offline. A fact's core (statement, paraphrases) and each of its source anchors are versioned and reviewed separately, so one source can go live while another is still in review; a fact's links are versioned separately too. Each item has at most one draft at a time, and reviewers may approve their own edits made while reviewing. When a fact-core edit is approved, the reviewer marks it **minor** (its questions stay live and are queued for Gate 2) or **material** (its questions are taken offline until Gate 2).
 - [ ] AC-C21: Parents and children can "report a problem" on any question. The report sends the item back to review, and an item with 3 or more open reports is hidden automatically until reviewed.
 - [ ] AC-C22: Content is traceable end to end: question → anchor(s) → fact(s) → page → upload → textbook.
 - [ ] AC-C23: Launch content is staged: Term 1 content for the launch textbooks is finished first.
@@ -255,7 +255,7 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 
 #### Importance-weighted prep
 - [ ] AC-E21: Question selection, spacing and repetition are **proportional to importance**: Core facts (above all margin keywords and definitions) are asked first, more often, and reviewed at shorter spaced intervals; Supporting facts less often; Peripheral facts only when time allows, and never in Last-minute sessions.
-- [ ] AC-E22: A fact linked as **elaborating** a keyword is only drilled after the keyword itself is mastered. A restatement of the same knowledge is an extra anchor on one fact (AC-C29), so it is never drilled separately.
+- [ ] AC-E22: A fact linked as **elaborating** a keyword is only drilled after the keyword itself is mastered, when the keyword fact is in the assessment's fact set. A restatement of the same knowledge is an extra anchor on one fact (AC-C29), so it is never drilled separately.
 - [ ] AC-E23: An assessment counts as "ready" when the weighted mastery of its Core facts reaches a configurable threshold. Readiness % shown to parents is weighted by importance, so Peripheral facts barely affect it.
 - [ ] AC-E24: Importance tiers and weights are inputs that later per-child and outcome-based tuning (AC-E20) can learn from, e.g. which facts appeared to matter in tests children rated "tough". ***Staging:** deferred with per-child tuning (D1). See [Architecture → Debt Ledger](logical-design/ARCHITECTURE.md#debt-ledger).*
 
@@ -446,6 +446,7 @@ Greenfield: the repo currently contains only tooling and planning docs.
 | 2026-11-22 | **Facts and source anchors:** a fact can appear in several sources, each a source anchor with its own verbatim text and importance; fact IDs survive re-uploads (lightweight re-anchoring review); merges and splits carry mastery over; effective importance is the strongest anchor in scope (or of a preferred type); questions record their anchors and prep uses only questions anchored in the child's textbook (AC-C5, C11, C22, C25, C29–C31; Ontology). |
 | 2026-11-22 | **Fact candidates, publishing, links:** extraction produces fact candidates that become facts only at Gate 1; approved items go live one by one; the "duplicates" fact link is dropped in favour of anchors (AC-C7, C10, C27, E22; Ontology). |
 | 2026-11-22 | **Anchor versioning and the question live rule:** anchors are versioned and reviewed separately from the fact core; a question stays live while its own facts and anchors are live; fact-core edits are marked minor or material (AC-C20, C31; Ontology). |
+| 2026-11-22 | **Review & Versioning and links:** one draft per item; Gate 2 batches per generation run; reviewers may approve their own edits; fact links versioned separately and defined by meaning, not layout; the elaborates gate applies only when the keyword fact is in the fact set (AC-C18, C20, C27, E22). |
 
 ## Interview Transcript
 <details>
