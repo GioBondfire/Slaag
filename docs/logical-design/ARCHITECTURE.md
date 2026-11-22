@@ -154,7 +154,7 @@ Other aggregates are referenced by ID only; consistency between aggregates is ev
 | Prep | **AssessmentMastery** | One estimate per fact per assessment, never carried over to another assessment; changes only through graded responses, or through **fact lineage** (a split fact's children inherit its estimate; a merged fact takes the **lower** of its parents' estimates); a **Close** Verdict is neutral (no change; the fact is asked again later); an elaborating fact is drilled only after its keyword is mastered, **when the keyword fact is in the assessment's fact set**. Kept apart from Assessment because it is written on every answer |
 | Prep | **LearnerTuning** | One per child: strategy cut-offs and portion sizes |
 | Content | **Textbook** | Index tree confirmed once |
-| Content | **Page** | Re-upload replaces the page; each anchor on the old page version is re-matched to the new one (lightweight review, keeping its `AnchorId`) or left for a teacher to resolve |
+| Content | **Page** | Identified by (source document, printed page number); each upload of it creates a **PageVersion** with its own pipeline state (see [Content: ingestion pipeline](#content-ingestion-pipeline)); a newer version supersedes the old one, and each anchor on the old version is re-matched to the new one (lightweight review, keeping its `AnchorId`) or left for a teacher to resolve |
 | Content | **Fact** | Stable `FactId`; the **fact core**: one canonical statement, 1–2 paraphrases, type, key terms; versioned and reviewed on its own, independently of its anchors; its typed links live in a separate `FactLinkSet`; a merge or split creates new `FactId`s and records lineage, and a merged fact keeps every anchor of the facts it replaces; only approved facts feed generation; created only by approving a `FactCandidate` |
 | Content | **SourceAnchor** | Its own aggregate, referencing one `FactId`; stable `AnchorId`; source document, page version, section, region, verbatim text, index and CAPS references, position type, signal, **tier and weight**; versioned and reviewed on its own, so one source can go live while another is still in review; re-anchoring, importance edits and region corrections create new anchor versions. A fact with no live anchor is in no scope |
 | Content | **FactCandidate** | Extraction output, reviewed at Gate 1; has no `FactId`. Carries a proposed statement, paraphrases, anchor (source, verbatim text, position type, signal, importance) and links, plus the reconciliation proposal (new fact / re-anchor an existing anchor / additional anchor on an existing fact). Resolved exactly once: approved as a new `Fact`, accepted as a match (anchor added to or moved on the existing fact), combined with other candidates, or rejected |
@@ -275,6 +275,37 @@ SourceAnchor (aggregate; stable AnchorId; references one FactId; versioned)
 - **Questions record the anchor(s) they were written from.** Prep only uses questions whose anchors are in the source document the child is enrolled with for that subject. When a fact is merged or split, its questions are re-pointed to the new fact and go back through Gate 2.
 - **Merge and split rewire links:** a merged fact takes the links of every merged fact, re-pointed to its new ID, and links between the merged facts are dropped; on a split, the teacher assigns each link to one of the new facts.
 - **Coverage** includes, per source document, the facts in scope that have **no live question anchored in that document**; generation for that document closes the gap.
+
+### Content: ingestion pipeline
+Adopted 2026-11-22. Everything from upload to Gate 1 runs **automatically**; only question generation is curator-initiated (AC-C12).
+
+```
+0. Textbook setup   RegisterSourceDocument → UploadTableOfContents
+                    → [AI] ProposeIndexTree (+ CAPS mapping) → ConfirmIndexTree
+1. Intake           RegisterUpload(sourceFileId, revision, tags) → RenderPages
+2. Reading          [AI] ReadPage → layout blocks + printed page number(s) + quality
+3. Quality & place  PageQualityPolicy → Read | FlaggedForRephoto;  page number → index node
+4. Extraction       [AI] ExtractCandidates → FactCandidates (anchor, importance signal, links)
+5. Reconciliation   [search + AI] ProposeMatches → new / re-anchor / additional anchor
+6. Gate 1           Review & Versioning
+```
+
+**PageVersion states**
+```
+Registered → Rendered → Reading → Read ─┬→ Placed → Extracting → Extracted → Reconciled → InReview → Resolved
+                                        └→ FlaggedForRephoto (blur, skew, glare, cut-off)
+any step → Failed (retried with backoff; after N attempts, a curator alert)
+newer PageVersion of the same page → Superseded (unfinished AI work discarded)
+```
+
+- **Intake** is idempotent per (source file ID, revision). Pages are rendered to images in `MediaStore` (content-hashed) for reviewers and diagram crops; the AI reads the **original PDF pages**.
+- **Page identity:** reading detects the printed page number(s). A photo of a **spread** is split into two page versions; a page whose number is unclear goes to a curator **"assign page number"** queue.
+- **Index tree not a gate:** pages are read, extracted and reconciled before the index tree is confirmed; they are placed (and their anchors get index nodes) once it is.
+- **Extraction** runs per page with the neighbouring pages' transcripts as context; an anchor's region may span **two consecutive pages**.
+- **Reconciliation** looks for a match first among the anchors on the superseded version of the same page, then among existing facts in the **same language and subject, across all grades** (`SimilarityIndex`), with an AI `MatchJudgement` proposing new / same / same with a core change. A teacher always confirms at Gate 1.
+- **`ContentAI` port:** `submit(task, urgency) → TaskRef` and `collect() → [(TaskRef, Done(result) | Failed(reason))]`, for `IndexProposal`, `PageReading`, `CandidateExtraction`, `MatchJudgement`. The adapter picks batch or real-time from `urgency`, batches tasks, and translates results into Content types; prompts and provider IDs stay inside it.
+- **Out-of-order results:** a collector job hands each result to its `Record…` use case. Each page version advances independently; recording is idempotent per (page version, task kind, attempt); results for a superseded page version are ignored.
+- **Provenance:** every AI output records model, prompt version and cost, so pages can be re-extracted with better prompts (through the same reconciliation path) and cost is known per textbook.
 
 ### Content: review and versioning
 Adopted 2026-11-22. One general **Review & Versioning** module (consolidation S10) serves every versioned item: the **fact core**, each **source anchor**, each fact's **link set**, and each **question** (with its model answer and rubric versioned together). A `FactCandidate` is not versioned; it is resolved once.
@@ -399,6 +430,8 @@ Adopted 2026-11-16 (Phase 5); apply in every code review.
 | `Clock`, `EventPublisher` (outbox), `FeatureFlags` | All | 2 (tracer bullet) |
 | `IdentityProvider` (social sign-in) | Identity & Access | 2 |
 | `MediaStore` | Content | 3 |
+| `SourceRepository` (source PDFs by file ID + revision) | Content | 2 |
+| `SimilarityIndex` (meaning-based search: reconciliation, duplicate questions) | Content | 2 |
 
 ### Change impact (orthogonality)
 | Change | Modules touched | Guard |
@@ -499,6 +532,8 @@ Deliberately deferred work (Phase 8, 2026-11-16). Each keeps its seam from day 1
 | 2026-11-22 | **Questions record their anchors; prep only uses questions anchored in the child's enrolled source document** | Questions stay textbook-specific while facts and mastery are shared across sources | Questions tied only to facts |
 | 2026-11-22 | **`SourceAnchor` is its own aggregate,** versioned and reviewed apart from the fact core; a question is live while its own version, its facts' cores and the anchors it was written from are live | One source can go live while another is in review; teachers on different sources of one fact don't conflict | Anchors inside the `Fact` aggregate (a draft anchor would make the whole fact a draft) |
 | 2026-11-22 | **Fact-core edits are marked minor or material** when approved: minor keeps its questions live (queued for Gate 2), material takes them out until Gate 2 | A typo fix shouldn't pull questions; a changed meaning must | Always keep live; always take out |
+| 2026-11-22 | **Ingestion runs automatically from upload to Gate 1,** per page version, through `ContentAI` submit/collect; results are recorded idempotently in any order and carry model, prompt version and cost. See [Content: ingestion pipeline](#content-ingestion-pipeline) | Batch results arrive out of order and hours later; teachers shouldn't wait on each other; re-extraction with better prompts stays possible | Curator-triggered steps; request/response AI calls |
+| 2026-11-22 | **Pipeline rules:** spreads are split and unclear page numbers go to a curator queue; extraction sees neighbouring pages and an anchor may span two consecutive pages; reconciliation searches the same language and subject across all grades; pages are read and extracted before the index tree is confirmed and placed once it is; rendered page images for people, original PDF pages for the AI | User decisions | Blocking uploads on the index tree; per-grade matching; AI reading rendered images |
 | 2026-11-22 | **Review & Versioning:** one draft at a time per item; one Gate 2 batch per generation run; reviewers may approve their own edits made while reviewing; version state stored, dependency liveness computed. See [Content: review and versioning](#content-review-and-versioning) | No silent overwrites; a run is already one scope in one textbook; matches how Gate 1 works (AC-C10) | Parallel drafts with merging; batches per textbook; four-eyes on every edit |
 | 2026-11-22 | **Fact links get their own version stream** (one `FactLinkSet` per fact, light review, minor/material applies) and stay **between facts**, independent of source; layout is only the extraction signal for *elaborates* | Link edits don't disturb wording; links describe knowledge, anchors describe presentation | Links inside the fact core; unversioned links; *elaborates* between anchors |
 | 2026-11-22 | **Publish per item:** each fact, question or edit goes live as soon as its version is approved | Content reaches children as fast as teachers approve it; caching stays per item version | Catalogue releases per textbook |

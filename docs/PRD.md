@@ -160,9 +160,9 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 
 #### Textbooks & upload
 - [ ] AC-C1: Source documents have a **type**; "textbook" is the first. A textbook record holds title, publisher, edition/ISBN, grade, subject, language and cover image.
-- [ ] AC-C2: Before content is uploaded, the curator uploads a photo PDF of the textbook's **table of contents**. Slaag proposes the textbook's **index tree** (term > topic > subtopic, with page ranges) and a suggested **CAPS mapping** for each node; a person confirms or corrects it once.
-- [ ] AC-C3: The curator uploads **PDFs of phone photos** (no text layer) and tags each upload with **grade** and **textbook**, plus optional **section and page range(s)**. Pages are placed in the textbook's index tree automatically.
-- [ ] AC-C4: Each page is read by OCR (Afrikaans and English) and kept linked to its page image. Pages that read poorly (blur, skew, glare, cut-off text) are **flagged for re-photographing**.
+- [ ] AC-C2: The curator uploads a photo PDF of the textbook's **table of contents**. Slaag proposes the textbook's **index tree** (term > topic > subtopic, with page ranges) and a suggested **CAPS mapping** for each node; a person confirms or corrects it once. Uploads don't wait for this: pages are read and extracted before the tree is confirmed, and placed once it is.
+- [ ] AC-C3: The curator uploads **PDFs of phone photos** (no text layer) and tags each upload with **grade** and **textbook**, plus optional **section and page range(s)**. Pages are placed in the textbook's index tree automatically. Reading, quality checks, extraction and matching to existing facts run **automatically** after upload, up to Gate 1.
+- [ ] AC-C4: Each page is read by OCR (Afrikaans and English) and kept linked to its page image. Pages that read poorly (blur, skew, glare, cut-off text) are **flagged for re-photographing**. A photo of two facing pages is split into two pages; a page whose printed page number can't be read goes to a curator to assign it. A fact may run across two consecutive pages.
 - [ ] AC-C5: **Re-uploading a page replaces it entirely.** Facts from the old version keep their IDs: each of their anchors is matched to the new page version and confirmed in a lightweight review (AC-C29). A fact whose statement changes goes back through full Gate 1, and questions built on it go back through Gate 2.
 - [ ] AC-C6: Each textbook shows coverage in the back office: pages uploaded, flagged, extracted, facts approved, and questions generated and live. ***Staging:** v1 shows a table of counts per textbook; the full coverage dashboard is deferred (D7). See [Architecture → Debt Ledger](logical-design/ARCHITECTURE.md#debt-ledger).*
 
@@ -447,6 +447,7 @@ Greenfield: the repo currently contains only tooling and planning docs.
 | 2026-11-22 | **Fact candidates, publishing, links:** extraction produces fact candidates that become facts only at Gate 1; approved items go live one by one; the "duplicates" fact link is dropped in favour of anchors (AC-C7, C10, C27, E22; Ontology). |
 | 2026-11-22 | **Anchor versioning and the question live rule:** anchors are versioned and reviewed separately from the fact core; a question stays live while its own facts and anchors are live; fact-core edits are marked minor or material (AC-C20, C31; Ontology). |
 | 2026-11-22 | **Review & Versioning and links:** one draft per item; Gate 2 batches per generation run; reviewers may approve their own edits; fact links versioned separately and defined by meaning, not layout; the elaborates gate applies only when the keyword fact is in the fact set (AC-C18, C20, C27, E22). |
+| 2026-11-22 | **Ingestion pipeline:** automatic from upload to Gate 1; the index tree no longer blocks uploads; spreads split, unreadable page numbers assigned by a curator; facts may span two pages (AC-C2–C4). |
 
 ## Interview Transcript
 <details>
