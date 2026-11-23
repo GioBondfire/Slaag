@@ -131,7 +131,7 @@ Parent dashboard, readiness views, partner reports and content coverage are **re
 
 | Upstream → Downstream | Pattern | What crosses |
 |---|---|---|
-| Content → Prep | Open Host Service + Published Language (**content catalogue**) | Approved, live versions only: scope → fact-set resolution; fact references with their **in-scope anchors** and **effective importance** (`effectiveImportance`, defined once in the catalogue contract), difficulty, links and lineage; live questions with their **anchor IDs**, model answer and rubric. Never pages, verbatim text, drafts or review state (PRD AC-C24) |
+| Content → Prep | Open Host Service + Published Language (**content catalogue**) | Approved, live versions only: scope → fact-set resolution; fact references with their **in-scope anchors** (anchor ID, page number, index node) and **effective importance** (`effectiveImportance`, defined once in the catalogue contract), difficulty, links and lineage; live questions with their **anchor IDs**, model answer and rubric. Never pages, verbatim text, drafts or review state (PRD AC-C24) |
 | Content → Prep | Domain events (Published Language) | `FactsMerged {from[], into}`, `FactSplit {from, into[]}`: Prep carries mastery over (see [Content: facts, anchors and lineage](#content-facts-anchors-and-lineage)) |
 | Prep → Content | Customer–Supplier | Problem reports on a question (AC-C21) |
 | Billing & Campaigns → all | Published Language | **Access** per brand membership (`AccessGranted` / `AccessSuspended`). Subscription states never leave Billing |
@@ -330,6 +330,27 @@ StartGenerationRun(selection, mode, options, urgency)        ← curator only (A
 - **Duplicates:** existing questions on the same facts, **including rejected ones**, are sent to the AI as "avoid these"; afterwards a `SimilarityIndex` check drops anything too close, and logs it.
 - **Modes:** **generate more** keeps existing questions and adds new ones (AC-C16); **regenerate** creates new drafts for the selected facts and **retires the old questions only once their replacements pass Gate 2**, so a fact is never left without live questions (use after a material edit, a better prompt or a rubric format change).
 
+### Content: the live catalogue
+Adopted 2026-11-23. Content is **ready for consumption** when it is in the live catalogue.
+
+- **A stored projection** (read model) inside Content, updated from `VersionApproved`, `ItemHeld`, `ItemReleased` and `ItemRetired`, and rebuildable from scratch. It **stores liveness**: on every change, the dependent items are recalculated, so Prep reads a plain live set.
+- **Liveness rules:** a fact is live while its core version is approved and it is not held or retired; an anchor while its own version is approved and its fact is live; a link while both its facts are live; a question while its own approved version is not held or retired, its facts' cores are live and the anchors it was written from are live.
+- **Published interface:**
+```
+resolveScope(sourceDocument, scope, anchorPreference?)
+  → FactRef[] { factId, effectiveImportance {anchorId, tier, weight},
+                anchors in scope {anchorId, page number, index node}, links, lineage }
+
+sessionBundle(sourceDocument, factIds, constraints)
+  → LiveQuestion[] { questionId, version, type, prompt, options, diagram crop URL,
+                     modelAnswer, rubric + rubricVersion, factIds, anchorIds, difficulty }
+
+lineage(factIds) → mergedInto / splitInto
+reportProblem(questionId, version, reason)
+```
+- **Never returned:** verbatim text, page images, drafts or review state (AC-C24). **Page numbers and index nodes are returned**, so Prep can point a child to their own textbook pages (Incremental "learn").
+- **Caching:** approved versions never change, so items are cached by (ID, version) with no invalidation; scope resolution queries the projection directly (about 180k facts).
+
 ### Content: review and versioning
 Adopted 2026-11-22. One general **Review & Versioning** module (consolidation S10) serves every versioned item: the **fact core**, each **source anchor**, each fact's **link set**, and each **question** (with its model answer and rubric versioned together). A `FactCandidate` is not versioned; it is resolved once.
 
@@ -401,7 +422,7 @@ Each context exposes one small published interface that hides a lot behind it; p
 | Context | Published interface (in short) | Hides |
 |---|---|---|
 | Prep | add/change assessment, switch strategy, start/finish session, submit answer, record result, dashboard queries | Planning, strategies, importance, mastery, marking, LLM grading, cost cap |
-| Content | `ContentCatalogue`: resolve scope (facts with in-scope anchors and `effectiveImportance`), session bundle (questions anchored in the child's source document), fact lineage, report a problem; back office: upload, review, re-anchor, generate, publish | AI pipeline, versioning, review gates, page reading, reconciliation, image storage |
+| Content | `ContentCatalogue` (see [Content: the live catalogue](#content-the-live-catalogue)): resolve scope (facts with in-scope anchors and `effectiveImportance`), session bundle (questions anchored in the child's source document), fact lineage, report a problem; back office: upload, review, re-anchor, generate, publish | AI pipeline, versioning, review gates, page reading, reconciliation, image storage |
 | Billing & Campaigns | checkout, handle provider event, cancel, reactivate, start card update, `access(membership)` | Lifecycle state machine, provider quirks, discounts, reversion |
 | Identity & Access | sign-in flows, issue/redeem link code, refresh device access token, revoke device, authenticate request | Provider sign-in, credentials, token issuing and verification, rate limits |
 | Family | register, add child, enrol subject, directory queries | Consent, memberships, schools |
@@ -557,6 +578,7 @@ Deliberately deferred work (Phase 8, 2026-11-16). Each keeps its seam from day 1
 | 2026-11-22 | **Fact-core edits are marked minor or material** when approved: minor keeps its questions live (queued for Gate 2), material takes them out until Gate 2 | A typo fix shouldn't pull questions; a changed meaning must | Always keep live; always take out |
 | 2026-11-22 | **Ingestion runs automatically from upload to Gate 1,** per page version, through `ContentAI` submit/collect; results are recorded idempotently in any order and carry model, prompt version and cost. See [Content: ingestion pipeline](#content-ingestion-pipeline) | Batch results arrive out of order and hours later; teachers shouldn't wait on each other; re-extraction with better prompts stays possible | Curator-triggered steps; request/response AI calls |
 | 2026-11-22 | **Pipeline rules:** spreads are split and unclear page numbers go to a curator queue; extraction sees neighbouring pages and an anchor may span two consecutive pages; reconciliation searches the same language and subject across all grades; pages are read and extracted before the index tree is confirmed and placed once it is; rendered page images for people, original PDF pages for the AI | User decisions | Blocking uploads on the index tree; per-grade matching; AI reading rendered images |
+| 2026-11-23 | **The live catalogue is a stored projection** inside Content, updated from Review & Versioning events and rebuildable; liveness is stored and recalculated for dependants on each change; Prep gets page numbers and index nodes, never verbatim text or page images. See [Content: the live catalogue](#content-the-live-catalogue) | Simple, fast reads on the hot path; Incremental needs "study pages 12–14" | Liveness computed per query; index nodes only |
 | 2026-11-23 | **Question generation runs take a fact selection across any sources,** decoupled from uploads; Gate 2 batches per run and source document; modes generate more and regenerate (old questions retired only after replacements pass Gate 2); verbatim means the anchor's text; rejected questions count as duplicates; mechanical rubrics derived by code; every model answer AI-checked. See [Content: question generation](#content-question-generation) | Curation takes weeks across many PDFs; sampling stays meaningful per textbook; facts never lose their live questions; exact, repeatable mechanical marking | Runs tied to uploads or one source; one batch per run; regenerate that retires old questions first |
 | 2026-11-23 | **Placement is a separate, repeatable step** run when the index tree is confirmed or corrected; it splits pages at headings, is auto-approved, sends unclear cases to a curator queue, and anchors may go live before they are placed | Uploads and Gate 1 never wait for the tree; a person already confirmed the tree, so re-reviewing derived placement adds nothing | Blocking uploads or approvals on the tree; reviewing each placement |
 | 2026-11-22 | **Review & Versioning:** one draft at a time per item; one Gate 2 batch per generation run (refined 2026-11-23: per run and source document); reviewers may approve their own edits made while reviewing; version state stored, dependency liveness computed. See [Content: review and versioning](#content-review-and-versioning) | No silent overwrites; a run is already one scope in one textbook; matches how Gate 1 works (AC-C10) | Parallel drafts with merging; batches per textbook; four-eyes on every edit |

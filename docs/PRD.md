@@ -213,7 +213,7 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 - [ ] AC-C21: Parents and children can "report a problem" on any question. The report sends the item back to review, and an item with 3 or more open reports is hidden automatically until reviewed.
 - [ ] AC-C22: Content is traceable end to end: question → anchor(s) → fact(s) → page → upload → textbook.
 - [ ] AC-C23: Launch content is staged: Term 1 content for the launch textbooks is finished first.
-- [ ] AC-C24: Textbook page photos and verbatim text are visible only to Slaag staff and reviewers; learners see questions, model answers and diagram crops only.
+- [ ] AC-C24: Textbook page photos and verbatim text are visible only to Slaag staff and reviewers; learners see questions, model answers, diagram crops and references to their own textbook (page numbers and index sections) only.
 
 ### Test/Exam Planner
 - [ ] AC-P1: The parent or the child can add a test or exam with a type, subject, date and scope.
@@ -450,6 +450,7 @@ Greenfield: the repo currently contains only tooling and planning docs.
 | 2026-11-22 | **Ingestion pipeline:** automatic from upload to Gate 1; the index tree no longer blocks uploads; spreads split, unreadable page numbers assigned by a curator; facts may span two pages (AC-C2–C4). |
 | 2026-11-23 | **Placement after the index tree:** pages and anchors are placed automatically when the tree is confirmed or corrected; facts can go live before placement (AC-C2). |
 | 2026-11-23 | **Question generation:** runs take a selection of approved facts across textbooks, independent of uploads; regenerate mode; verbatim means the anchor's wording; Gate 2 samples per run and textbook (AC-C12, C14, C16–C18; Ontology). |
+| 2026-11-23 | **Live catalogue:** learners may see page numbers and index sections of their own textbook, never verbatim text or page images (AC-C24). |
 
 ## Interview Transcript
 <details>
