@@ -11,7 +11,7 @@ Most tests sit in the inner rings, where they are fast and need no I/O. Few end-
 | **Use-case tests** | Each use case with fake ports and a fixed `Clock` | In memory | Many |
 | **Adapter contract tests** | One suite per port (`AnswerEvaluator`, `ContentAI`, `PaymentGateway`, provider-event translator, `PushSender`, `EmailSender`, `IdentityProvider`, `MediaStore`, `EventPublisher`, `FeatureFlags`), run against **both** the fake and the real adapter (provider sandbox) | Fake + sandbox | Per port |
 | **Between-context contract tests** | Each context's published interface; domain event schemas; rubric format versions; mobile API versions **N and N-1** | In memory | Per contract |
-| **Concurrency tests** | The 14 no-race invariants ([ARCHITECTURE.md › Data & Consistency Decisions](ARCHITECTURE.md#data--consistency-decisions)), each with parallel requests | The real system of record | 14 |
+| **Concurrency tests** | The 15 no-race invariants ([ARCHITECTURE.md › Data & Consistency Decisions](ARCHITECTURE.md#data--consistency-decisions)), each with parallel requests | The real system of record | 14 |
 | **End-to-end tests** | The tracer bullet, then the critical journeys (Safety Net Map) | Full stack, both channels | Few |
 | **Static checks** | No hard-coded user-facing text (AC-X1); no hard-coded brand (AC-B1); **dependency rule** (inner rings never import outer rings; no context touches another's data) | Source | Every change |
 | **Grader evaluation** | Verdict agreement with teacher marking **≥ 90%** (AC-E9) on a teacher-marked evaluation set of children's Afrikaans answers; rerun on any change to grader, prompt, rubric format or `AnswerEvaluator` provider | Evaluation set | On grader changes |
@@ -39,7 +39,7 @@ Run in this order; a failing gate stops the pipeline.
 2. **Static checks:** no hard-coded text or brand; dependency rule
 3. **Domain unit + use-case tests**
 4. **Contract tests:** adapters (fakes), between contexts, mobile API N and N-1
-5. **Concurrency tests** for the 14 invariants
+5. **Concurrency tests** for the 15 invariants
 6. **Migration compatibility:** every schema change works with the currently running version (expand-contract)
 7. **Grader evaluation ≥ 90%:** only on changes to grading, prompts, rubric format or the grading provider adapter
 

@@ -380,6 +380,9 @@ Rubric (format version 1; versioned with its question)
 ```
 
 - **Evaluator output** (stored on the response): `{ keyPointId → met | missed | uncertain, misconceptionIds[], confidence, evaluator }`. A required point that is *uncertain* (or low confidence) escalates to the more capable model; past the session cost cap the answer is **Close**.
+- **Escalation re-judges only the uncertain points:** the more capable model receives the question, model answer, the child's answer and **only the key points the first model marked uncertain**; the points already judged met or missed are kept. The escalation trigger is **not narrowed** in v1 (any uncertain required point or low confidence), so the grader spike and pilot give a quality baseline first; Peripheral facts escalate like any other.
+- **Prompt caching:** every grading request is ordered from most to least shared (fixed grading instructions → question, model answer and rubric → the child's answer), with a cache breakpoint after the fixed instructions, so the shared part is billed at the cache-read rate. The same ordering applies to content pipeline calls.
+- **Daily inference limit per child:** written answers sent to a model count against the child's daily limit (see [Usage limits](#usage-limits-generic)); past it, written answers are **Close** without a model call.
 - **Verdict rules in code:** a misconception or a `neverCorrect` match → Incorrect; all required points met and weight ≥ `correctThreshold` → Correct; weight ≥ `partialThreshold` → Partial; otherwise Incorrect. Changing thresholds lets stored responses be re-marked without asking the model again.
 - **Partial credit** is expressed by weights, required points and thresholds, not by listing allowed subsets of points.
 - **Fill in the blank:** code accepts exact matches and near matches within the spelling tolerance; an answer in the uncertain band between near match and clearly wrong is **Close** (no model call; the fact is asked again later).
@@ -430,6 +433,7 @@ Every rule is enforced **explicitly**, by a conditional update, a uniqueness rul
 | 12 | Credits once per activity | Redelivered event | Triggering event ID is the ledger entry key |
 | 13 | A revoked device can't obtain a new access token | A refresh races the revocation | Refresh is a conditional check against the `LinkedDevice` record (only non-revoked devices get a token). Requests themselves are verified from the 30-minute access token alone, with no store lookup, so a revoked device keeps working for **at most 30 minutes** |
 | 14 | Suspension blocks children immediately | Stale copy of Access | Access read from Billing's published query at request time; never copied |
+| 15 | A usage limit is never exceeded; the breach is flagged and alerted once per window | Concurrent answers from several devices of one child | Conditional increment on the (subject, limit, window) counter; the first increment that would pass the limit sets the flag and writes `UsageLimitReached` to the outbox in the same transaction |
 
 ### Consistency between contexts
 - Domain events use a **transactional outbox**: an event is saved in the same transaction as its state change and delivered **at least once** through the work queue. **Every handler is idempotent**, keyed by event ID. Delay is seconds, inside the 5-minute alert limits (AC-O1, O4).
@@ -464,6 +468,7 @@ Each context exposes one small published interface that hides a lot behind it; p
 | Notifications | `notify(recipient, alertType, payload)` + event handlers, set mutes | Channels, devices, templates, digest |
 | Rewards | event handlers, set goal, balance/goal queries | Credit table, levels, streaks |
 | Platform Config | resolve brand, resolve language, `Messages.render(messageKey, params, {brand, language})` | Brand records, fallback rules, message catalogues |
+| Usage Limits *(generic module, any context)* | `consume(subject, limitKey, amount) → Allowed \| LimitReached{firstBreach}`, `status(subject)`, staff: `clearFlag`, `setOverride` | Limit definitions, counters per window, flags, `UsageLimitReached` event |
 
 ### Consolidations
 | # | Smell avoided | Where | Design |
@@ -482,6 +487,23 @@ Each context exposes one small published interface that hides a lot behind it; p
 | S12 | Settings scattered | Prep | One **`PrepSettings`** with decided defaults; per-child tuning overrides |
 
 **Deliberately not merged:** Marking stays out of Content; Rewards and Notifications stay out of Prep (separate knowledge, separate reasons to change).
+
+### Usage limits (generic)
+Adopted 2026-11-23. A **generic module** any context uses to put a ceiling on how much one subject (a child, a parent, a device, a family) may consume in a time window, to protect against a compromised device or account and runaway cost. Limits are **settings with decided defaults**, not code.
+
+```
+UsageLimits.consume(subject, limitKey, amount = 1) → Allowed | LimitReached { firstBreach }
+UsageLimits.status(subject) → [{ limitKey, used, limit, window, flagged }]
+UsageLimits.clearFlag(subject, limitKey)              staff only
+UsageLimits.setOverride(subject, limitKey, limit)     staff only, with a reason
+```
+
+- **Limit definition** (setting): `limitKey`, subject type, window (calendar day in the platform time zone, Africa/Johannesburg), default limit, action on breach.
+- **Counter** per (subject, limit key, window), incremented with a conditional update (no-race invariant 15); counters for past windows are kept for reporting, then aged out.
+- **On the first breach in a window:** the subject is **flagged** and `UsageLimitReached { subjectType, subjectId, limitKey, window, used, limit }` is published through the outbox. **Notifications** sends a **system administrator** alert (a staff recipient, email); the flag is shown on the subject's record in the back office and the per-device support timeline, whichever device was used. Further breaches in the same window are counted but not alerted again.
+- **Callers decide what "not allowed" means** for their own work: the limit module never blocks requests itself.
+- **First limit:** `child.writtenAnswerInference.daily`, subject = **child** (not device, so it covers every device and the parent's app), default **300 written answers per day**. Prep's `Marking` calls `consume` before sending a written answer to a model (one count per answer, escalation included). Past the limit: the answer is **Close** with no model call; mechanical answers are still marked by code. The flag stays until staff clear it; the counter resets with the next window.
+- **Future limits** (e.g. sign-in attempts, link-code redemption, sessions started per day) are new definitions on the same module, with no new mechanism.
 
 ## Design Conventions
 Adopted 2026-11-16 (Phase 5); apply in every code review.
@@ -582,7 +604,7 @@ Deliberately deferred work (Phase 8, 2026-11-16). Each keeps its seam from day 1
 | 2026-11-16 | **One system of record, partitioned logically by context;** no cross-context writes or write-path joins | One team, one backup/restore; seams kept clean for a later split | Separate stores per context (multi-step processes across contexts; more backups) |
 | 2026-11-16 | **Assessment fact sets are re-resolved live** from the published catalogue at each session plan; mastery keyed by stable fact ID | Content corrections and importance changes reach children from the next session (AC-C28, P12) | Fixed snapshot at creation (ignores corrections) |
 | 2026-11-16 | **Responses record the exact question and rubric version** | Traceability and grader validation survive content changes | Reference the question only |
-| 2026-11-16 | **14 invariants enforced explicitly** (conditional updates, uniqueness, per-aggregate version checks), never by default isolation | Write skew passes single-user tests and fails under load | Rely on the store's default isolation |
+| 2026-11-16 | **14 invariants enforced explicitly** (15 since 2026-11-23: usage limits) (conditional updates, uniqueness, per-aggregate version checks), never by default isolation | Write skew passes single-user tests and fails under load | Rely on the store's default isolation |
 | 2026-11-16 | **Transactional outbox + at-least-once delivery + idempotent handlers** for all cross-context events and outbound emails | No lost or doubled alerts, credits or billing emails | Publish after commit (events lost on crash); distributed transactions |
 | 2026-11-16 | **Derived views computed on read or by scheduled batch;** readiness % maintained with mastery | Enough at this scale; nothing extra to keep in sync | Event-driven projections for every view |
 | 2026-11-16 | **Access and device revocation read live** from the system of record on every request. *Device-revocation part superseded 2026-11-16 by the 30-minute access-token decision below; Access is still read live.* | Suspension and revocation must apply on the next request (AC-A12, A15) | Cached copies in other contexts |
@@ -612,6 +634,8 @@ Deliberately deferred work (Phase 8, 2026-11-16). Each keeps its seam from day 1
 | 2026-11-22 | **Fact-core edits are marked minor or material** when approved: minor keeps its questions live (queued for Gate 2), material takes them out until Gate 2 | A typo fix shouldn't pull questions; a changed meaning must | Always keep live; always take out |
 | 2026-11-22 | **Ingestion runs automatically from upload to Gate 1,** per page version, through `ContentAI` submit/collect; results are recorded idempotently in any order and carry model, prompt version and cost. See [Content: ingestion pipeline](#content-ingestion-pipeline) | Batch results arrive out of order and hours later; teachers shouldn't wait on each other; re-extraction with better prompts stays possible | Curator-triggered steps; request/response AI calls |
 | 2026-11-22 | **Pipeline rules:** spreads are split and unclear page numbers go to a curator queue; extraction sees neighbouring pages and an anchor may span two consecutive pages; reconciliation searches the same language and subject across all grades; pages are read and extracted before the index tree is confirmed and placed once it is; rendered page images for people, original PDF pages for the AI | User decisions | Blocking uploads on the index tree; per-grade matching; AI reading rendered images |
+| 2026-11-23 | **Generic usage limits module;** first limit: 300 written answers sent to a model per child per day; past it, Close without a model call; first breach flags the child (any device) and alerts a system administrator. See [Usage limits](#usage-limits-generic) | Protects against a compromised device or account and runaway inference cost; one mechanism for future limits | Per-device limits (a compromised account uses several devices); per-endpoint rate limiting only |
+| 2026-11-23 | **Grading cost levers:** escalation trigger not narrowed until a quality baseline exists; escalation re-judges only the uncertain key points; prompt caching of fixed instructions; Peripheral facts escalate like others | Quality first, then tune from measured data; caching and partial re-judging cut cost without lowering quality | Narrow trigger or monthly escalation budget from day 1; skipping escalation for Peripheral facts |
 | 2026-11-23 | **Rubric format version 1 (O5):** the evaluator judges each key point and code decides the Verdict; partial credit by weights, required points and thresholds; fill-in-the-blank uncertain band → Close; mechanical types marked by code only. See [Content: rubric format](#content-rubric-format-catalogue-contract-format-version-1) | Feedback per key point, teacher-checkable grading, re-marking without model calls | The evaluator classifies whole answers (no reasons stored); listing allowed subsets of points; sending uncertain blanks to the model |
 | 2026-11-23 | **Grader stack:** Claude Haiku 5.5 primary (key-point judgements), Claude Sonnet 5.5 escalation when a required point is uncertain; TypeSafe Jev dropped (see TECH-STACK.md › Answer evaluation) | Jev classifies whole answers and can't judge key points; one vendor and one DPA | Jev primary with Haiku fallback (2026-11-16) |
 | 2026-11-23 | **No vector index (O3):** reconciliation uses a shortlist (old page anchors, then same CAPS subtopic trimmed by key-term text search) and one cheap-model call per page; duplicate questions use one cheap-model call per fact per run; the `SimilarityIndex` port is dropped | About one cheap call per page instead of ~200,000 vector lookups plus per-candidate expensive-model judgements; no extra extension or embedding model to run | pgvector with a multilingual embedding model (Afrikaans quality unknown) |
