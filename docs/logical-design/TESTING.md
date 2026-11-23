@@ -17,7 +17,7 @@ Most tests sit in the inner rings, where they are fast and need no I/O. Few end-
 | **Grader evaluation** | Verdict agreement with teacher marking **≥ 90%** (AC-E9) on a teacher-marked evaluation set of children's Afrikaans answers; rerun on any change to grader, prompt, rubric format or `AnswerEvaluator` provider | Evaluation set | On grader changes |
 | **Device & data budget** | 2 GB Android device runs sessions and animations smoothly; ≤ 5 MB per 15-min session (AC-G7, G8); web journeys on the browsers in AC-G7a | Real devices | Before pilot, then per release |
 
-**Grader spike (prototype, thrown away):** 3–5 days, before `Marking` is built for real. Run Haiku 5.5 with Sonnet 5.5 escalation against ~200 Afrikaans written answers marked by teachers per key point, and measure Verdict and key-point agreement and the escalation rate. The prototype code is discarded; the **evaluation set is kept** as the grader evaluation above.
+**Grader spike (prototype, thrown away):** 3–5 days, before `Marking` is built for real. Run Haiku 5.5 with Sonnet 5.5 escalation against ~200 Afrikaans written answers marked by curators per key point, and measure Verdict and key-point agreement and the escalation rate. The prototype code is discarded; the **evaluation set is kept** as the grader evaluation above.
 
 ## Safety Net Map
 | # | Flow | Test level | Status |

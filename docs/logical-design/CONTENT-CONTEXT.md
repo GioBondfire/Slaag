@@ -6,6 +6,15 @@ This document is the **inventory** of the Content context, from a source documen
 
 ---
 
+## 0. Roles
+
+| Role | May do |
+|---|---|
+| **Content curator** | All content work: register sources and standards, uploads, review queues (candidates, anchors, links, questions, problem reports), spot checks, question generation, exhibits and open alternatives, reviewer mode, retiring facts and questions |
+| **System administrator** | Anything, including brand content licensing, settings and usage-limit flags |
+
+"Actor" columns below name the least-privileged role; a system administrator can always act too. In AI review mode, "Curator" approvals happen for items the AI check doubts or samples for spot checks.
+
 ## 1. Scope
 
 | In scope | Out of scope (other contexts or later) |
@@ -127,9 +136,9 @@ VersionedItem<T>
 | `effectiveImportance(fact, scope, anchorPreference?)` | Strongest anchor in scope, or strongest of the preferred type; none → fact drops out | **Catalogue contract**: question generation and Prep |
 | `GenerationDefaultsPolicy` | Questions per fact by effective tier (~4 / 2 / 0–1) and types by fact type (AC-C13) | Question bank |
 | `MechanicalRubric` | Derives rubrics for mechanical types from the question (correct option, sequence, blank, ordering partial credit) | Question bank |
-| `LineageRules` | Merge: new fact takes all anchors and links (re-pointed; links among merged facts dropped). Split: anchors and links assigned by the teacher | Fact model |
+| `LineageRules` | Merge: new fact takes all anchors and links (re-pointed; links among merged facts dropped). Split: anchors and links assigned by the curator | Fact model |
 | `LivenessRules` | Fact, anchor, link and question liveness (see [ARCHITECTURE.md › the live catalogue](ARCHITECTURE.md#content-the-live-catalogue)) | Catalogue projection |
-| Review policies | **Reviewer mode** per textbook or subject: **AI review** (year-1 default: independent AI check of every item, confident → live, doubtful → curator queue, curator spot checks at a set rate) or **teacher review** (Gate 1 full; light review for anchors and link sets; Gate 2 full for judgement types, sampled `ReviewBatch` for mechanical types); placement auto-approved | Review & Versioning |
+| Review policies | **Reviewer mode** per textbook or subject: **AI review** (year-1 default: independent AI check of every item, confident → live, doubtful → curator queue, curator spot checks at a set rate) or **curator review** (Gate 1 full; light review for anchors and link sets; Gate 2 full for judgement types, sampled `ReviewBatch` for mechanical types); placement auto-approved | Review & Versioning |
 | `ReconciliationOrder` | Shortlist: the superseded page version's anchors first, then facts in the same language and subject mapped to the **same CAPS subtopic**, trimmed by key-term text search when large | Ingestion |
 | `RetryPolicy` | Which failures retry automatically (free steps; transient AI failures) and which wait for a curator; when a source pauses | Ingestion |
 
@@ -237,29 +246,29 @@ One use case per operation. Each loads aggregates, calls domain behaviour, saves
 ### 6.6 Gate 1: resolving candidates
 | Use case | Actor | Does |
 |---|---|---|
-| `ApproveCandidateAsNewFact` | Teacher | Creates `Fact`, its first `SourceAnchor` and `FactLinkSet` (approved) |
-| `AcceptCandidateMatch` | Teacher | Re-anchors an existing anchor or adds an anchor to an existing fact (light review); a proposed core change becomes a fact-core draft for full Gate 1 |
-| `CombineCandidates` | Teacher | Joins candidates into one before approval (no lineage) |
-| `EditCandidate` | Teacher | Edits statement, paraphrases, anchor details, importance or links before deciding |
-| `RejectCandidate` | Teacher | Rejects; no `FactId` is created |
-| `ResolveOrphanedAnchor` | Teacher | For an old anchor with no match after page replacement: retire it or re-anchor elsewhere; a fact left with no anchor is retired |
+| `ApproveCandidateAsNewFact` | Curator | Creates `Fact`, its first `SourceAnchor` and `FactLinkSet` (approved) |
+| `AcceptCandidateMatch` | Curator | Re-anchors an existing anchor or adds an anchor to an existing fact (light review); a proposed core change becomes a fact-core draft for full Gate 1 |
+| `CombineCandidates` | Curator | Joins candidates into one before approval (no lineage) |
+| `EditCandidate` | Curator | Edits statement, paraphrases, anchor details, importance or links before deciding |
+| `RejectCandidate` | Curator | Rejects; no `FactId` is created |
+| `ResolveOrphanedAnchor` | Curator | For an old anchor with no match after page replacement: retire it or re-anchor elsewhere; a fact left with no anchor is retired |
 
 ### 6.7 Fact maintenance (approved facts)
 | Use case | Actor | Does |
 |---|---|---|
-| `EditFactCore` | Teacher / curator | Opens (or joins) the one draft of the fact core |
-| `ApproveFactCore` | Teacher | Approves with `EditImpact` minor or material |
-| `MergeFacts` | Teacher | New fact from several; takes all anchors and links; lineage; `EditImpact` (default **material**); emits `FactsMerged` |
-| `SplitFact` | Teacher | New facts from one; teacher assigns anchors and links; lineage; `EditImpact` (default **material**); emits `FactSplit` |
-| `RetireFact` | Teacher | Retires a fact and its anchors |
+| `EditFactCore` | Curator | Opens (or joins) the one draft of the fact core |
+| `ApproveFactCore` | Curator | Approves with `EditImpact` minor or material |
+| `MergeFacts` | Curator | New fact from several; takes all anchors and links; lineage; `EditImpact` (default **material**); emits `FactsMerged` |
+| `SplitFact` | Curator | New facts from one; curator assigns anchors and links; lineage; `EditImpact` (default **material**); emits `FactSplit` |
+| `RetireFact` | Curator | Retires a fact and its anchors |
 
 ### 6.8 Anchors and links
 | Use case | Actor | Does |
 |---|---|---|
-| `EditAnchor` | Teacher / curator | Importance, region, CAPS override (light review) |
-| `ApproveAnchor` | Teacher | Light review approval |
-| `EditFactLinks` | Teacher / curator | Opens the link-set draft |
-| `ApproveFactLinks` | Teacher | Light review approval with `EditImpact` (e.g. a *part of* change is material for ordering questions) |
+| `EditAnchor` | Curator | Importance, region, CAPS override (light review) |
+| `ApproveAnchor` | Curator | Light review approval |
+| `EditFactLinks` | Curator | Opens the link-set draft |
+| `ApproveFactLinks` | Curator | Light review approval with `EditImpact` (e.g. a *part of* change is material for ordering questions) |
 
 ### 6.9 Question generation
 | Use case | Actor | Does |
@@ -273,19 +282,19 @@ One use case per operation. Each loads aggregates, calls domain behaviour, saves
 | Use case | Actor | Does |
 |---|---|---|
 | `OpenReviewBatches` | Event (`GenerationRunCompleted`) | One batch per source document for mechanical questions; draws the ~10% sample |
-| `ReviewSampledQuestion` | Teacher | Pass / fail (with edits) for a sampled question |
+| `ReviewSampledQuestion` | Curator | Pass / fail (with edits) for a sampled question |
 | `CloseReviewBatch` | Job | ≥95% → approve all; otherwise send all to the full queue |
-| `ReviewQuestion` | Teacher | Full review: approve, edit (question, model answer, rubric together), set difficulty, reject |
+| `ReviewQuestion` | Curator | Full review: approve, edit (question, model answer, rubric together), set difficulty, reject |
 | `RetireReplacedQuestions` | Event (`VersionApproved` in regenerate mode) | For each fact: once it has at least one approved replacement from the run **and** all the run's drafts for that fact are resolved, retires its old questions |
 | `RepointQuestionsAfterLineage` | Event (`FactsMerged` / `FactSplit`) | Re-points questions to the new fact(s) and sends them to Gate 2; held until then if the merge/split was material, live if minor |
-| `RetireQuestion` | Teacher or curator | Retires a question |
+| `RetireQuestion` | Curator | Retires a question |
 
 ### 6.11 Holds and problem reports
 | Use case | Actor | Does |
 |---|---|---|
 | `ReportProblem` | **Prep** (parent or child) | Records a report on a question version; at 3 open reports, holds it (AC-C21) |
-| `ResolveProblemReports` | Teacher | Reviews the question; releases the hold or edits/retires |
-| `HoldItem` / `ReleaseItem` | Policy / teacher | Generic hold handling |
+| `ResolveProblemReports` | Curator | Reviews the question; releases the hold or edits/retires |
+| `HoldItem` / `ReleaseItem` | Policy / curator | Generic hold handling |
 
 ### 6.12a Standards
 | Use case | Actor | Does |
@@ -307,12 +316,12 @@ One use case per operation. Each loads aggregates, calls domain behaviour, saves
 ### 6.12c Brand content licensing
 | Use case | Actor | Does |
 |---|---|---|
-| `GrantBrandContentLicence` / `RevokeBrandContentLicence` | Staff | Adds or removes a source (textbook or standard) for a brand; overlap allowed; emits `BrandContentLicenceChanged` |
+| `GrantBrandContentLicence` / `RevokeBrandContentLicence` | System administrator | Adds or removes a source (textbook or standard) for a brand; overlap allowed; emits `BrandContentLicenceChanged` |
 
 ### 6.12d AI review (reviewer mode)
 | Use case | Actor | Does |
 |---|---|---|
-| `SetReviewerMode` | Curator | AI review (year-1 default) or teacher review, per textbook or subject |
+| `SetReviewerMode` | Curator | AI review (year-1 default) or curator review, per textbook or subject |
 | `SubmitAiReview` | Job | Submits an independent AI check for each new or changed item (fact candidate, anchor, link set, question) |
 | `RecordAiReview` | Job (AI result) | Confident → approves (auto-approval logged as AI); doubtful → curator queue with reasons |
 | `DrawSpotCheckSample` | Scheduled job | Samples auto-approved items at the configured rate into the curator's spot-check queue |
@@ -364,7 +373,7 @@ Each one translates input, resolves the request context (actor, role), calls **o
 
 | Inbound adapter | Driven by | Calls |
 |---|---|---|
-| **Back-office server functions** (staff only, role-checked) | Curators, teachers | Sections 6.1–6.11 commands and 6.12 queries |
+| **Back-office server functions** (staff only, role-checked) | Curators, system administrators | Sections 6.1–6.11 commands and 6.12 queries |
 | **AI result collector** | Scheduled job | `CollectAiResults` → `Record…` use cases |
 | **Pipeline job handlers** | Job queue | `RenderPages`, `SubmitPageReading`, `SubmitExtraction`, `ProposeMatches`, `CompleteGenerationRun`, `CloseReviewBatch`, retries |
 | **Domain event handlers** | Outbox events | `PlacePages`, `OpenReviewBatches`, `RetireReplacedQuestions`, `RepointQuestionsAfterLineage`, `UpdateLiveCatalogue` |
@@ -412,19 +421,19 @@ plus the events `FactsMerged` and `FactSplit`. Never verbatim text, page images,
 **Re-photographed page**
 1. New upload with an existing page number → new page version; old one `Superseded`.
 2. Extraction and reconciliation look first at the old version's anchors.
-3. Teacher accepts matches (anchors move, `AnchorId` and `FactId` kept, light review); changed statements go to full Gate 1 with minor/material; unmatched old anchors are resolved.
+3. Curator accepts matches (anchors move, `AnchorId` and `FactId` kept, light review); changed statements go to full Gate 1 with minor/material; unmatched old anchors are resolved.
 4. Mastery is untouched; questions stay live unless an edit is material.
 
 **Curation over weeks, then one generation run**
-1. Ten PDFs ingested; teachers approve facts over two weeks.
+1. Ten PDFs ingested; curators approve facts over two weeks.
 2. Curator: `PreviewGeneration` with selection "ready for questions" across the ten source documents → `StartGenerationRun` (batch).
 3. Results recorded per source; `OpenReviewBatches` per source; judgement types to the full queue.
 4. Each passing batch and each approved question goes live at once.
 
 **Merge**
-1. Teacher: `MergeFacts(a, b)` → fact `c` with all anchors and links; `a`, `b` retired.
+1. Curator: `MergeFacts(a, b)` → fact `c` with all anchors and links; `a`, `b` retired.
 2. `FactsMerged` → Prep sets `c`'s mastery to the lower of `a` and `b` in every active assessment.
-3. Questions re-pointed to `c` and sent to Gate 2; held until approved, unless the teacher marked the merge minor.
+3. Questions re-pointed to `c` and sent to Gate 2; held until approved, unless the curator marked the merge minor.
 
 **Approval to live**
 1. `VersionApproved` → `UpdateLiveCatalogue` recalculates the item and its dependants.
@@ -437,16 +446,16 @@ plus the events `FactsMerged` and `FactSplit`. Never verbatim text, page images,
 ### Resolved (2026-11-23)
 | # | Point | Decision |
 |---|---|---|
-| O1 | Do questions stay live while re-reviewed after a merge or split? | A merge or split is treated as a **material** edit by default: its questions are held until Gate 2. The teacher can mark it **minor** to keep them live |
+| O1 | Do questions stay live while re-reviewed after a merge or split? | A merge or split is treated as a **material** edit by default: its questions are held until Gate 2. The curator can mark it **minor** to keep them live |
 | O2 | When regenerated questions retire the old ones | For each fact, when it has at least one approved replacement from the run **and** all the run's drafts for that fact are resolved |
-| O6 | Who may retire facts and questions, and resolve orphaned anchors | **Teacher reviewers** retire facts and resolve orphaned anchors; **teacher reviewers and curators** may retire questions |
+| O6 | Who may retire facts and questions, and resolve orphaned anchors | **Content curators** retire facts and resolve orphaned anchors; **content curators** may retire questions |
 | O7 | Index tree corrections after facts are live | Placement re-runs; anchors move nodes (auto-approved); index-node scopes in Prep re-resolve at the next session plan |
 | O3 | `SimilarityIndex` technology | **Dropped.** Reconciliation: shortlist (old page anchors; same CAPS subtopic, trimmed by key-term text search) + one cheap-model `MatchJudgement` per page. Duplicate questions: one cheap-model `DuplicateQuestionCheck` per fact per run. No vector index |
 | O5 | Rubric format | **Format version 1** in the catalogue contract: the evaluator judges each key point, code decides the Verdict; partial credit by weights, required points and thresholds; fill-in-the-blank uncertain band → Close. Grader: Haiku 5.5 primary, Sonnet 5.5 escalation |
 | O4 | Retries of failed pipeline steps | Free steps retry automatically (3 attempts, 1 min → 10 min → 1 h); AI steps retry automatically only for transient, usually uncharged failures (switchable); charged bad output waits for a manual retry; a source pauses after 5 failures in a row; manual retries show the estimated cost |
 
 | O8 | Page identity across editions | Optional curator-only **edition label** per upload; page identity (textbook, edition label, page number); facts from every edition merge as extra anchors; parents' page-range scopes resolve against the main edition |
-| O9 | Review with almost no teacher capacity in year 1 | **AI review** by default: independent AI check of every item (different prompt, ideally a different model); confident → live, doubtful → curator queue; curator spot checks at a set rate; problem reports as the safety net; **teacher review** switchable per textbook or subject. Applies to Gate 2 judgement types too |
+| O9 | Review with almost no reviewer capacity in year 1 | **AI review** by default: independent AI check of every item (different prompt, ideally a different model); confident → live, doubtful → curator queue; curator spot checks at a set rate; problem reports as the safety net; **curator review** switchable per textbook or subject. Applies to Gate 2 judgement types too |
 | O10 | Verbatim question basis | Allowed only for anchors in **open** sources |
 | O11 | Standards and language | One language-independent node with text per language; a later language's document is matched to existing nodes |
 | O12 | Where Standards live | A module inside the Content context |
