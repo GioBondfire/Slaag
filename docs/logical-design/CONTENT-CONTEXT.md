@@ -75,7 +75,11 @@ VersionedItem<T>
 
 | Aggregate | Identity | Holds | Invariants |
 |---|---|---|---|
-| **SourceDocument** | `SourceDocumentId` | Type (textbook first), title, publisher, edition/ISBN, grade, subject, **language**, cover | Language fixed once content exists; every fact anchored in it shares its language |
+| **SourceDocument** | `SourceDocumentId` | Type (**textbook** or **standard document**), title, publisher, edition/ISBN (informational; a textbook spans editions), grade, subject, **language**, cover, **openness (open / closed)** | Language fixed once content exists; every fact anchored in it shares its language |
+| **Standard** | `StandardId` | Name (e.g. CAPS), level names, **mapping depth**, openness | No versions; a material revision is a separate standard |
+| **StandardNode** | `StandardNodeId`, stable | Standard, level, parent, title, description, content items, optional metadata (teaching time, assessment weighting) | Depth ≤ the standard's mapping depth; created by confirming standard node candidates |
+| **Exhibit** | `ExhibitId` | Source page version + region, kind (diagram, table, graph, photo), caption, linked fact IDs, open alternatives (uploaded files, versioned and reviewed) | Learner-visible only if its source is open or it has an approved open alternative |
+| **BrandContentLicence** | (brand, source) | Brand, source document or standard | Catalogue and enrolment lists show only licensed sources per brand |
 | **IndexTree** | One per source document | Nodes term > topic > subtopic with page ranges; CAPS mapping per node; proposal, confirmation and correction history | Page ranges of sibling nodes don't overlap; confirmed by a person before placement runs; each correction re-runs placement |
 | **Upload** | `UploadId` | Source file ID + revision, tags (grade, source document, optional section and page ranges), uploader | Idempotent on (source file ID, revision) |
 | **Page** | (source document, printed page number) | Its page versions; the current one | At most one current page version; a newer version supersedes the old one |
@@ -102,7 +106,7 @@ VersionedItem<T>
 | `Importance` | Tier (Core / Supporting / Peripheral) + weight |
 | `EffectiveImportance` | `{ anchorId, tier, weight }` chosen for a fact in a scope |
 | `AnchorPreference` | Optional filter on position types (e.g. margin keywords only) |
-| `IndexNodeRef`, `CapsRef` | Place in the source's own index tree; CAPS cross-reference |
+| `IndexNodeRef`, `StandardNodeRef` | Place in the source's own index tree; reference to a node in a standard (e.g. CAPS) |
 | `Scope` | Index nodes or page ranges within one source document |
 | `FactSelection` | Ready for questions · approved since · by structure · hand-picked; across any source documents |
 | `ReconciliationProposal` | New fact · re-anchor existing anchor `AnchorId` · additional anchor on `FactId` · (optionally) a core change |
@@ -404,4 +408,11 @@ plus the events `FactsMerged` and `FactSplit`. Never verbatim text, page images,
 | O4 | Retries of failed pipeline steps | Free steps retry automatically (3 attempts, 1 min → 10 min → 1 h); AI steps retry automatically only for transient, usually uncharged failures (switchable); charged bad output waits for a manual retry; a source pauses after 5 failures in a row; manual retries show the estimated cost |
 
 ### Still open
-None. All Content open points are resolved.
+| # | Open point | Suggested direction |
+|---|---|---|
+| O8 | Page identity across editions (a shifted page in another edition would supersede the wrong page) | Optional curator-only **edition label** per upload; page identity (textbook, edition label, page number); page-range scopes resolve against the textbook's main edition |
+| O9 | Review with almost no teacher capacity in year 1 | Independent AI check as default reviewer; confident → auto-approved, doubtful → curator queue; sampled spot checks; problem reports as safety net; teacher review as a switchable policy |
+| O10 | Verbatim question basis for closed sources | Only for open sources, with a per-fact exception for short keyword definitions |
+| O11 | Standards and language | One language-independent node with text per language; each language's document matched to existing nodes |
+| O12 | Where Standards live | A module inside the Content context for now |
+| O13 | Withdrawing a textbook (legal request) | Parked until needed |
