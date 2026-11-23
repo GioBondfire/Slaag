@@ -38,7 +38,7 @@ All values below are **starting budgets** (2026-11-16), to be tuned from pilot m
 **Self-inflicted load**
 - [ ] Campaign landing pages served from the edge cache (a partner newsletter can reach hundreds of thousands of members at once). (Owner: team, P1)
 - [ ] Rate limits on checkout, sign-in (AC-A1a) and **link-code redemption** (guessing an 8-character code). (Owner: team, P1)
-- [ ] **Usage limits module** with the first limit: 300 written answers per child per day sent to a model; past it, Close; flag the child and alert a system administrator on the first breach (AC-E25, ARCHITECTURE.md › Usage limits). Candidates for later limits on the same module: sign-in attempts, link-code redemption, sessions per day. (Owner: team, P1)
+- [ ] **Usage limits module** with the first limit: 300 written answers per child per day sent to a model; past it, stop the child's sessions for the rest of the day; flag the child (staff only) and alert a system administrator on the first breach (AC-E25, ARCHITECTURE.md › Usage limits). Candidates for later limits on the same module: sign-in attempts, link-code redemption, sessions per day. (Owner: team, P1)
 - [ ] The session-due push fan-out is spread over 1–2 minutes through the queue. (Owner: team, P1)
 
 ## Health Checks & Metrics
