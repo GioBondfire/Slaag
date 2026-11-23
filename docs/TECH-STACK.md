@@ -250,7 +250,7 @@ The user's standing preferences for Slaag (2026-11-16). The decisions below star
   - **Decide by:** before the January 2027 pilot (the pilot validates AC-E9 at scale).
   - **If it fails:** the fallback LLM becomes primary for Afrikaans behind the same abstraction.
 - **POPIA:** children's answer text goes to US processors — sign TypeSafe's and Anthropic's DPAs, request zero retention, and send no names or identifiers: only question, model answer, rubric and answer text.
-- **Consequences:** no pgvector or embeddings needed for grading. The PRD's grader wording (Engine constraint, AC-E8, Technical Context) still says "similarity first" — amendment pending.
+- **Consequences:** no pgvector or embeddings needed for grading. The PRD's grader wording was amended on 2026-11-16 (Revision 13).
 - **Status:** decided (Afrikaans accuracy: research)
 
 ### API & contract
@@ -470,6 +470,7 @@ The user's standing preferences for Slaag (2026-11-16). The decisions below star
   - **Page reading:** source PDFs go directly to Claude Sonnet 5.5 (`claude-sonnet-5-5`, native PDF input), which transcribes each page verbatim with layout cues (headings, margin keywords, captions, diagram regions). Large production runs use the Message Batches API (50% cost, asynchronous); urgent ingestion uses the real-time API. No separate OCR engine for now.
   - **Content pipeline:** Claude Opus 5.5 (`claude-opus-5-5`) turns transcriptions into facts, tiers, links and tags, and generates questions with model answers and rubrics. Bulk runs use the Batch API; curator-initiated "generate more questions" uses the real-time API. Structured outputs validated against the Zod schemas.
   - **Fallback grader:** Claude Haiku 5.5 (`claude-haiku-5-5`), real-time, behind `AnswerEvaluationService`.
+  - **Matching and duplicate checks:** Claude Haiku 5.5 at batch rates — one call per page to match fact candidates against a shortlist of existing facts (same CAPS subtopic, old page version), and one call per fact per generation run to drop duplicate questions. No vector index or embedding model (decided 2026-11-23).
   - All calls go through pg-boss and a thin AI-client module in `packages/core`, so models and providers are configuration.
 - **Category:** Integrate
 - **Why:** one vendor and one DPA for all generative work; the Batch API halves the cost of non-urgent work; token cost for ~10,000 pages is small next to teacher review time, so quality (fewer Gate 1/Gate 2 edits) is worth paying for.
@@ -644,6 +645,7 @@ Rough monthly estimates, checked 2026-11-16 from third-party sources where noted
 | Amazon SES | <$5 | ~$10–30 | ~$0.10 per 1,000 emails |
 | Claude (ingestion, one-off) | ~$150–400 total | per new textbook | Opus 5.5 + Sonnet 5.5 at batch rates for ~10,000 pages (estimate) |
 | Claude Haiku 5.5 (fallback grading) | <$5 | <$30 | $0.10 / $0.50 per M tokens; only below Jev threshold |
+| Claude Haiku 5.5 (fact matching, duplicate questions) | <$5 | per new textbook | ~1 call per page + 1 per fact per generation run, batch rates (estimate) |
 | TypeSafe Jev | <$1 | <$10 | ~$0.042 per M input tokens |
 | Sentry | $0 | ~$26+ | Free developer tier, then team plan (confirm) |
 | Better Stack | $0 | ~$25+ | Free tier, then paid (confirm) |

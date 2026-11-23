@@ -93,7 +93,7 @@ All 8 phases done; team-topologies skipped (one team). Exit checklist:
 - [ ] Tech decision needed → docs/TECH-STACK.md: confirm the store's default isolation level, and the mechanisms for the 14 serialized-write invariants and the transactional outbox (owner: user, P1)
 - [ ] Define how long backups are kept, so erased family data ages out of backups within a stated period (POPIA; AC-A16–A17) (owner: user, P2)
 - [ ] Tech decision needed → docs/TECH-STACK.md: check the hosting/backup setup meets RPO 15 min and RTO 4 h, and schedule a restore test before the pilot (owner: user, P1)
-- [ ] Tech decision needed → docs/TECH-STACK.md: confirm how grader step 1 (similarity check, ~45/s in the burst) is computed and that the LLM grading provider's rate limits allow ~25 concurrent calls (owner: user, P1)
+- [ ] Tech decision needed → docs/TECH-STACK.md: confirm the first-step evaluation model handles ~45 written answers/s in the burst and that the LLM grading provider's rate limits allow ~25 concurrent calls (owner: user, P1)
 - [ ] Pilot: measure the real share of sessions starting in the same 15 minutes, the share of written answers going to the LLM, and LLM latency; revisit Phase 3 numbers (owner: user, due: Jan 2027, P2)
 - [ ] Have a contracted teacher confirm the Afrikaans words for the glossary terms (Fact, Verdict, Result, Readiness, Portion…) and add an Afrikaans column to the glossary (owner: user, P2)
 - [ ] Update PRD wording on the next revision to use Verdict / Result / Access (PRD uses "grade" and "mark" for answers) (owner: user, P3)

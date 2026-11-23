@@ -50,7 +50,7 @@ content/
     ports/                interfaces owned here (section 7)
   adapters/               ← ring 3
     inbound/              back-office server functions, job and event handlers, ContentCatalogue entry point
-    outbound/             repositories, ContentAI, SourceRepository, MediaStore, SimilarityIndex, publisher
+    outbound/             repositories, ContentAI, SourceRepository, MediaStore, publisher
 ```
 
 The **catalogue contract** (effective importance, rubric format, published shapes) is the one piece other contexts compile against. It is defined once and versioned ([ARCHITECTURE.md › Design Conventions](ARCHITECTURE.md#design-conventions): one source per contract).
@@ -126,7 +126,8 @@ VersionedItem<T>
 | `LineageRules` | Merge: new fact takes all anchors and links (re-pointed; links among merged facts dropped). Split: anchors and links assigned by the teacher | Fact model |
 | `LivenessRules` | Fact, anchor, link and question liveness (see [ARCHITECTURE.md › the live catalogue](ARCHITECTURE.md#content-the-live-catalogue)) | Catalogue projection |
 | Review policies | **Gate 1** (full: fact cores, new facts); **light review** (anchors, link sets); **Gate 2** (full for judgement types; sampled `ReviewBatch` for mechanical types); placement auto-approved | Review & Versioning |
-| `ReconciliationOrder` | Search the superseded page version's anchors first, then facts in the same language and subject across all grades | Ingestion |
+| `ReconciliationOrder` | Shortlist: the superseded page version's anchors first, then facts in the same language and subject mapped to the **same CAPS subtopic**, trimmed by key-term text search when large | Ingestion |
+| `RetryPolicy` | Which failures retry automatically (free steps; transient AI failures) and which wait for a curator; when a source pauses | Ingestion |
 
 ### 4.4 Domain events
 
@@ -156,8 +157,9 @@ Events leave through the transactional outbox ([ARCHITECTURE.md › Data & Consi
 ```
 Registered → Rendered → Reading → Read ─┬→ Placed → Extracting → Extracted → Reconciled → InReview → Resolved
                                         └→ FlaggedForRephoto
-any step → Failed (retry with backoff; after N attempts, curator alert)
+any step → Failed (automatic retry only for free steps and transient AI failures; otherwise manual)
 newer version of the same page → Superseded
+repeated failures in one source → that source's pipeline Paused until a curator resumes it
 ```
 `Placed` may be reached later than `Extracted` when the index tree is confirmed after upload; placement doesn't block extraction or review.
 
@@ -205,7 +207,9 @@ One use case per operation. Each loads aggregates, calls domain behaviour, saves
 | `SubmitPageReading` | Job | Submits a `PageReading` task (urgency from the upload) |
 | `RecordPageReading` | Job (AI result) | Stores transcription and layout; applies `PageQualityPolicy`; creates diagram crops |
 | `CollectAiResults` | Scheduled job | Collects finished AI tasks and hands each to its `Record…` use case |
-| `RetryFailedStep` | Job / curator | Retries a failed step with backoff; alerts after N attempts |
+| `RetryFailedStep` | Job (free steps; transient AI failures) / curator | Automatic only for steps with no AI cost and for transient, usually uncharged AI failures; otherwise manual, per page or in bulk, showing the estimated cost before confirming |
+| `PauseSourcePipeline` | Policy (repeated failures) | Pauses a source document's pipeline after the failure threshold and alerts the curator |
+| `ResumeSourcePipeline` | Curator | Resumes a paused source after investigation |
 
 ### 6.4 Placement
 | Use case | Actor | Does |
@@ -218,7 +222,7 @@ One use case per operation. Each loads aggregates, calls domain behaviour, saves
 |---|---|---|
 | `SubmitExtraction` | Job | Submits `CandidateExtraction` with neighbouring pages as context |
 | `RecordExtraction` | Job (AI result) | Creates `FactCandidate`s with anchors, signals, importance and links |
-| `ProposeMatches` | Job | Searches (`ReconciliationOrder`, `SimilarityIndex`), submits `MatchJudgement`s |
+| `ProposeMatches` | Job | Builds each candidate's shortlist (`ReconciliationOrder`: old page anchors, then same CAPS subtopic, trimmed by key-term text search) and submits **one** cheap-model `MatchJudgement` per page |
 | `RecordMatchJudgement` | Job (AI result) | Stores the `ReconciliationProposal` on the candidate; candidate enters Gate 1 |
 | `ReextractPages` | Curator | Re-runs extraction (e.g. new prompt) through the same reconciliation path |
 
@@ -254,7 +258,7 @@ One use case per operation. Each loads aggregates, calls domain behaviour, saves
 |---|---|---|
 | `PreviewGeneration` | Curator | Resolves the `FactSelection` and shows defaults per fact (effective importance, fact type) |
 | `StartGenerationRun` | Curator | Fixes selection, mode, overrides and urgency; submits `QuestionGeneration` tasks per fact or fact group per anchor source |
-| `RecordGeneratedQuestions` | Job (AI result) | Validates schema; checks model answers against source facts; derives mechanical rubrics; drops duplicates (`SimilarityIndex`, rejected included); creates question drafts |
+| `RecordGeneratedQuestions` | Job (AI result) | Validates schema; checks model answers against source facts; derives mechanical rubrics; drops duplicates (one cheap-model `DuplicateQuestionCheck` per fact against its existing questions, rejected included); creates question drafts |
 | `CompleteGenerationRun` | Job | Records counts and cost; emits `GenerationRunCompleted` |
 
 ### 6.10 Gate 2
@@ -280,7 +284,7 @@ Read models, not use cases; they don't load aggregates.
 
 | Query | Shows |
 |---|---|
-| `PipelineStatus` | Page versions per state per upload and source document; failures |
+| `PipelineStatus` | Page versions per state per upload and source document; failures with reasons; paused sources; AI cost so far |
 | `ReviewQueue(kind)` | Candidates (Gate 1), anchors and link sets (light), questions (Gate 2 full), sampled questions, problem reports |
 | `PageNumberQueue`, `UnplacedQueue`, `RephotoQueue` | Curator work queues |
 | `Coverage(sourceDocument)` | Pages uploaded / flagged / extracted, facts approved, questions generated / live, **facts with no live question anchored in this source**, unplaced pages (AC-C6) |
@@ -300,10 +304,9 @@ Read models, not use cases; they don't load aggregates.
 
 | Port | Operations (in short) | Boundary ([ARCHITECTURE.md › Boundary map](ARCHITECTURE.md#boundary-map)) |
 |---|---|---|
-| `ContentAI` | `submit(task, urgency) → TaskRef`; `collect() → [(TaskRef, Done(result) \| Failed(reason))]`; tasks: `IndexProposal`, `PageReading`, `CandidateExtraction`, `MatchJudgement`, `QuestionGeneration`, `ModelAnswerCheck` | Full + anti-corruption |
+| `ContentAI` | `submit(task, urgency) → TaskRef`; `collect() → [(TaskRef, Done(result) \| Failed(reason))]`; tasks: `IndexProposal`, `PageReading`, `CandidateExtraction`, `MatchJudgement`, `QuestionGeneration`, `ModelAnswerCheck`, `DuplicateQuestionCheck` | Full + anti-corruption |
 | `SourceRepository` | `fetch(fileId, revision) → document`; `revisionOf(fileId)` | Full |
 | `MediaStore` | `put(content) → contentHashedRef`; `urlFor(ref, audience)`; crop storage | Partial |
-| `SimilarityIndex` | `index(itemKind, id, text, filters)`; `nearest(text, filters, k) → [(id, score)]`; filters: language, subject, item kind, fact IDs | Full |
 | Repositories | One per aggregate: `SourceDocuments`, `IndexTrees`, `Uploads`, `Pages`, `FactCandidates`, `Facts`, `SourceAnchors`, `FactLinkSets`, `Questions`, `GenerationRuns`, `ReviewBatches`, `ProblemReports`; each with optimistic version checks | Full |
 | `JobQueue` | `enqueue(job, key)`, `schedule(job, when)`; idempotency key per job | Shared job service |
 | `EventPublisher` | `publish(event)` inside the same transaction (outbox) | Shared |
@@ -332,7 +335,6 @@ Each one translates input, resolves the request context (actor, role), calls **o
 | `ContentAI` | AI document reading and generation provider, batch and real time | Claude Sonnet 5.5 (page reading), Claude Opus 5.5 (extraction, matching, generation); Batch API for large runs |
 | `SourceRepository` | Source document repository | Google Drive (Shared Drive), service account |
 | `MediaStore` | Object storage + CDN | Cloudflare R2 + CDN |
-| `SimilarityIndex` | Meaning-based search | *Not yet chosen* (see open points) |
 | Repositories, projection | System of record | PostgreSQL |
 | `JobQueue` | Queue and scheduler | pg-boss, separate worker process |
 | `EventPublisher` | Transactional outbox | PostgreSQL outbox |
@@ -397,10 +399,10 @@ plus the events `FactsMerged` and `FactSplit`. Never verbatim text, page images,
 | O2 | When regenerated questions retire the old ones | For each fact, when it has at least one approved replacement from the run **and** all the run's drafts for that fact are resolved |
 | O6 | Who may retire facts and questions, and resolve orphaned anchors | **Teacher reviewers** retire facts and resolve orphaned anchors; **teacher reviewers and curators** may retire questions |
 | O7 | Index tree corrections after facts are live | Placement re-runs; anchors move nodes (auto-approved); index-node scopes in Prep re-resolve at the next session plan |
+| O3 | `SimilarityIndex` technology | **Dropped.** Reconciliation: shortlist (old page anchors; same CAPS subtopic, trimmed by key-term text search) + one cheap-model `MatchJudgement` per page. Duplicate questions: one cheap-model `DuplicateQuestionCheck` per fact per run. No vector index |
+| O4 | Retries of failed pipeline steps | Free steps retry automatically (3 attempts, 1 min → 10 min → 1 h); AI steps retry automatically only for transient, usually uncharged failures (switchable); charged bad output waits for a manual retry; a source pauses after 5 failures in a row; manual retries show the estimated cost |
 
 ### Still open
 | # | Open point | Agreed direction |
 |---|---|---|
-| O3 | `SimilarityIndex` technology and thresholds (reconciliation, duplicate questions) | Tech decision for TECH-STACK.md; thresholds as settings with decided defaults |
-| O4 | Retry count N and backoff for failed pipeline steps | Setting with a decided default |
 | O5 | Rubric format definition (already an open P1 action in the plan) | Define before question generation or `Marking` is built |
