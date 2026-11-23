@@ -1,6 +1,6 @@
 # Architecture
 
-Logical design only: technology-neutral. Components are named by role; technology choices live in [../TECH-STACK.md](../TECH-STACK.md). Requirements: [../PRD.md](../PRD.md).
+Logical design only: technology-neutral. Components are named by role; technology choices live in [../TECH-STACK.md](../TECH-STACK.md). Requirements: [../PRD.md](../PRD.md). Content context inventory (modules, layers, use cases, ports, adapters): [CONTENT-CONTEXT.md](CONTENT-CONTEXT.md).
 
 ## System Context
 
