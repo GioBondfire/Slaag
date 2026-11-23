@@ -1,6 +1,6 @@
 # Architecture
 
-Logical design only: technology-neutral. Components are named by role; technology choices live in [../TECH-STACK.md](../TECH-STACK.md). Requirements: [../PRD.md](../PRD.md).
+Logical design only: technology-neutral. Components are named by role; technology choices live in [../TECH-STACK.md](../TECH-STACK.md). Requirements: [../PRD.md](../PRD.md). Content context inventory (modules, layers, use cases, ports, adapters): [CONTENT-CONTEXT.md](CONTENT-CONTEXT.md).
 
 ## System Context
 
@@ -54,7 +54,7 @@ Source-code dependencies point inward only. Nothing in an inner ring names anyth
 |---|---|---|
 | 1. Domain | Entities and pure policies per module (e.g. `Assessment`, `PrepPlan` with its `PrepStrategy` plug-ins, `Importance`, `Mastery`, `Marking`) | Nothing outside the domain |
 | 2. Application | One use case per operation (e.g. `AddAssessment`, `RecalculateRunway`); request/response models; **ports** owned by the use case (repositories, gateways, `Clock`, `Notifier`, event publisher) | Domain |
-| 3. Adapters | Channel controllers and presenters (web, mobile API per version, back office); repository implementations; provider gateways and translators; event handlers; scheduled-trigger adapters | Application, Domain |
+| 3. Adapters | **Inbound adapters** (the outside calling in): web, mobile-API-per-version and back-office endpoints with their presenters; job, event and scheduled-trigger handlers. **Outbound adapters** (use cases calling out): repository implementations; provider gateways and translators; `MediaStore`, `Notifier` and publisher implementations | Application, Domain |
 | 4. Drivers | Frameworks, the data store, provider SDKs, the job runner; the **composition root** that wires every concrete implementation | Everything |
 
 **Data crossing boundaries.** Plain request/response models only. The data store's records, provider payloads and channel request objects never cross inward. Use cases return **message keys**, never text; presenters localise them to the family's language and brand.
@@ -68,7 +68,7 @@ Source-code dependencies point inward only. Nothing in an inner ring names anyth
 ### Boundary map
 | Part likely to change | Boundary | Why |
 |---|---|---|
-| Delivery channels (web, mobile API v1/v2, back office) | Full: controllers + presenters | Three channels already; the mobile API is versioned |
+| Inbound adapters (web, mobile API v1/v2, back office) | Full: one thin inbound adapter per entry point + presenters | Three channels already; the mobile API is versioned |
 | Transactional data store | Full: repository port per module | Core testable without the store; data outlives code |
 | Payment provider | Full + anti-corruption translator (`BillingGateway`, webhook translator) | Unusual states and webhooks; one merchant per brand; highest vendor risk |
 | AI content provider | Full: `ContentAI` port | Models and providers change fast; expensive work |
@@ -79,12 +79,12 @@ Source-code dependencies point inward only. Nothing in an inner ring names anyth
 | Clock, scheduled triggers | Partial: `Clock` port + trigger adapter | All date logic testable |
 | Brand and language | Resolved at the edge into the request context; the core sees IDs/keys only | PRD AC-B1: no code may assume a brand |
 | Prep strategies | Plug-in boundary inside the core | PRD AC-E20: add strategies without changing planner, grader or runner |
-| Plain reference data (school list, credit table, partner records) | Collapsed: controller → repository | No business rules to protect |
+| Plain reference data (school list, credit table, partner records) | Collapsed: inbound adapter → repository | No business rules to protect |
 
 ### First feature layered: "Add a test → suggest the next session"
 PRD AC-P1–P4, P9–P10, C11, E13–E14, O1.
 
-1. **Adapter:** the web or mobile-API controller resolves the request context and builds `AddAssessmentRequest { child, actor, type, subject, date, scope (index nodes | page ranges) }`.
+1. **Inbound adapter:** the web or mobile-API endpoint resolves the request context and builds `AddAssessmentRequest { child, actor, type, subject, date, scope (index nodes | page ranges) }`.
 2. **Use case `AddAssessment` (Prep, planning module):**
    - Access (whether this actor may act for this child) is already settled by the **request-context resolver** at the edge (Phase 5, S9); the use case asks Family's published interface whether the subject is active with a confirmed textbook.
    - **`ContentCatalogue`** (Content's published interface): scope → approved fact references with tier, weight, difficulty.
@@ -131,7 +131,8 @@ Parent dashboard, readiness views, partner reports and content coverage are **re
 
 | Upstream → Downstream | Pattern | What crosses |
 |---|---|---|
-| Content → Prep | Open Host Service + Published Language (**content catalogue**) | Approved, live versions only: fact references (tier, weight, difficulty, links), live questions with model answer and rubric, scope → fact-set resolution. Never pages, drafts or review state (PRD AC-C24) |
+| Content → Prep | Open Host Service + Published Language (**content catalogue**) | Approved, live versions only: scope → fact-set resolution; fact references with their **in-scope anchors** (anchor ID, page number, index node) and **effective importance** (`effectiveImportance`, defined once in the catalogue contract), difficulty, links and lineage; live questions with their **anchor IDs**, model answer and rubric. Never pages, verbatim text, drafts or review state (PRD AC-C24) |
+| Content → Prep | Domain events (Published Language) | `FactsMerged {from[], into}`, `FactSplit {from, into[]}`: Prep carries mastery over (see [Content: facts, anchors and lineage](#content-facts-anchors-and-lineage)) |
 | Prep → Content | Customer–Supplier | Problem reports on a question (AC-C21) |
 | Billing & Campaigns → all | Published Language | **Access** per brand membership (`AccessGranted` / `AccessSuspended`). Subscription states never leave Billing |
 | Payment provider → Billing | Anti-Corruption Layer | Provider subscriptions and webhooks translated into Billing events; provider terms never pass the translator |
@@ -150,13 +151,17 @@ Other aggregates are referenced by ID only; consistency between aggregates is ev
 |---|---|---|
 | Prep | **Assessment** | Holds the scope as selected plus the resolved fact set; exactly one active strategy, with history (parent's choice beats child's); portions are ordered and cover the scope; at most **one** suggested next session; after the date it stops suggesting and accepts one **Result** |
 | Prep | **PrepSession** | Scheduled → Started → Completed, or **Missed** 2 h after the scheduled time; holds its responses; LLM grading spend within the per-session cost cap |
-| Prep | **AssessmentMastery** | One estimate per fact per assessment, never carried over; changes only through graded responses; a **Close** Verdict is neutral (no change; the fact is asked again later); duplicate facts share an estimate; an elaborating fact is drilled only after its keyword is mastered. Kept apart from Assessment because it is written on every answer |
+| Prep | **AssessmentMastery** | One estimate per fact per assessment, never carried over to another assessment; changes only through graded responses, or through **fact lineage** (a split fact's children inherit its estimate; a merged fact takes the **lower** of its parents' estimates); a **Close** Verdict is neutral (no change; the fact is asked again later); an elaborating fact is drilled only after its keyword is mastered, **when the keyword fact is in the assessment's fact set**. Kept apart from Assessment because it is written on every answer |
 | Prep | **LearnerTuning** | One per child: strategy cut-offs and portion sizes |
 | Content | **Textbook** | Index tree confirmed once |
-| Content | **Page** | Re-upload replaces the page and sends its facts back to Gate 1 |
-| Content | **Fact** | 1–2 paraphrases; exactly one tier with a weight; typed links (elaborates / duplicates / part of / related) by fact ID; only approved facts feed generation |
-| Content | **Question** | Can't go live without an approved model answer and rubric, versioned together; ≥3 open problem reports hide it |
-| Content | **ReviewBatch** | Gate 2 sampling: ~10% sample with ≥95% pass, otherwise review the whole batch |
+| Content | **Page** | Identified by (source document, printed page number); each upload of it creates a **PageVersion** with its own pipeline state (see [Content: ingestion pipeline](#content-ingestion-pipeline)); a newer version supersedes the old one, and each anchor on the old version is re-matched to the new one (lightweight review, keeping its `AnchorId`) or left for a teacher to resolve |
+| Content | **Fact** | Stable `FactId`; the **fact core**: one canonical statement, 1–2 paraphrases, type, key terms; versioned and reviewed on its own, independently of its anchors; its typed links live in a separate `FactLinkSet`; a merge or split creates new `FactId`s and records lineage, and a merged fact keeps every anchor of the facts it replaces; only approved facts feed generation; created only by approving a `FactCandidate` |
+| Content | **SourceAnchor** | Its own aggregate, referencing one `FactId`; stable `AnchorId`; source document, page version, section, region, verbatim text, index and CAPS references, position type, signal, **tier and weight**; versioned and reviewed on its own, so one source can go live while another is still in review; re-anchoring, importance edits and region corrections create new anchor versions. A fact with no live anchor is in no scope |
+| Content | **FactCandidate** | Extraction output, reviewed at Gate 1; has no `FactId`. Carries a proposed statement, paraphrases, anchor (source, verbatim text, position type, signal, importance) and links, plus the reconciliation proposal (new fact / re-anchor an existing anchor / additional anchor on an existing fact). Resolved exactly once: approved as a new `Fact`, accepted as a match (anchor added to or moved on the existing fact), combined with other candidates, or rejected |
+| Content | **Question** | Records the **anchor(s)** it was written from; **live only while** its own approved version, the live core of each of its facts and **the anchors it was written from** are live (anchors in other sources don't matter); can't go live without an approved model answer and rubric, versioned together; ≥3 open problem reports hide it; re-pointed to the new fact and sent back through Gate 2 when its fact is merged or split |
+| Content | **FactLinkSet** | One per fact: its outgoing typed links (elaborates / part of with a position / related) to other facts by `FactId`; versioned and lightly reviewed as one item, apart from the fact core and anchors; no "duplicates" link (a restatement is another anchor on the same fact). A link is live only while both its facts are live (computed) |
+| Content | **GenerationRun** | Started only by a curator; a **fact selection** across any source documents (ready for questions, approved since, by structure, hand-picked); mode **generate more** or **regenerate**; options; urgency (batch or real time); logs who, when, selection, options, counts created / dropped as duplicate / dropped as invalid, model, prompt version, cost |
+| Content | **ReviewBatch** | One per **generation run and source document**: that run's mechanical-type questions for that source; ~10% sample with ≥95% pass, otherwise review the whole batch; none of them go live until the batch passes |
 | Billing | **Subscription** | One per brand membership; lifecycle state machine; each provider event applied exactly once and late events never move it to a wrong state; at most one overdue email and one suspension email per failure episode; at most one discount, a campaign discount once per family per brand; fee history |
 | Billing | **Campaign** | Sign-up window and cap; pausing or ending stops new sign-ups only |
 | Billing | **Partner** | Belongs to one brand |
@@ -175,11 +180,22 @@ Other aggregates are referenced by ID only; consistency between aggregates is ev
 | Assessment | A test or exam a child prepares for: type, subject, date, scope | `Assessment` |
 | Scope | What the user selected for an assessment: index nodes or page ranges | `Scope` |
 | Fact set | The approved facts a scope resolves to | `FactSet` |
-| Fact | A small, self-contained, verbatim statement from a textbook page; the unit of mastery | `Fact` (Content), `FactRef` (Prep) |
+| Fact | A small, self-contained statement of one idea, held as one canonical statement and found in one or more sources; the unit of mastery | `Fact` (Content), `FactRef` (Prep) |
+| Canonical statement | The fact's one authoritative wording, normally its primary anchor's verbatim text | `canonicalStatement` |
+| Source anchor | Where a fact appears: source document (with its metadata), page version, section and page region, with the verbatim text there, index node, CAPS node, position type, importance signal and importance | `SourceAnchor`, `AnchorId` |
+| Re-anchoring | Matching an existing anchor to a replaced page version, or adding an anchor in another source; reviewed lightly | `reanchor()` |
+| Fact lineage | Which retired facts a fact was merged or split from | `FactLineage` |
+| Effective importance | The importance of a fact within a scope: its strongest anchor in scope, or the strongest anchor of a preferred type | `effectiveImportance()` |
+| Anchor preference | An optional filter on anchor types for a prep or generation run (e.g. keywords only) | `AnchorPreference` |
 | Paraphrase | One of 1–2 restatements of a fact that keep its key terms | `Paraphrase` |
-| Importance tier / weight | Core, Supporting or Peripheral, plus a weight within the tier | `ImportanceTier`, `weight` |
-| Fact link | A typed relation: elaborates, duplicates, part of, related | `FactLink` |
-| Question | An item generated from fact(s), with a model answer and rubric | `Question` (Content), `LiveQuestion` (Prep) |
+| Importance tier / weight | Core, Supporting or Peripheral, plus a weight within the tier; held **per anchor** | `ImportanceTier`, `weight` |
+| Fact link | A typed relation between facts, independent of any source: elaborates (adds detail to a keyword fact's concept), part of (with a position), related. Restatements are anchors, not links | `FactLink`, `FactLinkSet` |
+| Version state | Draft → In review → Approved (live) → Superseded, or Rejected; per version | `VersionState` |
+| Hold | A reason an item is kept out of the catalogue (≥3 problem reports; material edit awaiting Gate 2) | `Hold` |
+| Fact candidate | A draft fact from extraction, awaiting Gate 1; has no fact ID until approved | `FactCandidate` |
+| Fact core | A fact's statement, paraphrases, type and key terms; versioned apart from its anchors | `FactCore` |
+| Minor / material edit | How an approved fact-core edit affects its questions: minor keeps them live (queued for Gate 2), material takes them out until Gate 2 | `EditImpact` |
+| Question | An item generated from fact(s) and written from specific anchor(s), with a model answer and rubric | `Question` (Content), `LiveQuestion` (Prep) |
 | Model answer | The answer written only from the source fact(s), shown after answering | `ModelAnswer` |
 | Rubric | Criteria defining Correct / Partial / Incorrect for a question | `Rubric` |
 | Verdict | The grader's outcome for one answer: Correct, Partial, Incorrect or Close (undecided) | `Verdict` |
@@ -224,7 +240,141 @@ One system of record, **partitioned logically by context**. Each context owns it
 **Traceability:** every learner response records the exact **question version and rubric version** used (AC-C22; grader-vs-teacher agreement, AC-E9).
 
 ### Fact set of an assessment: re-resolved live
-The `Assessment` keeps the scope as selected. Its fact set is re-resolved from the **current published catalogue** each time a session is planned. Mastery is keyed by a **fact ID that is stable across versions**: an edited fact keeps its mastery; a split or merged fact gets new IDs and starts fresh; a removed fact drops out; a newly approved fact enters as unmastered (AC-C28, AC-P12).
+The `Assessment` keeps the scope as selected. Its fact set is re-resolved from the **current published catalogue** each time a session is planned. Mastery is keyed by a **fact ID that is stable across versions and re-anchoring**: an edited or re-anchored fact keeps its mastery; a split or merged fact gets new IDs and **carries its mastery over** (children of a split inherit the parent's estimate; a merged fact takes the lower of its parents' estimates); a removed fact drops out; a newly approved fact enters as unmastered (AC-C28, AC-C29, AC-P12).
+
+### Content: facts, anchors and lineage
+Adopted 2026-11-22.
+
+```
+Fact (aggregate; stable FactId; merge or split creates new IDs and records lineage)
+ ├─ core: canonical statement, 1–2 paraphrases, type, key terms   (versioned)
+ ├─ links
+ └─ lineage: mergedFrom[] / splitFrom (retired FactIds)
+
+SourceAnchor (aggregate; stable AnchorId; references one FactId; versioned)
+      ├─ source: source document (+ metadata), page version, section, page region
+      ├─ verbatim text as it appears there
+      ├─ index node + CAPS cross-reference
+      ├─ position type + importance signal
+      └─ importance: tier + weight
+```
+
+- **A fact doesn't belong to a page; its anchors do.** Scope resolution goes scope → anchors on those pages or index nodes → their facts. Traceability (AC-C22) goes question → anchor(s) → fact → page version → upload → source document.
+- **Fact candidates:** extraction never creates facts. It creates `FactCandidate`s, and Gate 1 resolves each one: approve as a new fact (mints a `FactId`), accept the proposed match (re-anchor or additional anchor on an existing fact), combine with other candidates, or reject. Rejected candidates never get a `FactId`, and combining candidates is not a merge (no lineage, no mastery). Paraphrases live inside the `Fact`, reviewed and versioned with it.
+- **Two aggregates, two version streams:** the fact core and each anchor are versioned and reviewed independently. What is live for a fact is its live core version plus its live anchors. A draft never takes a live version offline: the previous approved version stays live until a new one is approved; only retiring or hiding removes it.
+- **What a candidate matched to an existing fact can propose:** a new or moved anchor (light review: verbatim text, region, index node, importance); a change to the fact core (full Gate 1); or, unmatched, a new fact (full Gate 1).
+- **Question live rule:** a question is live while its own approved version, the live core of each of its facts and the anchors it was written from are live. Work on another source never takes it offline.
+- **Minor vs material fact-core edits:** whoever approves a fact-core edit marks it **minor** (its questions stay live and are queued for Gate 2) or **material** (its questions come out of the catalogue until Gate 2 clears them).
+- **Links describe knowledge, not layout:** all link types are between facts and hold in every source. Page layout (body text repeating a margin keyword) is only the extraction signal for proposing *elaborates*. How a source presents a fact (e.g. as a margin keyword) lives on its anchor. Prep applies the elaborates gate only when the keyword fact is in the assessment's fact set.
+- **No "duplicates" link:** where the same knowledge appears twice, it is one fact with two anchors.
+- **Publishing is per item:** a fact, question or edit goes live as soon as its version is approved; there are no catalogue releases. Prep sees it from the next session plan; caches stay keyed by item version.
+- **Page replaced:** extraction of the new page produces candidates; reconciliation (AI proposes, a teacher confirms) matches each to an existing anchor, which moves to the new page version and keeps its `AnchorId` and `FactId`. This **re-anchoring** gets a lightweight "confirm match" review; a changed canonical statement goes through full Gate 1, and its questions through Gate 2. Unmatched candidates become new facts; an old anchor with no match is resolved by a teacher (retire it, or re-anchor elsewhere); a fact left with no anchor is retired.
+- **Additional source:** a new anchor is attached to the existing fact instead of creating a second fact (lightweight review).
+- **Merge:** creates a new `FactId` that takes over **every anchor** of the merged facts; the old facts are retired with `mergedInto`. A merge or split counts as a **material** edit by default (its questions are held until Gate 2), unless the teacher marks it minor. **Split:** creates new `FactId`s; the teacher assigns or divides the anchors. Both publish lineage events, and the catalogue exposes lineage as the source of truth if an event is missed.
+- **Mastery carry-over** (owned by `Mastery` in Prep, idempotent, for every active assessment holding the old facts): a split fact's children **inherit** its estimate; a merged fact takes the **lower** of its parents' estimates.
+- **Effective importance** is defined once, in the catalogue's published contract: `effectiveImportance(fact, scope, anchorPreference?) → { anchor, tier, weight }`. With no preference, the **strongest anchor in scope** wins; with a preference (e.g. margin keywords only), the strongest anchor of that type wins, and a fact with no such anchor in scope drops out. Content uses it for generation defaults (AC-C13); Prep uses it for prep plans.
+- **Questions record the anchor(s) they were written from.** Prep only uses questions whose anchors are in the source document the child is enrolled with for that subject. When a fact is merged or split, its questions are re-pointed to the new fact and go back through Gate 2.
+- **Merge and split rewire links:** a merged fact takes the links of every merged fact, re-pointed to its new ID, and links between the merged facts are dropped; on a split, the teacher assigns each link to one of the new facts.
+- **Coverage** includes, per source document, the facts in scope that have **no live question anchored in that document**; generation for that document closes the gap.
+
+### Content: ingestion pipeline
+Adopted 2026-11-22. Everything from upload to Gate 1 runs **automatically**; only question generation is curator-initiated (AC-C12).
+
+```
+0. Textbook setup   RegisterSourceDocument → UploadTableOfContents
+                    → [AI] ProposeIndexTree (+ CAPS mapping) → ConfirmIndexTree
+1. Intake           RegisterUpload(sourceFileId, revision, tags) → RenderPages
+2. Reading          [AI] ReadPage → layout blocks + printed page number(s) + quality
+3. Quality & place  PageQualityPolicy → Read | FlaggedForRephoto;  page number → index node
+4. Extraction       [AI] ExtractCandidates → FactCandidates (anchor, importance signal, links)
+5. Reconciliation   [search + AI] ProposeMatches → new / re-anchor / additional anchor
+6. Gate 1           Review & Versioning
+```
+
+**PageVersion states**
+```
+Registered → Rendered → Reading → Read ─┬→ Placed → Extracting → Extracted → Reconciled → InReview → Resolved
+                                        └→ FlaggedForRephoto (blur, skew, glare, cut-off)
+any step → Failed (retried with backoff; after N attempts, a curator alert)
+newer PageVersion of the same page → Superseded (unfinished AI work discarded)
+```
+
+- **Intake** is idempotent per (source file ID, revision). Pages are rendered to images in `MediaStore` (content-hashed) for reviewers and diagram crops; the AI reads the **original PDF pages**.
+- **Page identity:** reading detects the printed page number(s). A photo of a **spread** is split into two page versions; a page whose number is unclear goes to a curator **"assign page number"** queue.
+- **Index tree not a gate:** pages are read, extracted and reconciled before the index tree is confirmed. `IndexTreeConfirmed` (and every later tree correction) triggers **`PlacePages`** for all read page versions of that textbook: page → index node from the tree's page ranges; anchor → index node from its page and region, splitting a page at the headings captured during reading when a subtopic changes mid-page (an anchor spanning two pages goes by its start); the anchor's CAPS cross-reference comes from its node unless a teacher set one. Placement creates a new anchor version that is **auto-approved** (derived from a confirmed tree), or fills in a draft anchor. Unclear cases (no heading to split on, an anchor between nodes) and pages outside every range go to a curator **"unplaced"** queue, counted in coverage. **Anchors can go live before they are placed:** page-range scopes include them at once, index-node scopes once placed; Prep picks this up at the next session plan.
+- **Extraction** runs per page with the neighbouring pages' transcripts as context; an anchor's region may span **two consecutive pages**.
+- **Reconciliation** looks for a match first among the anchors on the superseded version of the same page, then among existing facts in the **same language and subject, across all grades** (`SimilarityIndex`), with an AI `MatchJudgement` proposing new / same / same with a core change. A teacher always confirms at Gate 1.
+- **`ContentAI` port:** `submit(task, urgency) → TaskRef` and `collect() → [(TaskRef, Done(result) | Failed(reason))]`, for `IndexProposal`, `PageReading`, `CandidateExtraction`, `MatchJudgement`. The adapter picks batch or real-time from `urgency`, batches tasks, and translates results into Content types; prompts and provider IDs stay inside it.
+- **Out-of-order results:** a collector job hands each result to its `Record…` use case. Each page version advances independently; recording is idempotent per (page version, task kind, attempt); results for a superseded page version are ignored.
+- **Provenance:** every AI output records model, prompt version and cost, so pages can be re-extracted with better prompts (through the same reconciliation path) and cost is known per textbook.
+
+### Content: question generation
+Adopted 2026-11-23. Generation is decoupled from uploads: a run selects **approved facts**, however and whenever they were approved.
+
+```
+StartGenerationRun(selection, mode, options, urgency)        ← curator only (AC-C12)
+  → resolve: approved facts with live anchors in the selected sources
+  → defaults: effectiveImportance + fact type → GenerationDefaultsPolicy
+  → curator overrides (counts per fact, types, basis, anchor preference)
+  → [AI] QuestionGeneration tasks via ContentAI (Batch API for large runs, real time for small or urgent ones)
+  → RecordGeneratedQuestions: validate → model-answer check → derive mechanical rubrics → duplicate check
+  → draft Questions → Gate 2 (judgement types: full queue; mechanical: the run's ReviewBatch per source document)
+```
+
+- **Fact selection** (any source documents): **ready for questions** (approved facts with a live anchor that has no questions yet), **approved since** a date or the last run, **by structure** (source documents, index nodes, page ranges), or **hand-picked**. Facts still in Gate 1 are skipped and picked up by a later run.
+- **Per anchor:** questions are written from anchors, so a fact with anchors in two selected sources gets questions for each.
+- **Units:** single facts (definitions, multiple choice, true/false, fill in the blank, "why"); **fact groups** for ordering and missing-step questions (one *part of* group) and paragraph questions (several linked facts). Every fact in a group needs a live anchor in the same source.
+- **Basis:** paraphrase (default) or **verbatim, meaning the anchor's verbatim text** (the wording in that textbook), not the canonical statement.
+- **Draft question** carries type, proposed difficulty, fact IDs, **anchor IDs**, basis, model answer citing its facts, and rubric in the catalogue contract's format.
+- **Checks:** schema validation; a second AI pass checks **every** model answer contains nothing beyond its source facts (AC-C15a), failures dropped and counted; **mechanical rubrics are derived by code** from the question (correct option, sequence, blank, partial credit for ordering), never written by the AI.
+- **Duplicates:** existing questions on the same facts, **including rejected ones**, are sent to the AI as "avoid these"; afterwards a `SimilarityIndex` check drops anything too close, and logs it.
+- **Modes:** **generate more** keeps existing questions and adds new ones (AC-C16); **regenerate** creates new drafts for the selected facts and **retires the old questions only once their replacements pass Gate 2**, so a fact is never left without live questions (use after a material edit, a better prompt or a rubric format change).
+
+### Content: the live catalogue
+Adopted 2026-11-23. Content is **ready for consumption** when it is in the live catalogue.
+
+- **A stored projection** (read model) inside Content, updated from `VersionApproved`, `ItemHeld`, `ItemReleased` and `ItemRetired`, and rebuildable from scratch. It **stores liveness**: on every change, the dependent items are recalculated, so Prep reads a plain live set.
+- **Liveness rules:** a fact is live while its core version is approved and it is not held or retired; an anchor while its own version is approved and its fact is live; a link while both its facts are live; a question while its own approved version is not held or retired, its facts' cores are live and the anchors it was written from are live.
+- **Published interface:**
+```
+resolveScope(sourceDocument, scope, anchorPreference?)
+  → FactRef[] { factId, effectiveImportance {anchorId, tier, weight},
+                anchors in scope {anchorId, page number, index node}, links, lineage }
+
+sessionBundle(sourceDocument, factIds, constraints)
+  → LiveQuestion[] { questionId, version, type, prompt, options, diagram crop URL,
+                     modelAnswer, rubric + rubricVersion, factIds, anchorIds, difficulty }
+
+lineage(factIds) → mergedInto / splitInto
+reportProblem(questionId, version, reason)
+```
+- **Never returned:** verbatim text, page images, drafts or review state (AC-C24). **Page numbers and index nodes are returned**, so Prep can point a child to their own textbook pages (Incremental "learn").
+- **Caching:** approved versions never change, so items are cached by (ID, version) with no invalidation; scope resolution queries the projection directly (about 180k facts).
+
+### Content: review and versioning
+Adopted 2026-11-22. One general **Review & Versioning** module (consolidation S10) serves every versioned item: the **fact core**, each **source anchor**, each fact's **link set**, and each **question** (with its model answer and rubric versioned together). A `FactCandidate` is not versioned; it is resolved once.
+
+| State | Values | Kept |
+|---|---|---|
+| **Version state** (per version) | Draft → In review → Approved, or Rejected; an approved version becomes Superseded when a newer one is approved | Stored, append-only |
+| **Item availability** (per item) | Live; **Held** with a reason (≥3 open problem reports; material edit awaiting Gate 2); **Retired** | Holds and retirement stored; whether dependencies are live is **computed** in the catalogue projection |
+
+```
+propose(item, content, basedOn: version) → draft version
+submit(version)                          → enters the queue its policy chooses
+approve(version, reviewer, edits?, editImpact?)
+reject(version, reviewer, reason)
+hold(item, reason) / release(item, reason) / retire(item, reason)
+liveVersion(item)
+```
+
+- **Policies per item type** decide review depth, the reviewer role and what approval triggers: **Gate 1** (full) for fact cores and new facts; **light review** for anchors and link sets; **Gate 2** for questions (judgement types fully reviewed; mechanical types in one `ReviewBatch` per generation run and source document, sampled).
+- **One draft at a time per item.** A further edit joins the open draft or waits. Approving a draft based on version N when N+1 is live is refused; the editor rebases.
+- **Reviewers may approve their own edits** made while reviewing (AC-C10). Edits made outside review (e.g. by a curator) go to a reviewer's queue.
+- **Minor / material** applies to fact-core and link-set edits: material (e.g. adding or removing a step in a *part of* group) holds the affected questions until Gate 2; minor keeps them live and queues them for Gate 2.
+- **A draft never takes a live version offline;** only a hold or retirement does. Rolling back approves a new version copying an old one.
+- **Every transition is logged** (who, when, from, to, reason).
+- The module publishes `VersionApproved`, `ItemHeld`, `ItemReleased`, `ItemRetired`; the catalogue projection and its per-version cache update from them.
 
 ### Paths that must not race (serialized writes)
 Every rule is enforced **explicitly**, by a conditional update, a uniqueness rule or a per-aggregate version check. None relies on the store's default isolation level.
@@ -272,7 +422,7 @@ Each context exposes one small published interface that hides a lot behind it; p
 | Context | Published interface (in short) | Hides |
 |---|---|---|
 | Prep | add/change assessment, switch strategy, start/finish session, submit answer, record result, dashboard queries | Planning, strategies, importance, mastery, marking, LLM grading, cost cap |
-| Content | `ContentCatalogue`: resolve scope, session bundle, report a problem; back office: upload, review, generate, publish | AI pipeline, versioning, review gates, page reading, image storage |
+| Content | `ContentCatalogue` (see [Content: the live catalogue](#content-the-live-catalogue)): resolve scope (facts with in-scope anchors and `effectiveImportance`), session bundle (questions anchored in the child's source document), fact lineage, report a problem; back office: upload, review, re-anchor, generate, publish | AI pipeline, versioning, review gates, page reading, reconciliation, image storage |
 | Billing & Campaigns | checkout, handle provider event, cancel, reactivate, start card update, `access(membership)` | Lifecycle state machine, provider quirks, discounts, reversion |
 | Identity & Access | sign-in flows, issue/redeem link code, refresh device access token, revoke device, authenticate request | Provider sign-in, credentials, token issuing and verification, rate limits |
 | Family | register, add child, enrol subject, directory queries | Consent, memberships, schools |
@@ -285,7 +435,7 @@ Each context exposes one small published interface that hides a lot behind it; p
 |---|---|---|---|
 | S1 | Planning split into steps by time, as thin classes sharing the same knowledge | Prep | One deep **`PrepPlan`**: `plan(assessment, mastery, today) → decision {strategy, portion, nextSession, messageKeys}`; strategies are plug-ins inside it (AC-E20); runway never leaves it |
 | S2 | Grading knowledge leaking through the rubric format between Content and Prep | Content ↔ Prep | One **`Marking`** module in Prep: `mark(liveQuestion, answer, sessionBudget) → Verdict` for all question types; the rubric format is defined once, versioned, in the content catalogue's published contract |
-| S3 | Importance semantics duplicated across runway, selection, spacing, last-minute exclusion, readiness, weak keywords | Prep | One **`Importance`** policy turns tier + weight into priority, spacing and readiness weight; Content only assigns tiers and weights |
+| S3 | Importance semantics duplicated across runway, selection, spacing, last-minute exclusion, readiness, weak keywords | Prep (+ catalogue contract) | Choosing which anchor's importance applies is **`effectiveImportance`**, defined once in the catalogue contract and used by both Content (generation defaults) and Prep. One **`Importance`** policy in Prep turns the effective tier + weight into priority, spacing and readiness weight; Content only assigns tiers and weights per anchor |
 | S4 | Fact-link semantics re-implemented in several places | Prep | Hidden inside one **`Mastery`** module (`record`, `estimate`, `readiness`); Content only stores typed links |
 | S5 | One port per need between contexts → thin pass-throughs | All contexts | **One published interface per context** (table above); `LearnerTuning` internal to Prep |
 | S6 | Brand/language lookup and fallback repeated in every channel | All channels | One **`Messages`** module (Platform Config) used by every presenter and template |
@@ -302,12 +452,13 @@ Each context exposes one small published interface that hides a lot behind it; p
 Adopted 2026-11-16 (Phase 5); apply in every code review.
 
 - [ ] **Domain names only.** Name modules, types, methods and events after [glossary](#domain-glossary-ubiquitous-language) concepts. Never `Manager`, `Helper`, `Util`, `Processor`. A name that resists is a design signal: raise it, don't work around it.
-- [ ] **Behaviour lives in aggregates;** use cases only coordinate (load, call, save, publish). No business rule in controllers, presenters, handlers or jobs.
+- [ ] **Behaviour lives in aggregates;** use cases only coordinate (load, call, save, publish). No business rule in inbound adapters, presenters, handlers or jobs.
 - [ ] **One module per piece of knowledge.** If a change forces edits in two modules in lockstep, merge them or extract the shared knowledge.
 - [ ] **Interface comments first.** Before implementing a module or published interface, write what it promises (inputs, outputs, invariants, failure behaviour), not how it works.
 - [ ] **Settings have decided defaults in one place** (e.g. `PrepSettings`); no new configuration parameter without a default and a reason.
 - [ ] **Jobs and event handlers are thin triggers** that call a use case, and are idempotent (see [Data & Consistency Decisions](#data--consistency-decisions)).
 - [ ] **Code in English, using the glossary's code names;** user-facing text only through `Messages`.
+- [ ] **Inbound and outbound adapters.** Everything that calls into a context goes through an **inbound adapter**: our own web app, Android app and back office included, since "external" means outside the core, not a third party. Everything a use case calls out to goes through a port implemented by an **outbound adapter**. Inbound adapters do one translation step only: validate input, resolve the request context, call one use case (or one query service), and present the result. No controller → handler → use-case stacks; in TanStack Start the server function *is* the inbound adapter. Calls between contexts in the same process go straight to the other context's published interface, with no serialisation. Commands go through use cases; screens that only read may call a query service over a read model directly. Don't name anything "delivery" or "mediator".
 - [ ] **Every outside service sits behind an interface we own** (table below). Provider IDs, prompts and payload formats live only in the adapter; the domain never stores a provider's own identifiers. Forking-road test: any provider can be swapped within a week.
 - [ ] **One source per contract:** the mobile API contract, domain event schemas, the rubric format and settings are each defined once; server and Android types are generated from that one source.
 - [ ] **Design by contract:** aggregates assert their invariants and fail immediately and loudly; every request is validated against its contract at the edge.
@@ -323,6 +474,8 @@ Adopted 2026-11-16 (Phase 5); apply in every code review.
 | `Clock`, `EventPublisher` (outbox), `FeatureFlags` | All | 2 (tracer bullet) |
 | `IdentityProvider` (social sign-in) | Identity & Access | 2 |
 | `MediaStore` | Content | 3 |
+| `SourceRepository` (source PDFs by file ID + revision) | Content | 2 |
+| `SimilarityIndex` (meaning-based search: reconciliation, duplicate questions) | Content | 2 |
 
 ### Change impact (orthogonality)
 | Change | Modules touched | Guard |
@@ -334,12 +487,12 @@ Adopted 2026-11-16 (Phase 5); apply in every code review.
 | Swap a provider | One adapter | Adapter contract tests |
 | Rubric format change | Catalogue contract version + `Marking` | Rubric version contract tests |
 | **New question type** | Content generation + `Marking` + client rendering (3 places; inherent to the problem) | Question type defined once in the catalogue contract; clients render from it |
-| Mobile API change | Channel adapter; versions N and N-1 supported | Mobile API contract tests (N, N-1) |
+| Mobile API change | Mobile-API inbound adapter; versions N and N-1 supported | Mobile API contract tests (N, N-1) |
 
 ## v1 Scope & Staging
 Signed off 2026-11-16 (Phase 8). The time is fixed (pilot January 2027, launch February 2027); scope was cut to fit, never the expensive-to-reverse decisions.
 
-**Never cut (expensive to reverse; all in v1):** brand and language resolved at the edge, with no hard-coded text or brand; one parent identity across brands with per-brand memberships; stable fact IDs, immutable content versions, responses recording question and rubric versions; outbox, idempotency and the 14 no-race invariants; Access as Billing's only published state; device linking; POPIA consent and self-service family deletion; outcomes (Results, strategy history) recorded from day 1.
+**Never cut (expensive to reverse; all in v1):** brand and language resolved at the edge, with no hard-coded text or brand; one parent identity across brands with per-brand memberships; stable fact and anchor IDs, fact lineage with mastery carry-over, immutable content versions, responses recording question and rubric versions; outbox, idempotency and the 14 no-race invariants; Access as Billing's only published state; device linking; POPIA consent and self-service family deletion; outcomes (Results, strategy history) recorded from day 1.
 
 | Stage | In scope |
 |---|---|
@@ -375,7 +528,7 @@ Deliberately deferred work (Phase 8, 2026-11-16). Each keeps its seam from day 1
 | Date | Decision | Why | Alternatives rejected |
 |---|---|---|---|
 | 2026-11-16 | **Modular monolith:** one deployable codebase and one system of record, with strict module boundaries; background work may run as a separate process from the same codebase | One small team; no proven context seams yet; keeps refactoring across modules cheap | Separate services (e.g. Content and Prep Engine deployed alone): operational load for one team, and a distributed monolith if seams are wrong |
-| 2026-11-16 | **Dependency Rule enforced through ports owned by use cases;** full boundaries at delivery, data store, payment provider, AI content provider and LLM grader; partial at notifications, identity, object storage and clock; collapsed for plain reference data | Full boundaries go where change or vendor risk is likely; the rest avoids ceremony | Collapse the data-store boundary (core not testable without the store); full boundaries everywhere (ceremony with no protection) |
+| 2026-11-16 | **Dependency Rule enforced through ports owned by use cases;** full boundaries at inbound adapters, data store, payment provider, AI content provider and LLM grader; partial at notifications, identity, object storage and clock; collapsed for plain reference data | Full boundaries go where change or vendor risk is likely; the rest avoids ceremony | Collapse the data-store boundary (core not testable without the store); full boundaries everywhere (ceremony with no protection) |
 | 2026-11-16 | **Brand and language resolved at the edge;** the core handles IDs and message keys only | Multi-brand and multi-language from day 1 without code changes (PRD AC-B1, X1) | Brand/language checks inside use cases (leaks "Slaag" and language assumptions inward) |
 | 2026-11-16 | **Modules interact only through published use cases and domain events** | Keeps future service seams open; prevents a shared-data monolith | Shared access to tables across modules |
 | 2026-11-16 | **Eight bounded contexts:** Prep, Content, Family, Billing & Campaigns, Identity & Access, Rewards, Notifications, Platform Config | Each has its own language and changes for its own reasons | One unified model (contradictory "Child", "Subscription", "Fact") |
@@ -416,3 +569,22 @@ Deliberately deferred work (Phase 8, 2026-11-16). Each keeps its seam from day 1
 | 2026-11-16 | **Not built for v1 (deferred with triggers):** per-child tuning, statistical knowledge tracing, "label the diagram" questions, retention deletion job, second-brand rehearsal, bulk importance edit, full coverage dashboard; see [Debt Ledger](#debt-ledger) | No data, no users or no deadline needs them before launch; each keeps its seam | Building them before the pilot |
 | 2026-11-16 | **Mastery starts as a simple, explainable rule** behind the `Mastery` interface | Nothing to fit a statistical model to before the pilot; the interface doesn't change when it is swapped | Statistical knowledge tracing before the pilot |
 | 2026-11-16 | **No circuit breaker:** if pilot readiness is at risk, the pilot date moves rather than scope | User decision | Pre-agreed order of cuts from pilot to launch |
+| 2026-11-22 | **Facts have one or more source anchors;** a source is a source document with its metadata, page version, section and region; each anchor holds its own verbatim text and its own importance; the fact holds one canonical statement. See [Content: facts, anchors and lineage](#content-facts-anchors-and-lineage) | Fact IDs (and mastery) survive re-photographed pages and additional sources; importance can differ by source and be chosen at consumption | Facts owned by one page (re-upload resets mastery); importance per fact (loses source-specific signals) |
+| 2026-11-22 | **Re-anchoring keeps fact and anchor IDs and gets a lightweight review;** a changed canonical statement still gets full Gate 1 | Teacher time goes to real changes | Full Gate 1 for every fact on a replaced page |
+| 2026-11-22 | **Merge and split create new fact IDs, record lineage and carry mastery over:** split children inherit, a merge takes the lower estimate; a merged fact keeps all anchors of the facts it replaces | Mastery continuity is crucial (user decision); the lower estimate never overstates readiness | Starting fresh (replaces the 2026-11-16 rule); keeping one old ID on merge |
+| 2026-11-22 | **`effectiveImportance` is defined in the catalogue contract:** strongest anchor in scope, or strongest anchor of a preferred type | One rule shared by question generation and prep | Separate rules in Content and Prep |
+| 2026-11-22 | **Questions record their anchors; prep only uses questions anchored in the child's enrolled source document** | Questions stay textbook-specific while facts and mastery are shared across sources | Questions tied only to facts |
+| 2026-11-22 | **`SourceAnchor` is its own aggregate,** versioned and reviewed apart from the fact core; a question is live while its own version, its facts' cores and the anchors it was written from are live | One source can go live while another is in review; teachers on different sources of one fact don't conflict | Anchors inside the `Fact` aggregate (a draft anchor would make the whole fact a draft) |
+| 2026-11-22 | **Fact-core edits are marked minor or material** when approved: minor keeps its questions live (queued for Gate 2), material takes them out until Gate 2 | A typo fix shouldn't pull questions; a changed meaning must | Always keep live; always take out |
+| 2026-11-22 | **Ingestion runs automatically from upload to Gate 1,** per page version, through `ContentAI` submit/collect; results are recorded idempotently in any order and carry model, prompt version and cost. See [Content: ingestion pipeline](#content-ingestion-pipeline) | Batch results arrive out of order and hours later; teachers shouldn't wait on each other; re-extraction with better prompts stays possible | Curator-triggered steps; request/response AI calls |
+| 2026-11-22 | **Pipeline rules:** spreads are split and unclear page numbers go to a curator queue; extraction sees neighbouring pages and an anchor may span two consecutive pages; reconciliation searches the same language and subject across all grades; pages are read and extracted before the index tree is confirmed and placed once it is; rendered page images for people, original PDF pages for the AI | User decisions | Blocking uploads on the index tree; per-grade matching; AI reading rendered images |
+| 2026-11-23 | **Content open points resolved** ([CONTENT-CONTEXT.md › Open points](CONTENT-CONTEXT.md#11-open-points)): merge/split is material by default (questions held until Gate 2) unless marked minor; regenerated questions retire the old ones per fact once one replacement is approved and the run's drafts for that fact are resolved; teacher reviewers retire facts and resolve orphaned anchors, teachers and curators may retire questions; index tree corrections re-run placement | A changed fact's questions aren't drilled unchecked; a fact never loses its live questions; retiring knowledge stays with teachers | Always keep questions live; retire old questions as soon as one replacement is approved |
+| 2026-11-23 | **The live catalogue is a stored projection** inside Content, updated from Review & Versioning events and rebuildable; liveness is stored and recalculated for dependants on each change; Prep gets page numbers and index nodes, never verbatim text or page images. See [Content: the live catalogue](#content-the-live-catalogue) | Simple, fast reads on the hot path; Incremental needs "study pages 12–14" | Liveness computed per query; index nodes only |
+| 2026-11-23 | **Question generation runs take a fact selection across any sources,** decoupled from uploads; Gate 2 batches per run and source document; modes generate more and regenerate (old questions retired only after replacements pass Gate 2); verbatim means the anchor's text; rejected questions count as duplicates; mechanical rubrics derived by code; every model answer AI-checked. See [Content: question generation](#content-question-generation) | Curation takes weeks across many PDFs; sampling stays meaningful per textbook; facts never lose their live questions; exact, repeatable mechanical marking | Runs tied to uploads or one source; one batch per run; regenerate that retires old questions first |
+| 2026-11-23 | **Placement is a separate, repeatable step** run when the index tree is confirmed or corrected; it splits pages at headings, is auto-approved, sends unclear cases to a curator queue, and anchors may go live before they are placed | Uploads and Gate 1 never wait for the tree; a person already confirmed the tree, so re-reviewing derived placement adds nothing | Blocking uploads or approvals on the tree; reviewing each placement |
+| 2026-11-22 | **Review & Versioning:** one draft at a time per item; one Gate 2 batch per generation run (refined 2026-11-23: per run and source document); reviewers may approve their own edits made while reviewing; version state stored, dependency liveness computed. See [Content: review and versioning](#content-review-and-versioning) | No silent overwrites; a run is already one scope in one textbook; matches how Gate 1 works (AC-C10) | Parallel drafts with merging; batches per textbook; four-eyes on every edit |
+| 2026-11-22 | **Fact links get their own version stream** (one `FactLinkSet` per fact, light review, minor/material applies) and stay **between facts**, independent of source; layout is only the extraction signal for *elaborates* | Link edits don't disturb wording; links describe knowledge, anchors describe presentation | Links inside the fact core; unversioned links; *elaborates* between anchors |
+| 2026-11-22 | **Publish per item:** each fact, question or edit goes live as soon as its version is approved | Content reaches children as fast as teachers approve it; caching stays per item version | Catalogue releases per textbook |
+| 2026-11-22 | **Extraction produces `FactCandidate`s;** a `Fact` and its `FactId` exist only after Gate 1 approval; paraphrases sit inside the `Fact` | Rejected drafts never consume IDs; reconciliation proposals have a natural home; the core fact model holds only approved knowledge | Draft facts in a draft state (IDs for rejected drafts, review state inside the core model) |
+| 2026-11-22 | **The "duplicates" fact link is dropped;** restatements become additional anchors on one fact | One fact, one mastery record; no link semantics to share | Keeping a duplicates link alongside anchors |
+| 2026-11-22 | **"Inbound adapters" and "outbound adapters"** name the two halves of the adapter ring; our own apps go through inbound adapters like any outside caller, as one thin translation step | Names the direction of each edge; the Android app runs on untrusted devices with old versions in use, and several channels share one set of use cases | "Delivery" (doesn't say inbound), "driving/driven adapters" (less obvious), "interface layer" (clashes with TypeScript `interface`), "gateway" (usually means outbound) |
