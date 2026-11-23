@@ -237,8 +237,8 @@ One use case per operation. Each loads aggregates, calls domain behaviour, saves
 |---|---|---|
 | `EditFactCore` | Teacher / curator | Opens (or joins) the one draft of the fact core |
 | `ApproveFactCore` | Teacher | Approves with `EditImpact` minor or material |
-| `MergeFacts` | Teacher | New fact from several; takes all anchors and links; lineage; emits `FactsMerged` |
-| `SplitFact` | Teacher | New facts from one; teacher assigns anchors and links; lineage; emits `FactSplit` |
+| `MergeFacts` | Teacher | New fact from several; takes all anchors and links; lineage; `EditImpact` (default **material**); emits `FactsMerged` |
+| `SplitFact` | Teacher | New facts from one; teacher assigns anchors and links; lineage; `EditImpact` (default **material**); emits `FactSplit` |
 | `RetireFact` | Teacher | Retires a fact and its anchors |
 
 ### 6.8 Anchors and links
@@ -264,8 +264,9 @@ One use case per operation. Each loads aggregates, calls domain behaviour, saves
 | `ReviewSampledQuestion` | Teacher | Pass / fail (with edits) for a sampled question |
 | `CloseReviewBatch` | Job | ≥95% → approve all; otherwise send all to the full queue |
 | `ReviewQuestion` | Teacher | Full review: approve, edit (question, model answer, rubric together), set difficulty, reject |
-| `RetireReplacedQuestions` | Event (`VersionApproved` in regenerate mode) | Retires old questions once their replacements are approved |
-| `RepointQuestionsAfterLineage` | Event (`FactsMerged` / `FactSplit`) | Re-points questions to the new fact(s) and sends them to Gate 2 |
+| `RetireReplacedQuestions` | Event (`VersionApproved` in regenerate mode) | For each fact: once it has at least one approved replacement from the run **and** all the run's drafts for that fact are resolved, retires its old questions |
+| `RepointQuestionsAfterLineage` | Event (`FactsMerged` / `FactSplit`) | Re-points questions to the new fact(s) and sends them to Gate 2; held until then if the merge/split was material, live if minor |
+| `RetireQuestion` | Teacher or curator | Retires a question |
 
 ### 6.11 Holds and problem reports
 | Use case | Actor | Does |
@@ -379,7 +380,7 @@ plus the events `FactsMerged` and `FactSplit`. Never verbatim text, page images,
 **Merge**
 1. Teacher: `MergeFacts(a, b)` → fact `c` with all anchors and links; `a`, `b` retired.
 2. `FactsMerged` → Prep sets `c`'s mastery to the lower of `a` and `b` in every active assessment.
-3. Questions re-pointed to `c` and sent to Gate 2.
+3. Questions re-pointed to `c` and sent to Gate 2; held until approved, unless the teacher marked the merge minor.
 
 **Approval to live**
 1. `VersionApproved` → `UpdateLiveCatalogue` recalculates the item and its dependants.
@@ -389,12 +390,17 @@ plus the events `FactsMerged` and `FactSplit`. Never verbatim text, page images,
 
 ## 11. Open points
 
-| # | Open point | Suggested default |
+### Resolved (2026-11-23)
+| # | Point | Decision |
 |---|---|---|
-| O1 | Do questions stay live while re-reviewed after a merge or split? | Treat merge/split like a material edit (held until Gate 2), unless the teacher marks it minor |
-| O2 | When exactly regenerated questions retire the old ones | When the fact has at least one approved replacement from the run and all the run's drafts for that fact are resolved |
+| O1 | Do questions stay live while re-reviewed after a merge or split? | A merge or split is treated as a **material** edit by default: its questions are held until Gate 2. The teacher can mark it **minor** to keep them live |
+| O2 | When regenerated questions retire the old ones | For each fact, when it has at least one approved replacement from the run **and** all the run's drafts for that fact are resolved |
+| O6 | Who may retire facts and questions, and resolve orphaned anchors | **Teacher reviewers** retire facts and resolve orphaned anchors; **teacher reviewers and curators** may retire questions |
+| O7 | Index tree corrections after facts are live | Placement re-runs; anchors move nodes (auto-approved); index-node scopes in Prep re-resolve at the next session plan |
+
+### Still open
+| # | Open point | Agreed direction |
+|---|---|---|
 | O3 | `SimilarityIndex` technology and thresholds (reconciliation, duplicate questions) | Tech decision for TECH-STACK.md; thresholds as settings with decided defaults |
 | O4 | Retry count N and backoff for failed pipeline steps | Setting with a decided default |
 | O5 | Rubric format definition (already an open P1 action in the plan) | Define before question generation or `Marking` is built |
-| O6 | Who may retire facts and questions, and resolve orphaned anchors | Teacher reviewers; curators may retire questions |
-| O7 | Index tree corrections after facts are live | Re-run placement; anchors move nodes; index-node scopes in Prep re-resolve at the next session plan |
