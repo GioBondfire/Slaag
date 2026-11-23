@@ -242,13 +242,13 @@ The user's standing preferences for Slaag (2026-11-16). The decisions below star
   4. **Daily limit per child:** at most 300 written answers per child per day go to a model (ARCHITECTURE.md › Usage limits); past it, the child's sessions stop for the rest of the day and a system administrator is alerted.
   Mechanical question types (including fill-in-the-blank) are marked by code only, never by a model. The threshold, cost cap and evaluator per language are configuration rows, not code.
 - **Category:** Integrate
-- **Why:** judgements per key point give feedback to the child ("you forgot …"), let teachers see exactly where the grader disagreed (AC-E9), and let verdicts be recalculated when rubric thresholds change without asking the model again. One vendor and one DPA for all model work.
+- **Why:** judgements per key point give feedback to the child ("you forgot …"), let moderators see exactly where the grader disagreed (AC-E9), and let verdicts be recalculated when rubric thresholds change without asking the model again. One vendor and one DPA for all model work.
 - **Preference:** specified by the user (2026-11-23)
 - **Alternatives rejected:** TypeSafe AI **Jev** as primary (decided 2026-11-16, replaced 2026-11-23) — cheapest per answer (~$0.04 per million input tokens, output free) with calibrated probabilities, but it classifies the **whole answer** and gives no judgement per key point; a second vendor and DPA. Embedding similarity (pgvector) + pg_trgm, then an LLM — similarity scores are not calibrated confidence, and thresholds on raw cosine similarity are brittle across question types.
 - **Facts checked (2026-11-16, Claude API reference cached 2026-11-03):** Haiku 5.5 $0.10 / $0.50 and Sonnet 5.5 $2 / $10 per million tokens input / output, so escalation costs about 20× a primary judgement. Roughly 1,000 tokens in and 200 out per written answer: ~$0.0002 on Haiku, ~$0.004 on Sonnet.
 - **Research:**
-  - **To learn:** does Haiku 5.5 reach ≥ 90% Verdict agreement with Afrikaans teachers (AC-E9), and how well does it agree **per key point**, including children's spelling slips? How often does escalation to Sonnet happen, and what cost cap does that imply?
-  - **How:** teachers label 300–500 real-style Grade 4–7 Afrikaans answers per key point; run Haiku and Sonnet; measure Verdict and key-point agreement and escalation rate per question type.
+  - **To learn:** does Haiku 5.5 reach ≥ 90% Verdict agreement with Afrikaans-speaking moderators (AC-E9), and how well does it agree **per key point**, including children's spelling slips? How often does escalation to Sonnet happen, and what cost cap does that imply?
+  - **How:** moderators label 300–500 real-style Grade 4–7 Afrikaans answers per key point; run Haiku and Sonnet; measure Verdict and key-point agreement and escalation rate per question type.
   - **Decide by:** before the January 2027 pilot (the pilot validates AC-E9 at scale).
   - **If it fails:** Sonnet 5.5 becomes primary for Afrikaans behind the same abstraction, with the cost cap retuned.
 - **POPIA:** children's answer text goes to a US processor — sign Anthropic's DPA, request zero retention, and send no names or identifiers: only question, model answer, rubric and answer text.

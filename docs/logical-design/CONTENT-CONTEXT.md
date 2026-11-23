@@ -11,6 +11,7 @@ This document is the **inventory** of the Content context, from a source documen
 | Role | May do |
 |---|---|
 | **Content curator** | All content work: register sources and standards, uploads, review queues (candidates, anchors, links, questions, problem reports), spot checks, question generation, exhibits and open alternatives, reviewer mode, retiring facts and questions |
+| **Moderator** | Marks children's answers against rubrics ("close" queue, grader agreement samples, grader evaluation set); sees answer text without names or identifiers. Works in Prep's marking tools, not on content |
 | **System administrator** | Anything, including brand content licensing, settings and usage-limit flags |
 
 "Actor" columns below name the least-privileged role; a system administrator can always act too. In AI review mode, "Curator" approvals happen for items the AI check doubts or samples for spot checks.

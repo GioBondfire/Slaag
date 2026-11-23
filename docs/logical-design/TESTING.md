@@ -14,7 +14,7 @@ Most tests sit in the inner rings, where they are fast and need no I/O. Few end-
 | **Concurrency tests** | The 15 no-race invariants ([ARCHITECTURE.md › Data & Consistency Decisions](ARCHITECTURE.md#data--consistency-decisions)), each with parallel requests | The real system of record | 14 |
 | **End-to-end tests** | The tracer bullet, then the critical journeys (Safety Net Map) | Full stack, both channels | Few |
 | **Static checks** | No hard-coded user-facing text (AC-X1); no hard-coded brand (AC-B1); **dependency rule** (inner rings never import outer rings; no context touches another's data) | Source | Every change |
-| **Grader evaluation** | Verdict agreement with teacher marking **≥ 90%** (AC-E9) on a teacher-marked evaluation set of children's Afrikaans answers; rerun on any change to grader, prompt, rubric format or `AnswerEvaluator` provider | Evaluation set | On grader changes |
+| **Grader evaluation** | Verdict agreement with moderator marking **≥ 90%** (AC-E9) on a moderator-marked evaluation set of children's Afrikaans answers; rerun on any change to grader, prompt, rubric format or `AnswerEvaluator` provider | Evaluation set | On grader changes |
 | **Device & data budget** | 2 GB Android device runs sessions and animations smoothly; ≤ 5 MB per 15-min session (AC-G7, G8); web journeys on the browsers in AC-G7a | Real devices | Before pilot, then per release |
 
 **Grader spike (prototype, thrown away):** 3–5 days, before `Marking` is built for real. Run Haiku 5.5 with Sonnet 5.5 escalation against ~200 Afrikaans written answers marked by curators per key point, and measure Verdict and key-point agreement and the escalation rate. The prototype code is discarded; the **evaluation set is kept** as the grader evaluation above.
