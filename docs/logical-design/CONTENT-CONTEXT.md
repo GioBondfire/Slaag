@@ -77,12 +77,12 @@ VersionedItem<T>
 |---|---|---|---|
 | **SourceDocument** | `SourceDocumentId` | Type (**textbook** or **standard document**), title, publisher, edition/ISBN (informational; a textbook spans editions), grade, subject, **language**, cover, **openness (open / closed)** | Language fixed once content exists; every fact anchored in it shares its language |
 | **Standard** | `StandardId` | Name (e.g. CAPS), level names, **mapping depth**, openness | No versions; a material revision is a separate standard |
-| **StandardNode** | `StandardNodeId`, stable | Standard, level, parent, title, description, content items, optional metadata (teaching time, assessment weighting) | Depth ≤ the standard's mapping depth; created by confirming standard node candidates |
-| **Exhibit** | `ExhibitId` | Source page version + region, kind (diagram, table, graph, photo), caption, linked fact IDs, open alternatives (uploaded files, versioned and reviewed) | Learner-visible only if its source is open or it has an approved open alternative |
+| **StandardNode** | `StandardNodeId`, stable, language-independent | Standard, level, parent; title, description and content items **per language**; optional metadata (teaching time, assessment weighting) | Created by confirming standard node candidates; a later language's document is matched to existing nodes and adds its text; content items extracted where the document lists them |
+| **Exhibit** | `ExhibitId` | Source page version + region, **type** (diagram, table, chart/graph, map, photo, illustration, timeline, other), caption, linked fact IDs, open alternatives (uploaded files, versioned and reviewed) | Learner-visible only if its source is open or it has an approved open alternative |
 | **BrandContentLicence** | (brand, source) | Brand, source document or standard | Catalogue and enrolment lists show only licensed sources per brand |
 | **IndexTree** | One per source document | Nodes term > topic > subtopic with page ranges; CAPS mapping per node; proposal, confirmation and correction history | Page ranges of sibling nodes don't overlap; confirmed by a person before placement runs; each correction re-runs placement |
 | **Upload** | `UploadId` | Source file ID + revision, tags (grade, source document, optional section and page ranges), uploader | Idempotent on (source file ID, revision) |
-| **Page** | (source document, printed page number) | Its page versions; the current one | At most one current page version; a newer version supersedes the old one |
+| **Page** | (source document, edition label, printed page number) | Its page versions; the current one; uploads without an edition label belong to the main edition | At most one current page version; a newer version supersedes the old one |
 | **PageVersion** | `PageVersionId` | Rendered image, transcription with layout blocks (headings, margin boxes, captions, diagram regions), quality result, index placement, **pipeline state**, AI provenance | Advances only forward through the pipeline states (or to Failed / FlaggedForRephoto / Superseded); results for a superseded version are ignored |
 | **FactCandidate** | `FactCandidateId` (never a `FactId`) | Proposed statement, paraphrases, anchor (source, region, verbatim, position type, signal, importance), links, `ReconciliationProposal` | Resolved exactly once: new fact, accepted match, combined, or rejected |
 | **Fact** = `VersionedItem<FactCore>` + lineage | `FactId`, stable across versions and re-anchoring | Core: canonical statement, 1–2 paraphrases, fact type, key terms. Lineage: `mergedFrom[]`, `splitFrom`, `mergedInto`, `splitInto[]` | Created only by approving a candidate, a merge or a split; merge and split create new IDs and retire the old ones; a fact with no live anchor is in no scope |
@@ -129,7 +129,7 @@ VersionedItem<T>
 | `MechanicalRubric` | Derives rubrics for mechanical types from the question (correct option, sequence, blank, ordering partial credit) | Question bank |
 | `LineageRules` | Merge: new fact takes all anchors and links (re-pointed; links among merged facts dropped). Split: anchors and links assigned by the teacher | Fact model |
 | `LivenessRules` | Fact, anchor, link and question liveness (see [ARCHITECTURE.md › the live catalogue](ARCHITECTURE.md#content-the-live-catalogue)) | Catalogue projection |
-| Review policies | **Gate 1** (full: fact cores, new facts); **light review** (anchors, link sets); **Gate 2** (full for judgement types; sampled `ReviewBatch` for mechanical types); placement auto-approved | Review & Versioning |
+| Review policies | **Reviewer mode** per textbook or subject: **AI review** (year-1 default: independent AI check of every item, confident → live, doubtful → curator queue, curator spot checks at a set rate) or **teacher review** (Gate 1 full; light review for anchors and link sets; Gate 2 full for judgement types, sampled `ReviewBatch` for mechanical types); placement auto-approved | Review & Versioning |
 | `ReconciliationOrder` | Shortlist: the superseded page version's anchors first, then facts in the same language and subject mapped to the **same CAPS subtopic**, trimmed by key-term text search when large | Ingestion |
 | `RetryPolicy` | Which failures retry automatically (free steps; transient AI failures) and which wait for a curator; when a source pauses | Ingestion |
 
@@ -407,12 +407,14 @@ plus the events `FactsMerged` and `FactSplit`. Never verbatim text, page images,
 | O5 | Rubric format | **Format version 1** in the catalogue contract: the evaluator judges each key point, code decides the Verdict; partial credit by weights, required points and thresholds; fill-in-the-blank uncertain band → Close. Grader: Haiku 5.5 primary, Sonnet 5.5 escalation |
 | O4 | Retries of failed pipeline steps | Free steps retry automatically (3 attempts, 1 min → 10 min → 1 h); AI steps retry automatically only for transient, usually uncharged failures (switchable); charged bad output waits for a manual retry; a source pauses after 5 failures in a row; manual retries show the estimated cost |
 
+| O8 | Page identity across editions | Optional curator-only **edition label** per upload; page identity (textbook, edition label, page number); facts from every edition merge as extra anchors; parents' page-range scopes resolve against the main edition |
+| O9 | Review with almost no teacher capacity in year 1 | **AI review** by default: independent AI check of every item (different prompt, ideally a different model); confident → live, doubtful → curator queue; curator spot checks at a set rate; problem reports as the safety net; **teacher review** switchable per textbook or subject. Applies to Gate 2 judgement types too |
+| O10 | Verbatim question basis | Allowed only for anchors in **open** sources |
+| O11 | Standards and language | One language-independent node with text per language; a later language's document is matched to existing nodes |
+| O12 | Where Standards live | A module inside the Content context |
+| O14 | Exhibit types | Diagram, table, chart/graph, map, photo, illustration, timeline, other |
+
 ### Still open
 | # | Open point | Suggested direction |
 |---|---|---|
-| O8 | Page identity across editions (a shifted page in another edition would supersede the wrong page) | Optional curator-only **edition label** per upload; page identity (textbook, edition label, page number); page-range scopes resolve against the textbook's main edition |
-| O9 | Review with almost no teacher capacity in year 1 | Independent AI check as default reviewer; confident → auto-approved, doubtful → curator queue; sampled spot checks; problem reports as safety net; teacher review as a switchable policy |
-| O10 | Verbatim question basis for closed sources | Only for open sources, with a per-fact exception for short keyword definitions |
-| O11 | Standards and language | One language-independent node with text per language; each language's document matched to existing nodes |
-| O12 | Where Standards live | A module inside the Content context for now |
 | O13 | Withdrawing a textbook (legal request) | Parked until needed |
