@@ -24,7 +24,7 @@ Logical design only: technology-neutral. Components are named by role; technolog
 **Load reality.** Medium: 1,000–10,000 families in year 1 (≈2,000–20,000 children). Peaks are on weekday afternoons and before exams.
 
 ### Back-of-envelope sizing (Phase 3)
-Sized for the top of the range (10,000 families) in exam season. Assumptions, to check in the pilot: ~1.7 children/family; ~50% of children active on an exam-season school day (~10,000), ~3,000 parents active; ~1.5 sessions per active child per day (~15,000 sessions/day); ~30 answers + ~10 other requests per session; ~30% of answers written, ~20% of those borderline → ~6% of all answers go to the LLM grader.
+Sized for the top of the range (10,000 families) in exam season. Assumptions, to check in the pilot: ~1.7 children/family; ~50% of children active on an exam-season school day (~8,500, rounded up to ~10,000 for headroom), ~3,000 parents active; ~1.5 sessions per active child per day (~15,000 sessions/day); ~30 answers + ~10 other requests per session; ~30% of answers written, ~20% of those borderline → ~6% of all answers go to the LLM grader.
 
 | Measure | Estimate | Derivation |
 |---|---|---|

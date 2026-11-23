@@ -643,8 +643,8 @@ Rough monthly estimates, checked 2026-11-16 from third-party sources where noted
 | Cloudflare R2 | ~$0–5 | ~$5–15 | Free tier then per GB stored; no egress fees |
 | Amazon SES | <$5 | ~$10–30 | ~$0.10 per 1,000 emails |
 | Claude (ingestion, one-off) | ~$150–400 total | per new textbook | Opus 5.5 + Sonnet 5.5 at batch rates for ~10,000 pages (estimate) |
-| Claude Haiku 5.5 (grading, every written answer) | <$10 | ~$100–400 | ~$0.0002 per written answer; depends on the share of written answers (estimate; measured in the pilot) |
-| Claude Sonnet 5.5 (grading escalation) | <$10 | within the cost cap | ~$0.004 per escalated answer; capped per session |
+| Claude Haiku 5.5 (grading, every written answer) | <$10 | ~$330 (~$4,000/year) | ~$0.0002 per written answer × ~20M written answers/year (66M answers × ~30% written; ARCHITECTURE.md › sizing). Estimate; written share measured in the pilot |
+| Claude Sonnet 5.5 (grading escalation) | <$10 | ~$330 per 5% escalation rate: 5% ~$330 (~$4,000/year) · 10% ~$670 (~$8,000/year) · 20% ~$1,330 (~$16,000/year) | ~$0.004 per escalated answer × escalation rate × ~20M written answers/year. Escalation rate measured in the grader spike; the per-session cost cap bounds it (answers past the cap are "close") |
 | Claude Haiku 5.5 (fact matching, duplicate questions) | <$5 | per new textbook | ~1 call per page + 1 per fact per generation run, batch rates (estimate) |
 | Sentry | $0 | ~$26+ | Free developer tier, then team plan (confirm) |
 | Better Stack | $0 | ~$25+ | Free tier, then paid (confirm) |
