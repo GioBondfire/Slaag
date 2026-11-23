@@ -7,7 +7,7 @@ Most tests sit in the inner rings, where they are fast and need no I/O. Few end-
 
 | Level | Covers | Runs against | Share |
 |---|---|---|---|
-| **Domain unit tests** | `PrepPlan` and every `PrepStrategy`, `Importance`, `Mastery` (incl. fact-link rules, lineage carry-over (split inherits, merge takes the lower) and Close = neutral), `effectiveImportance` (strongest anchor in scope; anchor preference), `FactCandidate` resolution and re-anchoring, `Marking` step 1 and the mechanical question types, `Assessment` invariants. **`Subscription` state machine as a table:** every provider-neutral fact × every state, including duplicates and out-of-order delivery | In memory | Most |
+| **Domain unit tests** | `PrepPlan` and every `PrepStrategy`, `Importance`, `Mastery` (incl. fact-link rules, lineage carry-over (split inherits, merge takes the lower) and Close = neutral), `effectiveImportance` (strongest anchor in scope; anchor preference), `FactCandidate` resolution and re-anchoring, `Marking` Verdict rules from key-point judgements (rubric format v1: required points, weights, thresholds, misconceptions) and the mechanical question types (incl. fill-in-the-blank tolerance → Close), `Assessment` invariants. **`Subscription` state machine as a table:** every provider-neutral fact × every state, including duplicates and out-of-order delivery | In memory | Most |
 | **Use-case tests** | Each use case with fake ports and a fixed `Clock` | In memory | Many |
 | **Adapter contract tests** | One suite per port (`AnswerEvaluator`, `ContentAI`, `PaymentGateway`, provider-event translator, `PushSender`, `EmailSender`, `IdentityProvider`, `MediaStore`, `EventPublisher`, `FeatureFlags`), run against **both** the fake and the real adapter (provider sandbox) | Fake + sandbox | Per port |
 | **Between-context contract tests** | Each context's published interface; domain event schemas; rubric format versions; mobile API versions **N and N-1** | In memory | Per contract |
@@ -17,7 +17,7 @@ Most tests sit in the inner rings, where they are fast and need no I/O. Few end-
 | **Grader evaluation** | Verdict agreement with teacher marking **≥ 90%** (AC-E9) on a teacher-marked evaluation set of children's Afrikaans answers; rerun on any change to grader, prompt, rubric format or `AnswerEvaluator` provider | Evaluation set | On grader changes |
 | **Device & data budget** | 2 GB Android device runs sessions and animations smoothly; ≤ 5 MB per 15-min session (AC-G7, G8); web journeys on the browsers in AC-G7a | Real devices | Before pilot, then per release |
 
-**Grader spike (prototype, thrown away):** 3–5 days, before `Marking` is built for real. Run the two-step grader approach against ~200 teacher-marked Afrikaans written answers and measure agreement. The prototype code is discarded; the **evaluation set is kept** as the grader evaluation above.
+**Grader spike (prototype, thrown away):** 3–5 days, before `Marking` is built for real. Run Haiku 5.5 with Sonnet 5.5 escalation against ~200 Afrikaans written answers marked by teachers per key point, and measure Verdict and key-point agreement and the escalation rate. The prototype code is discarded; the **evaluation set is kept** as the grader evaluation above.
 
 ## Safety Net Map
 | # | Flow | Test level | Status |

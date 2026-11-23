@@ -109,7 +109,7 @@ VersionedItem<T>
 | `EditImpact` | Minor (questions stay live, queued for Gate 2) or material (questions held until Gate 2) |
 | `HoldReason` | Problem reports · material edit awaiting Gate 2 |
 | `QuestionType`, `Difficulty`, `Basis` | Question kind; easy / medium / hard; paraphrase or anchor verbatim |
-| `ModelAnswer`, `Rubric` | Answer citing source facts; Correct / Partial / Incorrect criteria in the catalogue's rubric format |
+| `ModelAnswer`, `Rubric` | Answer citing source facts; rubric in **format version 1** of the catalogue contract: key points with weights and required flags, correct/partial thresholds, misconceptions, never-correct answers, and mechanical variants ([ARCHITECTURE.md › rubric format](ARCHITECTURE.md#content-rubric-format-catalogue-contract-format-version-1)) |
 | `Provenance` | Model, prompt version, cost, time, attempt |
 | `QualityResult` | Readable, or flagged with reasons (blur, skew, glare, cut-off) |
 
@@ -400,9 +400,8 @@ plus the events `FactsMerged` and `FactSplit`. Never verbatim text, page images,
 | O6 | Who may retire facts and questions, and resolve orphaned anchors | **Teacher reviewers** retire facts and resolve orphaned anchors; **teacher reviewers and curators** may retire questions |
 | O7 | Index tree corrections after facts are live | Placement re-runs; anchors move nodes (auto-approved); index-node scopes in Prep re-resolve at the next session plan |
 | O3 | `SimilarityIndex` technology | **Dropped.** Reconciliation: shortlist (old page anchors; same CAPS subtopic, trimmed by key-term text search) + one cheap-model `MatchJudgement` per page. Duplicate questions: one cheap-model `DuplicateQuestionCheck` per fact per run. No vector index |
+| O5 | Rubric format | **Format version 1** in the catalogue contract: the evaluator judges each key point, code decides the Verdict; partial credit by weights, required points and thresholds; fill-in-the-blank uncertain band → Close. Grader: Haiku 5.5 primary, Sonnet 5.5 escalation |
 | O4 | Retries of failed pipeline steps | Free steps retry automatically (3 attempts, 1 min → 10 min → 1 h); AI steps retry automatically only for transient, usually uncharged failures (switchable); charged bad output waits for a manual retry; a source pauses after 5 failures in a row; manual retries show the estimated cost |
 
 ### Still open
-| # | Open point | Agreed direction |
-|---|---|---|
-| O5 | Rubric format definition (already an open P1 action in the plan) | Define before question generation or `Marking` is built |
+None. All Content open points are resolved.

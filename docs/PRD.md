@@ -72,7 +72,7 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 **Engine**
 - **All** techniques in the first release. Adaptive Learning (paradigm), Knowledge Tracing (learner model) and Spaced Retrieval (reinforcement) are kept distinct.
 - Each test or exam stands alone: mastery is tracked per assessment. Marks tune per-child engine behaviour only.
-- **Language-model-based grader** for written answers: every answer goes **straight to a language-model evaluation** against the question's teacher-approved rubric (no keyword or similarity pre-check). The evaluation reports how confident it is; below a configurable confidence threshold a second, more capable language model re-assesses the answer. Every answer is marked **correct**, **partial** or **incorrect**. It tolerates children's Afrikaans spelling slips and has a per-session cost cap.
+- **Language-model-based grader** for written answers: every answer goes **straight to a language-model evaluation** against the question's teacher-approved rubric (no keyword or similarity pre-check). The model judges **each key point** of the rubric and reports how confident it is; when a required point is uncertain or confidence is below a configurable threshold, a second, more capable language model re-assesses it. The rubric's rules then decide the mark. Every answer is marked **correct**, **partial** or **incorrect**. It tolerates children's Afrikaans spelling slips and has a per-session cost cap.
 - **Prep strategies:** a pluggable strategy layer picks how to prepare from an internal **runway ratio** (prep days remaining ÷ difficulty-weighted scope size). Launch strategies are **Incremental** (plenty of time: learn and prep portion by portion, with progress after each portion and a final interleaved review), **Standard** (full-scope diagnostic + adaptive plan) and **Last-minute**. Slaag suggests the strategy; **the parent or the child** can switch it. Cut-offs and portion sizes are settings, tuned per child from outcomes. In year 1, "learn" means studying the child's own textbook pages; Slaag does not teach content.
 
 **Language**
@@ -197,7 +197,7 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 - [ ] AC-C14: The curator chooses whether questions and model answers are based on the **paraphrased** statements (default) or the **verbatim** text of the anchor the question is written from, i.e. that textbook's exact wording (e.g. where exact textbook wording of a definition is examined).
 - [ ] AC-C15: Each question gets an easy, medium or hard rating and stays linked to its source fact(s).
 - [ ] AC-C15a: Generation **explicitly produces a model answer for every question**, written from the source fact(s) (verbatim or paraphrase, per AC-C14) and citing the fact(s) it comes from. The model answer contains nothing that isn't in the source facts.
-- [ ] AC-C15b: Generation also produces a **marking rubric** for every question, so marking is systematic and repeatable. The rubric defines three outcomes:
+- [ ] AC-C15b: Generation also produces a **marking rubric** for every question, so marking is systematic and repeatable. For written types, partial credit is expressed by **weighted key points**, which points are **required**, and thresholds for correct and partial. The rubric defines three outcomes:
   - **Correct:** the required key points (e.g. the keyword and its defining idea) are all present; acceptable alternative wordings and synonyms are listed.
   - **Partial:** which subset of key points earns partial credit (e.g. the right term but an incomplete definition, 2 of 3 steps in the right order, most labels correct).
   - **Incorrect:** missing or wrong key points, plus known misconceptions and wrong answers that must never be marked correct.
@@ -237,11 +237,11 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 - [ ] AC-E5: Adaptive learning changes content, questions and difficulty based on demonstrated proficiency.
 - [ ] AC-E6: The engine uses retrieval practice, spaced repetition at increasing intervals, error-based remediation, and interleaving.
 - [ ] AC-E7: Before the test date, the plan covers every in-scope **Core and Supporting** fact **at least once** and every weak **Core** fact **at least twice**. Peripheral facts are included only when the runway allows.
-- [ ] AC-E8: Written answers are assessed **directly by a language model** against the question's model answer and rubric, which marks each answer **correct**, **partial** or **incorrect** with a confidence level. There is no keyword or similarity pre-check. When confidence is below a configurable threshold, a second, more capable language model re-assesses the answer with the same rubric. The grade records which rubric criteria were met or missed. The model answer is always shown straight away. Partial answers earn partial mastery credit (configurable).
+- [ ] AC-E8: Written answers are assessed **directly by a language model** against the question's model answer and rubric, which judges **each key point** of the rubric as met, missed or uncertain, flags known misconceptions and reports a confidence level. The rubric's rules (required points, weights and thresholds) then decide **correct**, **partial** or **incorrect**. There is no keyword or similarity pre-check. When a required point is uncertain or confidence is below a configurable threshold, a second, more capable language model re-assesses the answer with the same rubric. The grade records which key points were met or missed, so the child can be told what was missing. The model answer is always shown straight away. Partial answers earn partial mastery credit (configurable).
 - [ ] AC-E9: The grader's correct / partial / incorrect mark agrees with a teacher marking with the same rubric **≥ 90%** of the time on a reviewed sample (validated in the pilot).
 - [ ] AC-E10: Results of ad-hoc sessions are included in the next system-generated session.
 - [ ] AC-E11: Grading respects a configurable cost cap per session. Once the cap is reached, low-confidence answers are not escalated and are marked "close".
-- [ ] AC-E12: Children's Afrikaans spelling slips don't by themselves make an answer wrong. Answers the grader can't decide are marked **"close"**, never wrong, and are queued for a teacher to mark with the rubric during the pilot.
+- [ ] AC-E12: Children's Afrikaans spelling slips don't by themselves make an answer wrong. Answers the grader can't decide are marked **"close"**, never wrong, and are queued for a teacher to mark with the rubric during the pilot. Fill-in-the-blank answers are checked by spelling-tolerant matching; one that is neither a near match nor clearly wrong is marked "close".
 
 #### Prep strategies
 - [ ] AC-E13: The runway ratio (prep days remaining ÷ count of Core and Supporting facts in the scope, weighted by importance and difficulty) is calculated when an assessment is added and recalculated whenever its date or scope changes or a day passes. It is never shown to users as a number.
@@ -387,7 +387,7 @@ Greenfield: the repo currently contains only tooling and planning docs.
 | GenerationRun | supporting | curator, fact selection (any textbooks), mode (generate more / regenerate), options (count, types, verbatim/paraphrase), urgency, created / dropped counts, time | creates Questions; has one ReviewBatch per textbook |
 | Question | core domain | type, difficulty, review status, language, based on (verbatim/paraphrase) | generated from Fact(s) and written from SourceAnchor(s) by a GenerationRun; has ModelAnswer; has ContentVersions |
 | ModelAnswer | supporting | text, source fact references, based on (verbatim/paraphrase) | belongs to Question; generated with it |
-| Rubric | supporting | correct / partial / incorrect criteria, weighted key points, accepted alternatives, known misconceptions, partial-credit rules | belongs to Question; applied by the grader; versioned |
+| Rubric | supporting | format version, key points (statement, weight, required, accepted phrasings, source facts), correct and partial thresholds, known misconceptions, never-correct answers; mechanical variants (correct options, true/false, blanks with spelling tolerance, matching pairs, ordering sequence with partial rule) | belongs to Question; key points judged by the grader, mark decided by its rules; versioned |
 | ContentVersion | supporting | version, author, status (draft/approved/hidden) | versions Facts, Paraphrases, Questions, ModelAnswers, Rubrics |
 | TeacherReviewer | supporting | name, subjects | approves ContentVersions |
 | ProblemReport | supporting | reporter, reason, status | raised by Parent/Child on Question; ≥3 open → auto-hide |
@@ -395,7 +395,7 @@ Greenfield: the repo currently contains only tooling and planning docs.
 | PrepStrategy | supporting | key (incremental/standard/last-minute), cut-offs, portion-size rules, per-child tuning | chosen for Assessment; pluggable |
 | ScopePortion | supporting | order, topics, page range, study-by date, status, mastery | belongs to Assessment (Incremental); has PrepSessions |
 | PrepSession | core domain | kind (diagnostic/system/ad-hoc/last-minute/portion/cumulative review), scheduled time, status, score, duration | belongs to Assessment (and optionally a ScopePortion); contains LearnerResponses |
-| LearnerResponse | core domain | answer text/choice, grade (correct/partial/incorrect, or close if undecided), rubric criteria met/missed, evaluator used, confidence | belongs to PrepSession; updates AssessmentMastery |
+| LearnerResponse | core domain | answer text/choice, verdict (correct/partial/incorrect, or close if undecided), key points met / missed / uncertain, misconceptions found, evaluator used, confidence, question and rubric version | belongs to PrepSession; updates AssessmentMastery |
 | AssessmentMastery | core domain | per-fact mastery estimate, rolled up to subtopic/topic | belongs to Assessment (not carried over to other assessments; carried over through fact merges and splits, AC-C29) |
 | Alert | supporting | type, channel, mute settings | sent to Parent/Child Devices |
 | Device | supporting | push token, platform (Android/web browser), linked child profiles, linked-at, revoked flag | belongs to Parent and/or linked to Child via DeviceLink |
@@ -452,6 +452,7 @@ Greenfield: the repo currently contains only tooling and planning docs.
 | 2026-11-23 | **Question generation:** runs take a selection of approved facts across textbooks, independent of uploads; regenerate mode; verbatim means the anchor's wording; Gate 2 samples per run and textbook (AC-C12, C14, C16–C18; Ontology). |
 | 2026-11-23 | **Live catalogue:** learners may see page numbers and index sections of their own textbook, never verbatim text or page images (AC-C24). |
 | 2026-11-23 | **Content open points resolved:** merge/split holds questions until Gate 2 unless marked minor; when regenerated questions replace old ones; who may retire facts and questions (AC-C16, C29). |
+| 2026-11-23 | **Grading per key point:** the grader judges each rubric key point and the rubric's rules decide the mark; partial credit by weights, required points and thresholds; undecided fill-in-the-blank answers are "close" (Engine constraint, AC-C15b, E8, E12; Ontology). |
 
 ## Interview Transcript
 <details>

@@ -33,8 +33,8 @@ Sized for the top of the range (10,000 families) in exam season. Assumptions, to
 | Afternoon peak | ~50/s | ~70% of traffic falls 15:00–20:00 |
 | **Burst when sessions are due** | **~200/s** | Suggested times cluster (AC-P9: last session's time, else a default such as 16:00); 30% of sessions starting in the same 15 min: 4,500 × 40 ÷ 900 s |
 | Push fan-out in the burst | ~9,000 in 1–2 min | Child + parent push at the scheduled time (AC-O2) |
-| LLM grading calls | ~27,000/day; ~9/s in the burst, ~25 in flight | 6% of answers; 1–3 s each |
-| First-step answer evaluations (evaluation model) | ~45/s in the burst | Every written answer |
+| LLM grading calls (primary) | ~45/s in the burst, ~90 in flight | Every written answer; 1–3 s each |
+| LLM grading escalations | Share measured in the grader spike and pilot | Only when a required key point is uncertain; capped per session |
 | Answers stored | ~66M/year, ~40 GB with indexes | ~180k/day averaged over the year × ~300 B |
 | Mastery estimates | ~60M/year, ~6 GB | ~400k assessments/year × ~150 facts in scope |
 | Content | ~9,000 pages, ~180k facts, ~450k questions; ~1 GB text with versions; ~25 GB page images | ~35 textbooks × ~250 pages |
@@ -137,7 +137,7 @@ Parent dashboard, readiness views, partner reports and content coverage are **re
 | Billing & Campaigns → all | Published Language | **Access** per brand membership (`AccessGranted` / `AccessSuspended`). Subscription states never leave Billing |
 | Payment provider → Billing | Anti-Corruption Layer | Provider subscriptions and webhooks translated into Billing events; provider terms never pass the translator |
 | AI content provider → Content | Anti-Corruption Layer | Page reading, extraction, generation results as Content drafts |
-| LLM grading provider → Prep | Anti-Corruption Layer | Borderline-answer evaluation as a Verdict proposal against the rubric |
+| LLM grading provider → Prep | Anti-Corruption Layer | Judgements per rubric key point (met / missed / uncertain), misconceptions found, confidence; `Marking` decides the Verdict |
 | Identity & Access → Family, Prep, Rewards, Notifications | Customer–Supplier | `ParentId`, `ChildId`, `DeviceId`; an authenticated actor |
 | Family → Prep, Rewards, Notifications | Customer–Supplier | Child grade, active subjects with textbook, family language per brand |
 | Prep → Notifications, Rewards | Domain events (Published Language) | `AssessmentAdded`, `AssessmentChanged` (with actor), `SessionScheduled`, `SessionMissed`, `SessionCompleted`, `PortionCompleted`, `StrategySwitched`, `ResultRecorded` |
@@ -358,6 +358,34 @@ reportProblem(questionId, version, reason)
 - **Never returned:** verbatim text, page images, drafts or review state (AC-C24). **Page numbers and index nodes are returned**, so Prep can point a child to their own textbook pages (Incremental "learn").
 - **Caching:** approved versions never change, so items are cached by (ID, version) with no invalidation; scope resolution queries the projection directly (about 180k facts).
 
+### Content: rubric format (catalogue contract, format version 1)
+Adopted 2026-11-23. The rubric is part of the content catalogue's published contract; `Marking` in Prep is its only interpreter. **For written types, the evaluator judges each key point and code decides the Verdict.**
+
+```
+Rubric (format version 1; versioned with its question)
+  questionType
+  — mechanical types (marked entirely by code) —
+  choice:        correctOptionIds[]
+  trueFalse:     correctValue; correction? → keyPoints   (for "true/false with correction")
+  blank:         blanks[] { acceptedAnswers[], spelling: exact | tolerant }
+  matching:      pairs[]; partialWhen: ≥ n correct pairs
+  ordering:      sequence[]; partialWhen: longest run in correct order ≥ n
+  — written types (key points judged by the evaluator, Verdict by code) —
+  keyPoints[]    { id, statement, weight, required, acceptedPhrasings[], factIds[] }
+  correctWhen:   all required points met AND total weight ≥ correctThreshold
+  partialWhen:   total weight ≥ partialThreshold
+  misconceptions[] { id, statement }   → any match forces Incorrect
+  neverCorrect[]                       answers that must never pass
+  tolerance:     spelling slips allowed; key terms must be recognisable (AC-E12)
+```
+
+- **Evaluator output** (stored on the response): `{ keyPointId → met | missed | uncertain, misconceptionIds[], confidence, evaluator }`. A required point that is *uncertain* (or low confidence) escalates to the more capable model; past the session cost cap the answer is **Close**.
+- **Verdict rules in code:** a misconception or a `neverCorrect` match → Incorrect; all required points met and weight ≥ `correctThreshold` → Correct; weight ≥ `partialThreshold` → Partial; otherwise Incorrect. Changing thresholds lets stored responses be re-marked without asking the model again.
+- **Partial credit** is expressed by weights, required points and thresholds, not by listing allowed subsets of points.
+- **Fill in the blank:** code accepts exact matches and near matches within the spelling tolerance; an answer in the uncertain band between near match and clearly wrong is **Close** (no model call; the fact is asked again later).
+- **Mechanical rubrics** are derived by code from the question at generation time; written-type rubrics are generated with the question and reviewed at Gate 2.
+- **Worked example:** "Wat is fotosintese?" with K1 *plants make their own food* (2, required), K2 *energy from sunlight* (1), K3 *from water and carbon dioxide* (1); correct at 4, partial at 2. The answer "Plante maak hul eie kos met sonlig" → K1 met, K2 met, K3 missed → weight 3 → **Partial**, with feedback "you forgot water and carbon dioxide".
+
 ### Content: review and versioning
 Adopted 2026-11-22. One general **Review & Versioning** module (consolidation S10) serves every versioned item: the **fact core**, each **source anchor**, each fact's **link set**, and each **question** (with its model answer and rubric versioned together). A `FactCandidate` is not versioned; it is resolved once.
 
@@ -441,7 +469,7 @@ Each context exposes one small published interface that hides a lot behind it; p
 | # | Smell avoided | Where | Design |
 |---|---|---|---|
 | S1 | Planning split into steps by time, as thin classes sharing the same knowledge | Prep | One deep **`PrepPlan`**: `plan(assessment, mastery, today) → decision {strategy, portion, nextSession, messageKeys}`; strategies are plug-ins inside it (AC-E20); runway never leaves it |
-| S2 | Grading knowledge leaking through the rubric format between Content and Prep | Content ↔ Prep | One **`Marking`** module in Prep: `mark(liveQuestion, answer, sessionBudget) → Verdict` for all question types; the rubric format is defined once, versioned, in the content catalogue's published contract |
+| S2 | Grading knowledge leaking through the rubric format between Content and Prep | Content ↔ Prep | One **`Marking`** module in Prep: `mark(liveQuestion, answer, sessionBudget) → Verdict` for all question types (mechanical types by code; written types from key-point judgements, Verdict by the rubric's rules in code); the rubric format is defined once, versioned, in the content catalogue's published contract |
 | S3 | Importance semantics duplicated across runway, selection, spacing, last-minute exclusion, readiness, weak keywords | Prep (+ catalogue contract) | Choosing which anchor's importance applies is **`effectiveImportance`**, defined once in the catalogue contract and used by both Content (generation defaults) and Prep. One **`Importance`** policy in Prep turns the effective tier + weight into priority, spacing and readiness weight; Content only assigns tiers and weights per anchor |
 | S4 | Fact-link semantics re-implemented in several places | Prep | Hidden inside one **`Mastery`** module (`record`, `estimate`, `readiness`); Content only stores typed links |
 | S5 | One port per need between contexts → thin pass-throughs | All contexts | **One published interface per context** (table above); `LearnerTuning` internal to Prep |
@@ -584,6 +612,8 @@ Deliberately deferred work (Phase 8, 2026-11-16). Each keeps its seam from day 1
 | 2026-11-22 | **Fact-core edits are marked minor or material** when approved: minor keeps its questions live (queued for Gate 2), material takes them out until Gate 2 | A typo fix shouldn't pull questions; a changed meaning must | Always keep live; always take out |
 | 2026-11-22 | **Ingestion runs automatically from upload to Gate 1,** per page version, through `ContentAI` submit/collect; results are recorded idempotently in any order and carry model, prompt version and cost. See [Content: ingestion pipeline](#content-ingestion-pipeline) | Batch results arrive out of order and hours later; teachers shouldn't wait on each other; re-extraction with better prompts stays possible | Curator-triggered steps; request/response AI calls |
 | 2026-11-22 | **Pipeline rules:** spreads are split and unclear page numbers go to a curator queue; extraction sees neighbouring pages and an anchor may span two consecutive pages; reconciliation searches the same language and subject across all grades; pages are read and extracted before the index tree is confirmed and placed once it is; rendered page images for people, original PDF pages for the AI | User decisions | Blocking uploads on the index tree; per-grade matching; AI reading rendered images |
+| 2026-11-23 | **Rubric format version 1 (O5):** the evaluator judges each key point and code decides the Verdict; partial credit by weights, required points and thresholds; fill-in-the-blank uncertain band → Close; mechanical types marked by code only. See [Content: rubric format](#content-rubric-format-catalogue-contract-format-version-1) | Feedback per key point, teacher-checkable grading, re-marking without model calls | The evaluator classifies whole answers (no reasons stored); listing allowed subsets of points; sending uncertain blanks to the model |
+| 2026-11-23 | **Grader stack:** Claude Haiku 5.5 primary (key-point judgements), Claude Sonnet 5.5 escalation when a required point is uncertain; TypeSafe Jev dropped (see TECH-STACK.md › Answer evaluation) | Jev classifies whole answers and can't judge key points; one vendor and one DPA | Jev primary with Haiku fallback (2026-11-16) |
 | 2026-11-23 | **No vector index (O3):** reconciliation uses a shortlist (old page anchors, then same CAPS subtopic trimmed by key-term text search) and one cheap-model call per page; duplicate questions use one cheap-model call per fact per run; the `SimilarityIndex` port is dropped | About one cheap call per page instead of ~200,000 vector lookups plus per-candidate expensive-model judgements; no extra extension or embedding model to run | pgvector with a multilingual embedding model (Afrikaans quality unknown) |
 | 2026-11-23 | **Pipeline retries (O4):** free steps retry automatically; AI steps retry automatically only for transient, usually uncharged failures; charged bad output waits for a manual retry; a source pauses after repeated failures; manual retries show the estimated cost | Control over AI spend; systematic failures are investigated, not repeated | Automatic retries on every step |
 | 2026-11-23 | **Content open points resolved** ([CONTENT-CONTEXT.md › Open points](CONTENT-CONTEXT.md#11-open-points)): merge/split is material by default (questions held until Gate 2) unless marked minor; regenerated questions retire the old ones per fact once one replacement is approved and the run's drafts for that fact are resolved; teacher reviewers retire facts and resolve orphaned anchors, teachers and curators may retire questions; index tree corrections re-run placement | A changed fact's questions aren't drilled unchecked; a fact never loses its live questions; retiring knowledge stays with teachers | Always keep questions live; retire old questions as soon as one replacement is approved |
