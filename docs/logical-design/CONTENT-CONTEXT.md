@@ -150,6 +150,10 @@ VersionedItem<T>
 | `GenerationRunCompleted` | run, per-source counts | Review & Versioning (open `ReviewBatch`es) |
 | `ReviewBatchPassed` / `ReviewBatchFailed` | batch | Review & Versioning |
 | `ProblemReportThresholdReached` | question | Review & Versioning (hold) |
+| `StandardTreeConfirmed` | standard, source document, language | Sources (mapping proposals for textbook index trees) |
+| `ExhibitAlternativeApproved` | exhibit, alternative version | Catalogue projection (exhibit becomes learner-visible) |
+| `BrandContentLicenceChanged` | brand, source, granted / revoked | Catalogue projection; Family (textbook lists for enrolment) |
+| `AiReviewCompleted` | item, verdict (confident / doubtful), reasons | Review & Versioning (auto-approve or curator queue) |
 
 Events leave through the transactional outbox ([ARCHITECTURE.md › Data & Consistency Decisions](ARCHITECTURE.md#data--consistency-decisions)); every handler is idempotent.
 
@@ -283,6 +287,37 @@ One use case per operation. Each loads aggregates, calls domain behaviour, saves
 | `ResolveProblemReports` | Teacher | Reviews the question; releases the hold or edits/retires |
 | `HoldItem` / `ReleaseItem` | Policy / teacher | Generic hold handling |
 
+### 6.12a Standards
+| Use case | Actor | Does |
+|---|---|---|
+| `RegisterStandard` | Curator | Creates a standard (e.g. CAPS) with level names, mapping depth and openness; a revision that matters is registered as a separate standard |
+| `UploadStandardDocument` | Curator | Registers a standard document (e.g. one phase × subject × language) as a source; runs through intake and reading |
+| `RecordStandardExtraction` | Job (AI result) | Creates **standard node candidates** (tree and node content, down to content items where listed); for a later language, proposes matches to existing nodes |
+| `ConfirmStandardTree` | Curator | Confirms or corrects nodes and matches against the document; adds that language's text; emits `StandardTreeConfirmed` |
+| `MapIndexNodesToStandard` | Curator (AI-proposed) | Maps a textbook's index nodes to standard nodes at the mapping depth; anchors inherit the references unless overridden |
+
+### 6.12b Exhibits and openness
+| Use case | Actor | Does |
+|---|---|---|
+| `SetSourceOpenness` | Curator | Marks a source open or closed |
+| `RecordExhibits` | Job (reading result) | Stores crops as exhibits with a type, linked to the facts they illustrate after extraction |
+| `EditExhibit` | Curator | Changes type, caption or linked facts |
+| `UploadExhibitAlternative` | Curator | Uploads an open alternative for an exhibit (versioned; reviewed); emits `ExhibitAlternativeApproved` on approval |
+
+### 6.12c Brand content licensing
+| Use case | Actor | Does |
+|---|---|---|
+| `GrantBrandContentLicence` / `RevokeBrandContentLicence` | Staff | Adds or removes a source (textbook or standard) for a brand; overlap allowed; emits `BrandContentLicenceChanged` |
+
+### 6.12d AI review (reviewer mode)
+| Use case | Actor | Does |
+|---|---|---|
+| `SetReviewerMode` | Curator | AI review (year-1 default) or teacher review, per textbook or subject |
+| `SubmitAiReview` | Job | Submits an independent AI check for each new or changed item (fact candidate, anchor, link set, question) |
+| `RecordAiReview` | Job (AI result) | Confident → approves (auto-approval logged as AI); doubtful → curator queue with reasons |
+| `DrawSpotCheckSample` | Scheduled job | Samples auto-approved items at the configured rate into the curator's spot-check queue |
+| `RecordSpotCheck` | Curator | Pass / fail (with edits); updates the measured error rate per textbook and item kind |
+
 ### 6.12 Query services (back office reads)
 Read models, not use cases; they don't load aggregates.
 
@@ -292,6 +327,9 @@ Read models, not use cases; they don't load aggregates.
 | `ReviewQueue(kind)` | Candidates (Gate 1), anchors and link sets (light), questions (Gate 2 full), sampled questions, problem reports |
 | `PageNumberQueue`, `UnplacedQueue`, `RephotoQueue` | Curator work queues |
 | `Coverage(sourceDocument)` | Pages uploaded / flagged / extracted, facts approved, questions generated / live, **facts with no live question anchored in this source**, unplaced pages (AC-C6) |
+| `SpotCheckErrorRate` | Error rate of auto-approved items per textbook and item kind, from spot checks |
+| `BrandContent(brand)` | Sources licensed to a brand |
+| `ExhibitsNeedingAlternatives` | Exhibits from closed sources linked to live facts, without an open alternative |
 | `GenerationRunLog` | Runs with selection, mode, options, counts, cost (AC-C17) |
 | `ItemHistory(item)` | Versions, transitions, who and when (AC-C20, C22) |
 | `Traceability(question)` | Question → anchors → fact → page version → upload → source document (AC-C22) |
@@ -308,7 +346,7 @@ Read models, not use cases; they don't load aggregates.
 
 | Port | Operations (in short) | Boundary ([ARCHITECTURE.md › Boundary map](ARCHITECTURE.md#boundary-map)) |
 |---|---|---|
-| `ContentAI` | `submit(task, urgency) → TaskRef`; `collect() → [(TaskRef, Done(result) \| Failed(reason))]`; tasks: `IndexProposal`, `PageReading`, `CandidateExtraction`, `MatchJudgement`, `QuestionGeneration`, `ModelAnswerCheck`, `DuplicateQuestionCheck` | Full + anti-corruption |
+| `ContentAI` | `submit(task, urgency) → TaskRef`; `collect() → [(TaskRef, Done(result) \| Failed(reason))]`; tasks: `IndexProposal`, `PageReading`, `CandidateExtraction`, `MatchJudgement`, `QuestionGeneration`, `ModelAnswerCheck`, `DuplicateQuestionCheck`, `StandardExtraction`, `StandardNodeMatch`, `AiReview` | Full + anti-corruption |
 | `SourceRepository` | `fetch(fileId, revision) → document`; `revisionOf(fileId)` | Full |
 | `MediaStore` | `put(content) → contentHashedRef`; `urlFor(ref, audience)`; crop storage | Partial |
 | Repositories | One per aggregate: `SourceDocuments`, `IndexTrees`, `Uploads`, `Pages`, `FactCandidates`, `Facts`, `SourceAnchors`, `FactLinkSets`, `Questions`, `GenerationRuns`, `ReviewBatches`, `ProblemReports`; each with optimistic version checks | Full |
