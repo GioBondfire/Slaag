@@ -1,4 +1,4 @@
-> **APPROVED** as the Slaag year-1 PRD on 2026-11-14T00:45:29Z; revised 2026-11-16 (see Revision History). Deep Interview: 20 rounds, 12% ambiguity.
+> **APPROVED** as the Slaag year-1 PRD on 2026-11-14T00:45:29Z; revised 2026-11-16 and 2026-11-24 (see Revision History). Deep Interview: 20 rounds, 12% ambiguity.
 
 # Slaag — Year-1 PRD (Afrikaans Test & Exam Prep for Grades 4–7)
 
@@ -11,7 +11,7 @@
 - Threshold: 0.2
 - Threshold Source: default
 - Initial Context Summarized: no
-- Status: APPROVED (2026-11-14T00:45:29Z); revised 2026-11-16 (child device linking, language-driven experience, multi-brand platform, prep strategies)
+- Status: APPROVED (2026-11-14T00:45:29Z); revised 2026-11-16 (child device linking, language-driven experience, multi-brand platform, prep strategies); revised 2026-11-24 (Account and User vocabulary, Marketing & Acquisition, partners and offers after launch, fee R149)
 
 ## Clarity Breakdown
 | Dimension | Score | Weight | Weighted |
@@ -27,7 +27,8 @@ Confirmed in Round 0 (2026-11-10). Platform note: native store apps were first d
 
 | Component | Status | Description | Coverage / Deferral Note |
 |-----------|--------|-------------|--------------------------|
-| Accounts & Family Setup | active | Parent social login, family subscription via PayFast (web-only checkout), web account and subscription management, webhook-driven billing lifecycle, parent-owned child accounts, school/grade/province/textbooks, partner campaigns with time-limited member discounts | AC-A1…A37 |
+| Accounts & Billing | active | Parent sign-in, accounts with Parent and Child members, account subscription via PayFast (web-only checkout), web account and subscription management, webhook-driven billing lifecycle, school/grade/province/textbooks; partners and offers with time-limited member discounts (after launch) | AC-A1…A37 |
+| Marketing & Acquisition | active | Term-based marketing campaigns, landing links and codes, touchpoint attribution, server-side ad-platform conversion and lifecycle events, customer-list audiences, ad-spend import and marketing reporting | AC-M1…M10 |
 | Content & Question Bank | active | Ingestion of photographed textbook PDFs into reviewed, importance-weighted facts (verbatim + paraphrased), indexed to the textbook and cross-referenced to CAPS; curator-initiated question generation; risk-based review | AC-C1…C31 |
 | Test/Exam Planner | active | Add test/exam (date + scope), parent review/edit, rule-based next-session suggestion, post-test rating and marks | AC-P1…P12 |
 | Prep Session Engine | active | Full adaptive engine with every technique; strategy layer (Incremental / Standard / Last-minute) chosen by runway ratio; language-model-based grading of written answers against rubrics | AC-E1…E24 |
@@ -41,7 +42,7 @@ Confirmed in Round 0 (2026-11-10). Platform note: native store apps were first d
 ## Goal
 Slaag ("pass/succeed") is the first business of Slaag Group, a platform for Afrikaans-speaking families in South Africa. In year 1, Slaag helps parents of Grade 4–7 children prepare their children for school **tests** (small, during term) and **exams** (end of term, consolidated), replacing last-minute, stressful manual quizzing from the textbook.
 
-A parent subscribes on the web (PayFast) and enrols up to 3 children with their school, grade, province and the textbook for each subject. The parent or child adds an upcoming test or exam with its date and scope (content-tree selection or page ranges). Slaag suggests the next prep session one at a time. An adaptive engine diagnoses gaps and drills the child towards mastery, using multiple-choice and written questions graded instantly against teacher-approved model answers and marking rubrics (correct / partial / incorrect). Parents get honest visibility into planned, missed and completed sessions and readiness. Children get a fun, encouraging, gamified experience. Content is produced through an AI-drafting, teacher-review back office. The closed pilot is in **January 2027** and the production launch in **February 2027**. When a test is added early enough, Slaag can offer an incremental strategy (learn and prep portion by portion, with earlier progress to the parent). The platform is language-driven (Afrikaans only in year 1, English ready) and multi-brand, so a future English offering can run under its own brand and domain on the same engine. **Partnerships are a key distribution channel:** civic organisations such as AfriForum, Solidariteit and OUTA can run long-running campaigns that give their members a discounted subscription for a fixed period, after which the price reverts to standard automatically.
+A parent subscribes on the web (PayFast) and enrols up to 3 children with their school, grade, province and the textbook for each subject. The parent or child adds an upcoming test or exam with its date and scope (content-tree selection or page ranges). Slaag suggests the next prep session one at a time. An adaptive engine diagnoses gaps and drills the child towards mastery, using multiple-choice and written questions graded instantly against teacher-approved model answers and marking rubrics (correct / partial / incorrect). Parents get honest visibility into planned, missed and completed sessions and readiness. Children get a fun, encouraging, gamified experience. Content is produced through an AI-drafting, teacher-review back office. The closed pilot is in **January 2027** and the production launch in **February 2027**. When a test is added early enough, Slaag can offer an incremental strategy (learn and prep portion by portion, with earlier progress to the parent). The platform is language-driven (Afrikaans only in year 1, English ready) and multi-brand, so a future English offering can run under its own brand and domain on the same engine. Families are acquired through **marketing campaigns that follow the school term** (paid Meta ads, organic social media, email, community groups, media and teacher referrals), measured end to end from ad to sign-up. The platform also supports **partner organisations** (e.g. AfriForum, Solidariteit, OUTA) whose members get a discounted subscription for a fixed period through an **offer**, after which the price reverts to standard automatically; partners and offers come **after launch** and are not a key channel for the first campaign.
 
 ## Constraints
 **Platform & tech**
@@ -52,13 +53,18 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 
 **Accounts & billing**
 - Parents sign in **only** with **Google** or **email and password**. Microsoft and Apple sign-in are not offered. **Children have no sign-in details of their own** (no social login, password or PIN). A child gets in only through a **device the parent has linked** with a one-time code or QR code.
-- **Flat fee per family, up to 3 children**; the rand amount is a config value.
+- **Flat fee per account, up to 3 children** (Child members): **R149 per month** at launch; the amount is a config value.
 - **PayFast** onsite checkout; first charge pro-rata, then recurring billing on the **2nd**; card update started from Slaag.
 - **Checkout is web-only** (the "reader app" approach): the Android app shows no purchase buttons, prices or payment links.
-- Lifecycle is **driven by PayFast webhooks**. PayFast may notify Slaag of **every** failed collection attempt, so Slaag works out first vs final failure from its own subscription status plus the subscription status reported by PayFast. The first failure moves an Active subscription to **Overdue**, with one email saying there was a problem and PayFast will retry; child access continues. Later failed attempts are only logged, with no email. When PayFast reports the subscription paused after its final retry, Slaag sets **Suspended**: child access is blocked and the parent is emailed a deep link to reactivate. Reactivation is a **new web checkout** (card details entered again) that reactivates the subscription at PayFast. Cancellation is a **guided journey with a reason**; access continues to the end of the paid month. Suspended or cancelled accounts keep their data **12 months**, then it is deleted after a **30-day warning email**. A parent can delete the whole family account themselves at any time.
-- **Partner campaigns:** members of partner organisations (e.g. AfriForum, Solidariteit, OUTA) who sign up during a campaign window (e.g. 3 months) get a discounted fee for a fixed period (e.g. 12 months), which then **reverts automatically** to the standard fee after a notice email. Discounts don't stack. Campaign prices are shown only on the web.
+- Lifecycle is **driven by PayFast webhooks**. PayFast may notify Slaag of **every** failed collection attempt, so Slaag works out first vs final failure from its own subscription status plus the subscription status reported by PayFast. The first failure moves an Active subscription to **Overdue**, with one email saying there was a problem and PayFast will retry; child access continues. Later failed attempts are only logged, with no email. When PayFast reports the subscription paused after its final retry, Slaag sets **Suspended**: child access is blocked and the parent is emailed a deep link to reactivate. Reactivation is a **new web checkout** (card details entered again) that reactivates the subscription at PayFast. Cancellation is a **guided journey with a reason**; access continues to the end of the paid month. Suspended or cancelled accounts keep their data **12 months**, then it is deleted after a **30-day warning email**. A parent can delete the whole account themselves at any time.
+- **Partners and offers** *(after launch; see AC-A28–A37)*: members of partner organisations (e.g. AfriForum, Solidariteit, OUTA) who sign up during an **offer's** sign-up window (e.g. 3 months) get a discounted fee for a fixed period (e.g. 12 months), which then **reverts automatically** to the standard fee after a notice email. Discounts don't stack. Offer prices are shown only on the web.
 - Parents manage their account and subscription **on the web**: status, next billing date, card on file, card-expiry warnings, card update, cancel and reactivate.
-- **POPIA**: the parent's consent for processing children's data is recorded at registration.
+- **POPIA**: the parent's consent for processing children's data is recorded at registration, and separately their consent to **marketing measurement** (sharing hashed parent contact details and subscription events with ad platforms), which they can withdraw at any time.
+
+**Marketing**
+- Marketing runs as **one campaign per school term**, in phases that follow the term (holiday, warm-up, base, ramp, push until the assessment deadline). Strategy and targets live in [marketing/CAMPAIGN-PLAN.md](marketing/CAMPAIGN-PLAN.md).
+- **No third-party analytics or advertising tag** (e.g. Meta Pixel) on any screen. All ad-platform events are sent from Slaag's server.
+- **No child data** is ever sent to an ad platform; only Parent users' hashed contact details and the account's ID.
 
 **Content**
 - Launch coverage: **Grades 4–7**, Natuurwetenskappe & Tegnologie (NS in Gr 7), Sosiale Wetenskappe (Geskiedenis + Aardrykskunde), EBW (Gr 7); the 2–3 most-used Afrikaans textbooks for each; all 4 terms.
@@ -78,8 +84,8 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 **Language**
 - The whole experience, from social-media ad and landing page through sign-up to ongoing use, emails and support, is driven by a **language setting**; no user-facing text is hard-coded.
 - Year 1 ships **Afrikaans only**. English is supported by the platform but **switched off** by a configuration flag.
-- Language is decided in this order: **explicit parent choice → entry point (campaign link / landing-page path such as `/af` vs `/en`, or a campaign tag) → default Afrikaans**. It carries through the funnel and is saved on the family at registration.
-- **One language per family within each brand**, set by the parent and used by the children; the parent can change it in settings.
+- Language is decided in this order: **explicit parent choice → entry point (landing link / landing-page path such as `/af` vs `/en`, or a landing-link tag) → default Afrikaans**. It carries through the funnel and is saved on the account at registration.
+- **One language per account within each brand**, set by the parent and used by the children; the parent can change it in settings.
 - Content is **tagged by language**. English content would be a separate content set built from English textbooks, not machine-translated.
 - Third-party screens (PayFast payment window; Google sign-in) may appear in English; Slaag keeps these steps short and explains them in Afrikaans around them.
 
@@ -88,7 +94,7 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 - Slaag is brand #1 (Afrikaans). A future English brand would be brand #2 on its own domain.
 - **Brand is decided by where the user arrives** (the domain, or which app). Language is then chosen within that brand. Brand and language are separate settings.
 - **A separate Android app per brand**, built from the same codebase with different branding and IDs.
-- **One parent sign-in works across brands.** The parent identity (and their children) is shared; subscriptions, billing, emails, support and the look and feel are **per brand**. A family uses each brand only under that brand's look and domain.
+- **One parent sign-in works across brands.** The parent's User identity and the account's members are shared; subscriptions, billing, emails, support and the look and feel are **per brand**. An account uses each brand only under that brand's look and domain.
 - **Shared behind the scenes:** engine, content back office and infrastructure. Content sets are tagged by language and can be offered by any brand that allows that language.
 - **Year 1:** only the Slaag brand exists, but no code may assume "Slaag". Adding a brand requires configuration plus building its apps, with no other code changes.
 
@@ -113,17 +119,19 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 
 > **Staging and deferrals:** these criteria describe the full product. Which capabilities ship in the January 2027 pilot, by the February 2027 launch, or later (deferred with revisit triggers) is defined in the architecture document: [v1 Scope & Staging](logical-design/ARCHITECTURE.md#v1-scope--staging) and the [Debt Ledger](logical-design/ARCHITECTURE.md#debt-ledger). Criteria affected by a deferral carry a *Staging* note. Where the two differ on timing, the architecture document wins; the requirement itself stays here.
 
-### Accounts & Family Setup
+### Accounts & Billing
+
+> **Terms (2026-11-24):** an **Account** is the customer (its holder is an individual today, possibly a company later). **Users** are people; they belong to an account as **members** with a role: **Parent** (manages and pays) or **Child** (the learner, no sign-in details). "Parent" and "child" below mean those roles.
 - [ ] AC-A1: A parent can register and sign in only with **Google** or with **email and password**. No other sign-in methods are offered.
 - [ ] AC-A1a: Email-and-password registration requires email verification before the account can subscribe, a minimum password strength, and a self-service "forgot password" reset by emailed link. Repeated failed sign-ins are rate-limited. Passwords are stored only as strong salted hashes.
 - [ ] AC-A1b: A parent who registered with email and password can later sign in with Google using the same verified email address (and the reverse), and ends up in the same account rather than a duplicate.
 - [ ] AC-A2: Registration records the parent's POPIA consent for processing their children's data (timestamped).
 - [ ] AC-A3: Checkout uses PayFast onsite payment; the first charge is pro-rata to the 2nd of the next month, and recurring charges run on the 2nd.
 - [ ] AC-A4: A parent can start a card update from Slaag, which completes on PayFast.
-- [ ] AC-A5: A parent with an active subscription can create up to 3 child accounts; a 4th is blocked with a clear message.
+- [ ] AC-A5: A parent with an active subscription can add up to 3 children (Child members) to the account; a 4th is blocked with a clear message.
 - [ ] AC-A6: Creating a child requires only a short name (typically the first name), used to identify the child in reports; grade (4–7) and province are captured during child setup.
 - [ ] AC-A7: For each subject, the parent can confirm the textbook and turn the subject on, now or later. Subjects without a confirmed textbook stay inactive.
-- [ ] AC-A8: Child accounts have no sign-in details: no Google sign-in, email/password, username/password or PIN. A child can use Slaag only on a device the parent has linked, or through the parent's own signed-in app (AC-A11).
+- [ ] AC-A8: Children (Child members) have no sign-in details: no Google sign-in, email/password, username/password or PIN. A child can use Slaag only on a device the parent has linked, or through the parent's own signed-in app (AC-A11).
 - [ ] AC-A9: From the web app or phone app, the parent picks a child and taps "Link a device". Slaag shows a one-time **code (~8 characters) and a QR code**, valid **once**, for **that child only**, expiring after **15 minutes**.
 - [ ] AC-A10: Entering the code or scanning the QR on the child's Android app or web browser adds that child's profile to the device. It stays signed in until the parent removes the device, and later sessions open straight into the child's profile.
 - [ ] AC-A11: When 2 or more children are linked to one device, the app shows their names and the child taps their own, with no password. On the parent's own phone, the parent can switch to a child profile without linking; getting back to parent screens needs the parent to sign in again or use the phone's biometrics.
@@ -132,7 +140,7 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 - [ ] AC-A14: On a failed-payment notification, Slaag compares its local subscription status with the status PayFast reports. If the subscription is **Active** locally and still active at PayFast, it is the **first failure**: Slaag sets **Overdue** and emails the parent **once** that there was a problem with the payment and that it will be retried a few times. Child access continues while Overdue.
 - [ ] AC-A15: If the subscription is already **Overdue** and PayFast reports it still active, the attempt is logged with **no email**. If PayFast reports the subscription **paused** (its final retry failed), Slaag sets **Suspended**, blocks all child access on every linked device with a friendly message, and emails the parent **once** with a **deep link** to reactivate. The parent never receives more than one overdue email and one suspension email per billing failure episode. A successful payment while Overdue returns the subscription to Active with no further email.
 - [ ] AC-A16: A suspended or cancelled account's data is kept for 12 months. A warning email goes out 30 days before deletion, and the data is then deleted. ***Staging:** the automated 12-month deletion job and its 30-day warning are deferred after v1 (D4); retention dates are recorded from day 1. See [Architecture → Debt Ledger](logical-design/ARCHITECTURE.md#debt-ledger).*
-- [ ] AC-A17: A parent can permanently delete the whole family account, children's data included, from settings.
+- [ ] AC-A17: A parent can permanently delete the whole account, children's data included, from settings. Deletion also removes the account's users from every ad-platform audience (AC-M7).
 - [ ] AC-A18: When enrolling a child, the parent selects the child's **school** from a searchable list of about 2,000 preloaded schools.
 - [ ] AC-A19: If the school isn't listed, the parent can enter a new school name, which is saved on the child's profile.
 - [ ] AC-A20: Province is stored for reporting and does not change content, scheduling or term dates at launch.
@@ -142,19 +150,35 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 - [ ] AC-A24: When PayFast reports that the **card is close to expiry**, Slaag emails the parent a link to the PayFast card-update journey for that subscription.
 - [ ] AC-A25: While a card-expiry warning is open, the parent web app shows a **"card expiring soon"** notice on the account page and dashboard, with an action that starts the same PayFast card-update journey. The notice clears once PayFast confirms the update.
 - [ ] AC-A26: PayFast webhooks are checked for authenticity (signature and source checks) and processed idempotently; repeated or out-of-order callbacks never move a subscription to the wrong status. Every status change is logged with its triggering event.
-- [ ] AC-A27: All subscription emails (overdue, suspended, reactivated, cancellation confirmation, card expiring) follow the family's brand and language.
+- [ ] AC-A27: All subscription emails (overdue, suspended, reactivated, cancellation confirmation, card expiring) follow the account's brand and language.
 
-#### Partner campaigns
+#### Partners and offers
+> ***Staging:** partners and offers (AC-A28–A37) move **after launch** (D8, 2026-11-24): partners are not a key channel for the first marketing campaign and Term 1 runs with no offer. Landing links and codes (AC-M2) ship by launch. Revisit trigger: first partner agreement signed, or a decision to run an offer. See [Architecture → Debt Ledger](logical-design/ARCHITECTURE.md#debt-ledger). Partners and landing links belong to Marketing; offers, discounts and fee reversion belong to Billing.*
+
 - [ ] AC-A28: Staff manage **partners** in the back office: civic society organisations such as AfriForum, Solidariteit and OUTA. Each partner has a name, logo, a recorded permission to use its name and logo, contact details, and an optional membership-number format for validation. A partner belongs to a brand; a partner is not a brand.
-- [ ] AC-A29: Staff create **campaigns** per partner. Each has a name, a **sign-up window** (start and end date, e.g. 3 months), a **discount** (a percentage or a fixed rand amount off the family fee), a **discount period** in months (e.g. 12), an optional sign-up cap, terms text, and its own landing page link and campaign code. A partner can have several campaigns over time. Staff can pause or end a campaign early; that only stops new sign-ups.
-- [ ] AC-A30: Each campaign has a co-branded **landing page** in the brand's language, with its own link and QR code for the partner's newsletters, emails, social media and events. Members can also enter the **campaign code** at web checkout. The campaign is recorded as the family's acquisition entry point.
-- [ ] AC-A31: **Membership check (year 1):** during sign-up, the parent confirms they are a member of the partner and enters their membership number (checked against the partner's format, if set). Staff can export a campaign's sign-ups with membership numbers for the partner to verify. If a number is confirmed invalid, staff can remove the discount; the parent is emailed and the standard fee applies from the next billing date.
-- [ ] AC-A32: **The discount is locked in at sign-up.** A family that subscribes during the window keeps the discount for the full discount period, even after the campaign ends. The period starts from the first charge, and the pro-rata first charge is also discounted. Checkout and the account page show the discounted fee, the standard fee, and the date the discount ends.
-- [ ] AC-A33: **Automatic reversion:** when the discount period ends, the subscription fee reverts to the standard family fee then in force, with no action by the parent. Slaag emails the parent **30 days before** with the new amount and its start date, and shows the same notice on the account page. Slaag changes the recurring amount at PayFast, confirms it, and flags any failure to staff before the next billing date.
-- [ ] AC-A34: **One discount per subscription:** campaign discounts don't stack with each other or with other offers, and a family can use a campaign discount once per brand. If a discounted subscription is suspended or cancelled and then reactivated within the discount period, the discount applies for the months that remain. After the period ends, reactivation is at the standard fee.
-- [ ] AC-A35: **Partner reporting:** per partner and campaign, staff see landing-page visits, sign-ups, conversion, active discounted subscriptions, upcoming and completed reversions, cancellations around reversion, and revenue. Reports can be exported to share with partners and to calculate any commission or revenue share, whose terms are agreed outside the product.
-- [ ] AC-A36: Campaign landing pages, prices and offers appear only on the web, in line with web-only checkout; the Android app shows no prices or offers. Campaign pages and emails follow the brand and language rules (AC-X, AC-B).
-- [ ] AC-A37: Every discount applied, removed or expired, and every fee change, is recorded in the subscription's history with the campaign and the reason.
+- [ ] AC-A29: Staff create **offers**, optionally for a partner. Each has a name, a **sign-up window** (start and end date, e.g. 3 months), a **discount** (a percentage or a fixed rand amount off the standard fee), a **discount period** in months (e.g. 12), an optional sign-up cap and terms text, and is reached through its own landing link and code (AC-M2). A partner can have several offers over time. Staff can pause or end an offer early; that only stops new sign-ups.
+- [ ] AC-A30: A partner offer has a co-branded **landing page** in the brand's language, with its own landing link and QR code for the partner's newsletters, emails, social media and events. Members can also enter the **code** at web checkout. The arrival is recorded as a touchpoint and attributed to the sign-up (AC-M3, M4).
+- [ ] AC-A31: **Membership check (year 1):** during sign-up, the parent confirms they are a member of the partner and enters their membership number (checked against the partner's format, if set). Staff can export an offer's sign-ups with membership numbers for the partner to verify. If a number is confirmed invalid, staff can remove the discount; the parent is emailed and the standard fee applies from the next billing date.
+- [ ] AC-A32: **The discount is locked in at sign-up.** An account that subscribes during the window keeps the discount for the full discount period, even after the offer ends. The period starts from the first charge, and the pro-rata first charge is also discounted. Checkout and the account page show the discounted fee, the standard fee, and the date the discount ends.
+- [ ] AC-A33: **Automatic reversion:** when the discount period ends, the subscription fee reverts to the standard fee then in force, with no action by the parent. Slaag emails the parent **30 days before** with the new amount and its start date, and shows the same notice on the account page. Slaag changes the recurring amount at PayFast, confirms it, and flags any failure to staff before the next billing date.
+- [ ] AC-A34: **One discount per subscription:** offer discounts don't stack with each other, and an account can use an offer discount once per brand. If a discounted subscription is suspended or cancelled and then reactivated within the discount period, the discount applies for the months that remain. After the period ends, reactivation is at the standard fee.
+- [ ] AC-A35: **Partner reporting:** per partner and offer, staff see landing-page visits, sign-ups, conversion, active discounted subscriptions, upcoming and completed reversions, cancellations around reversion, and revenue. Reports can be exported to share with partners and to calculate any commission or revenue share, whose terms are agreed outside the product.
+- [ ] AC-A36: Offer landing pages, prices and offers appear only on the web, in line with web-only checkout; the Android app shows no prices or offers. Landing pages and emails follow the brand and language rules (AC-X, AC-B).
+- [ ] AC-A37: Every discount applied, removed or expired, and every fee change, is recorded in the subscription's history with the offer and the reason.
+
+### Marketing & Acquisition
+> Added 2026-11-24. Design: [Architecture → Marketing](logical-design/ARCHITECTURE.md#marketing-campaigns-attribution-and-ad-platforms). AC-M1, M3–M8 are needed before the first marketing campaign (target 5 January 2027); AC-M2 by launch; AC-M9 may run as a script until built.
+
+- [ ] AC-M1: Staff record a **marketing campaign** per brand and school term with its phases (holiday, warm-up, base, ramp, push), the date range and planned budget of each phase, key messages and channels.
+- [ ] AC-M2: Staff create **landing links** for a campaign (and, after launch, a partner or offer): a tagged URL, an optional short code and a QR code. A published landing link never changes meaning.
+- [ ] AC-M3: Every arrival on a landing page records a **touchpoint**: landing link or tracking tags, the ad click ID if present, the page and the time. It is captured by Slaag itself, with no third-party tag, and linked to the brand membership at registration.
+- [ ] AC-M4: A **sign-up** is the first successful payment that activates a subscription. Each sign-up is attributed to its touchpoints, so sign-ups can be counted by campaign, phase, channel and ad.
+- [ ] AC-M5: Billing publishes `CheckoutStarted`, `SubscriptionStarted` (once per subscription), `SubscriptionCancelled`, `SubscriptionSuspended` and `SubscriptionReactivated`. A reactivation is never counted as a new sign-up.
+- [ ] AC-M6: For accounts with marketing-measurement consent, Slaag sends these to the ad platform (Meta Conversions API) **from its server**: `InitiateCheckout` on checkout started, `Subscribe` (with value and currency) on subscription started, and custom `SubscriptionCancelled`, `SubscriptionSuspended` and `SubscriptionReactivated`. Each event is sent once (retries de-duplicated) and carries only Parent users' hashed contact details, the account ID and the ad click ID; never child data.
+- [ ] AC-M7: Daily, Slaag uploads the hashed email of **every Parent user** on each consenting account to ad-platform customer lists by subscription status (active, cancelled, suspended). Withdrawn consent or account deletion removes those users within 24 hours.
+- [ ] AC-M8: A parent can give or withdraw marketing-measurement consent in settings; the privacy notice explains what is shared with ad platforms and why.
+- [ ] AC-M9: Ad spend and results per ad per day are imported from the ad platform's Marketing API (the previous 7 days re-imported daily to absorb corrections).
+- [ ] AC-M10: Staff see a weekly marketing report: spend, sign-ups and cost per sign-up by campaign, phase, channel and ad; landing-page conversion; checkout drop-off (checkout started without a sign-up); tests with at least one completed session; month-2 renewal (information only).
 
 ### Content & Question Bank
 
@@ -283,12 +307,12 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 ### Language
 - [ ] AC-X1: Every user-facing string (web, apps, emails, push, digest, help pages, praise and humour, grader feedback) comes from per-language resources; an automated check finds no hard-coded user-facing text.
 - [ ] AC-X2: Supported languages are `af` and `en`; only `af` is enabled in year 1, and enabling `en` is a configuration change, not a code change.
-- [ ] AC-X3: The language is resolved as explicit choice > entry point (landing-page path or campaign tag) > default `af`, and the result stays the same from the landing page through sign-up and the first app session.
-- [ ] AC-X4: At registration the resolved language is saved on the family; all children in the family use it; the parent can change it in settings, and the change applies to the UI, emails and push.
-- [ ] AC-X5: Every textbook, index node, fact, paraphrase, question and model answer has a language tag; a child only ever sees content in the family's language.
+- [ ] AC-X3: The language is resolved as explicit choice > entry point (landing-page path or landing-link tag) > default `af`, and the result stays the same from the landing page through sign-up and the first app session.
+- [ ] AC-X4: At registration the resolved language is saved on the account; all children in the account use it; the parent can change it in settings, and the change applies to the UI, emails and push.
+- [ ] AC-X5: Every textbook, index node, fact, paraphrase, question and model answer has a language tag; a child only ever sees content in the account's language.
 - [ ] AC-X6: Landing pages, app store listings and notification templates exist for each enabled language.
 - [ ] AC-X7: Before the PayFast payment window and the Google sign-in screen, Slaag shows a short Afrikaans explanation of the step.
-- [ ] AC-X8: Grader feedback and the model answers shown are in the family's language.
+- [ ] AC-X8: Grader feedback and the model answers shown are in the account's language.
 
 ### Multi-brand
 - [ ] AC-B1: Brand name, logo, colours, mascot, tone and copy, domains, email sender, legal pages, store IDs, OAuth clients, push settings, PayFast merchant and allowed/default languages all come from a brand configuration record; an automated check finds no hard-coded "Slaag" in user-facing code or templates.
@@ -304,7 +328,7 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 - [ ] AC-L1: A closed pilot with Afrikaans families runs in **January 2027** and validates AC-E1, E2, E7 and E9.
 - [ ] AC-L2: Production launch in **February 2027**.
 - [ ] AC-L3: Parent **NPS ≥ 40**.
-- [ ] AC-L4 *(assumed)*: ≥ 60% of tests added get ≥ 1 completed session; ≥ 70% of paying families renew in month 2; a paying-family target set by the business.
+- [ ] AC-L4 *(assumed)*: ≥ 60% of tests added get ≥ 1 completed session; ≥ 70% of paying accounts renew in month 2; **250 sign-ups by the end of Term 1 2027** from the first marketing campaign (business target set 2026-11-24; see [CAMPAIGN-PLAN.md](marketing/CAMPAIGN-PLAN.md)).
 
 ## Assumptions Exposed & Resolved
 | Assumption | Challenge | Resolution |
@@ -315,7 +339,7 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 | Content must be textbook-specific | Contrarian: could it be CAPS-topic-based? (R4) | Originally a hybrid (CAPS bank + per-textbook overrides); revised 2026-11-16: the textbook is the primary index, with facts cross-referenced to CAPS |
 | "Credits" | Simplifier: what's the minimum? (R6) | In-app only + reward goals set by parents |
 | Lasting mastery across the year | Ontologist (R8) | No: each test or exam stands alone |
-| Per-child pricing | (R11) | Flat family fee, ≤ 3 children, PayFast |
+| Per-child pricing | (R11) | Flat fee per account, ≤ 3 children, PayFast (R149/month, set 2026-11-24) |
 | "Negotiate" a schedule | Study windows proposed (R12) | One suggestion at a time; rules in R16 |
 | The apps can sell subscriptions | Store billing rules (R14) | Web-only checkout; no purchase UI in the apps |
 | "JEV" grader | What is it, and what does it cost? (R15) | Two-step grader: similarity first, then a small LLM; cost cap. *Revised 2026-11-16:* language-model evaluation for every answer, escalating to a more capable model below a confidence threshold; cost cap |
@@ -333,20 +357,22 @@ A parent subscribes on the web (PayFast) and enrols up to 3 children with their 
 - **Textbook copyright:** AI extraction from photographed copies Slaag owns needs legal review. Paraphrased statements (AC-C8, C14) are a partial buffer, not a legal clearance.
 - **Importance defaults:** the tier signals (AC-C26), default weights, question counts per tier and the readiness threshold are set and tuned during the pilot.
 - **Content ingestion assumptions:** only Slaag content staff upload; a textbook is identified by edition/ISBN as well as title; the quality bar for fact extraction (e.g. share of facts approved without edits) is set during the pilot.
-- **Fee amount:** business decision; config value.
+- **Fee amount:** R149 per month per account (decided 2026-11-24); config value.
 - **Delivery risk, wider scope:** device linking, the language system, brand configuration (including a test second brand) and the strategy layer add to the 11-week build window above.
 - **Children across brands:** assumed shared with the parent identity, and can be enrolled under either brand.
-- **Language per brand:** family language is stored per brand membership, so one family can use Afrikaans on Slaag and English on another brand.
+- **Language per brand:** the account's language is stored per brand membership, so one account can use Afrikaans on Slaag and English on another brand.
 - **POPIA for shared identity:** privacy notices must say that the operating company (Slaag Group) shares one sign-in across its brands; consent is recorded per brand.
 - **Strategy switching:** if the child switches strategy, the parent is alerted; if both change it, the parent's choice wins.
 - **Strategy cut-offs:** initial runway-ratio cut-offs and portion sizes are set during the January 2027 pilot.
 - **PayFast capabilities:** the billing flow assumes PayFast notifies Slaag of failed attempts (possibly every attempt) and reports the subscription's status (active/paused) in the notification or through its API, and sends webhooks for card nearing expiry and successful payment, and supports reactivating a paused subscription through a new checkout. Check this against PayFast's subscription API early in planning.
 - **Apple sign-in rule (future):** if an iOS app is added later, Apple's guideline 4.8 may require Sign in with Apple alongside Google; this must be checked then. It doesn't apply in year 1 (no iOS app).
 - **Reactivation charge:** assumed to work like a first checkout, with a pro-rata charge to the next 2nd of the month.
-- **Partner membership check:** year 1 assumes self-declared membership with a membership number, checked afterwards by the partner from an export. Live verification through a partner's system is future work and depends on each partner.
-- **Existing subscribers:** campaigns are assumed to apply to new and returning subscribers only. Whether a family that already pays can switch to a partner discount is to be confirmed.
-- **PayFast amount change:** automatic reversion assumes Slaag can change the recurring amount of an existing PayFast subscription through its API. Check this early in planning.
-- **Partner agreements:** permission to use partner names and logos, any commission or revenue share, and the partner's role in promoting campaigns are business agreements outside the product. Price-change notices should be checked against consumer-protection rules.
+- **Partner membership check** *(after launch)*: assumes self-declared membership with a membership number, checked afterwards by the partner from an export. Live verification through a partner's system is future work and depends on each partner.
+- **Existing subscribers** *(after launch)*: offers are assumed to apply to new and returning subscribers only. Whether an account that already pays can switch to a partner discount is to be confirmed.
+- **PayFast amount change** *(after launch, with offers)*: automatic reversion assumes Slaag can change the recurring amount of an existing PayFast subscription through its API. Check this early in planning.
+- **Partner agreements:** permission to use partner names and logos, any commission or revenue share, and the partner's role in promoting offers are business agreements outside the product. Price-change notices should be checked against consumer-protection rules.
+- **Ad-platform matching without a browser tag:** server-side events matched on the captured ad click ID, hashed email, account ID, IP address and user agent are assumed to give Meta enough signal to optimise for sign-ups. Check the event match quality in the first weeks of the campaign.
+- **Marketing-measurement consent:** assumed to be a separate, optional consent with a privacy-notice line; confirm the wording against POPIA (direct marketing and sharing with an operator outside South Africa).
 
 ## Technical Context
 Greenfield: the repo currently contains only tooling and planning docs.
@@ -354,6 +380,7 @@ Greenfield: the repo currently contains only tooling and planning docs.
 - **Auth:** parents use Google OAuth or email and password (verified email, reset by emailed link, rate-limited, hashed passwords). Children use parent-authorised device linking (a one-time code/QR, 15-minute expiry, single use) that creates a long-lived device credential the parent can revoke; there is no child login.
 - **Payments:** PayFast (onsite checkout, recurring billing, card update, pause and reactivate); web-only; subscription status driven by authenticated, idempotent PayFast webhooks.
 - **Notifications:** email (parents), push (parents and children).
+- **Marketing:** ad platform (Meta) through its Marketing API (spend import), Conversions API (server-side events) and Custom Audiences (hashed Parent-user emails); no browser tag; consent-gated.
 - **AI:** OCR of photographed pages (Afrikaans/English); AI fact extraction, paraphrasing, index/CAPS tagging and curator-initiated question generation, all behind teacher review gates; runtime language-model-based grader against rubrics (confidence threshold with escalation to a more capable model, cost-capped). Model and vendor choices are in the separate architecture document.
 - **Learner modelling:** knowledge tracing per assessment + spaced-repetition scheduling, under a pluggable **strategy layer** (runway ratio → Incremental / Standard / Last-minute), with per-child tuning of cut-offs and portion sizes from recorded outcomes.
 - **Back office:** web-only content back office with versioning and a review queue.
@@ -365,14 +392,21 @@ Greenfield: the repo currently contains only tooling and planning docs.
 | Entity | Type | Fields | Relationships |
 |--------|------|--------|---------------|
 | Brand | core domain | name, domains, visual identity, tone, email sender, store/app IDs, OAuth clients, push config, PayFast merchant, legal pages, allowed + default languages | has BrandMemberships; enables content sets by language |
-| BrandMembership | supporting | parent, brand, family language, acquisition entry point, POPIA consent timestamp, joined-at | links a Parent identity to a Brand; owns that brand's Subscription |
-| Parent | core domain | name, email, sign-in method (Google / email+password), email verified, password hash (identity shared across brands) | has BrandMemberships; owns Subscription per brand; owns 1–3 Child; sets ParentRewardGoal |
-| Child | core domain | short name, grade (4–7), province | belongs to Parent; attends School; has Subjects with Textbooks; has Assessments; earns Credits |
+| BrandMembership | supporting | account, brand, account language, acquisition entry point, POPIA consent timestamp, marketing-measurement consent timestamp, joined-at | links an Account to a Brand; owns that brand's Subscription |
+| Parent (role) | core domain | a User with the Parent role in an Account; sign-in method (Google / email+password), email verified, password hash held on the User | manages the Account; owns Subscription per brand through the Account; adds 1–3 Child members; sets ParentRewardGoal |
+| Child (role) | core domain | a User with the Child role (no credentials); short name; grade, school and subjects on its LearnerProfile; province | member of an Account; attends School; has Subjects with Textbooks; has Assessments; earns Credits |
 | School | supporting | name, province, preloaded flag / custom-entered | attended by Child (~2,000 preloaded) |
-| Partner | supporting | name, logo, logo-use permission, contact, membership-number format, brand | runs Campaigns |
-| Campaign | supporting | partner, name, sign-up window, discount (% or rand), discount period (months), sign-up cap, terms, landing page, code, status | offers a discount; attributed to BrandMemberships |
-| SubscriptionDiscount | supporting | campaign, membership number, starts, ends, status (active/removed/expired), reversion notice sent | belongs to Subscription; at most one |
-| Subscription | core domain | brand, family flat fee, current fee, status (active/overdue/suspended/cancelling/cancelled/deleted), billing day = 2, pro-rata first charge, card expiry warning, cancellation reason, status history | belongs to BrandMembership (one per brand); billed through PayFast |
+| Account | core domain | holder (individual; organisation later), members with roles | has 1+ Parent members and ≤ 3 Child members; has BrandMemberships |
+| User | supporting | name, email, sign-in method, email verified (identity shared across brands) | member of Accounts with a role (Parent or Child; a Child user has no credentials) |
+| LearnerProfile | supporting | grade, school, subjects with textbooks | one per Child member |
+| Partner | supporting | name, logo, logo-use permission, contact, membership-number format, brand | has Offers and LandingLinks (Marketing) |
+| Offer | supporting | partner (optional), name, sign-up window, discount (% or rand), discount period (months), sign-up cap, terms, status | applied to Subscriptions at checkout (Billing) |
+| MarketingCampaign | supporting | brand, school term, phases (dates, budget), key messages, channels | has LandingLinks; sign-ups attributed to it |
+| LandingLink | supporting | campaign and/or partner, tagged URL, code, QR, optional offer | creates Touchpoints |
+| Touchpoint | supporting | landing link or tags, ad click ID, page, time | linked to a BrandMembership at registration |
+| AdSpend | supporting | ad platform, ad, day, spend, impressions, clicks, results | imported from the ad platform |
+| SubscriptionDiscount | supporting | offer, membership number, starts, ends, status (active/removed/expired), reversion notice sent | belongs to Subscription; at most one |
+| Subscription | core domain | brand, account flat fee, current fee, status (active/overdue/suspended/cancelling/cancelled/deleted), billing day = 2, pro-rata first charge, card expiry warning, cancellation reason, status history | belongs to BrandMembership (one per brand); billed through PayFast |
 | PayFast | external system | token, subscription ID, subscription status, card-update flow, webhooks (each failed attempt, subscription paused, card expiring, payment success) | processes Subscription payments (web only); notifies Slaag through webhooks |
 | Subject | supporting | name, grade, active flag | Child activates Subject with one Textbook |
 | SourceDocument (Textbook) | core domain | type (textbook first), title, publisher, edition/ISBN, grade, subject, language, cover | has IndexNodes, Uploads, Pages |
@@ -451,6 +485,7 @@ Greenfield: the repo currently contains only tooling and planning docs.
 | 2026-11-23 | **Placement after the index tree:** pages and anchors are placed automatically when the tree is confirmed or corrected; facts can go live before placement (AC-C2). |
 | 2026-11-23 | **Question generation:** runs take a selection of approved facts across textbooks, independent of uploads; regenerate mode; verbatim means the anchor's wording; Gate 2 samples per run and textbook (AC-C12, C14, C16–C18; Ontology). |
 | 2026-11-23 | **Live catalogue:** learners may see page numbers and index sections of their own textbook, never verbatim text or page images (AC-C24). |
+| 2026-11-24 | **Account, Marketing, offers (marketing-strategy session):** vocabulary moves from family to **Account** with **Users** as members in roles (Parent, Child); **Marketing & Acquisition** added (AC-M1–M10): term-based marketing campaigns, landing links and codes, touchpoints, server-side Meta events (`InitiateCheckout`, `Subscribe`, custom cancelled/suspended/reactivated), daily hashed Parent-user audiences, no browser tag, marketing-measurement consent; partner **campaigns** become **offers**, and partners and offers move after launch (AC-A28–A37); fee set at **R149/month**; Term 1 target **250 sign-ups** (AC-L4); partners no longer described as a key channel. |
 | 2026-11-23 | **Content open points resolved:** merge/split holds questions until Gate 2 unless marked minor; when regenerated questions replace old ones; who may retire facts and questions (AC-C16, C29). |
 
 ## Interview Transcript
