@@ -1,240 +1,238 @@
-# Campaign Plan — Slaag Pilot & Term 1 Launch (2027)
+# Campaign Plan — Slaag Term Campaigns (template + Term 1 2027)
 
-_Created 2026-11-23 using the Marketing plugin's `campaign-plan` method (Objective → Audience → Message → Channel → Measure). Sources: [PRD](../PRD.md), [Architecture: v1 Scope & Staging](../logical-design/ARCHITECTURE.md#v1-scope--staging), [Design Brief](../../DESIGN-BRIEF.md). Update this file when a decision changes._
+_Rewritten 2026-11-24 from decisions confirmed one by one with the product owner, using the Marketing plugin's `campaign-plan` method (Objective → Audience → Message → Channel → Measure). Product design: [Architecture → Marketing](../logical-design/ARCHITECTURE.md#marketing-campaigns-attribution-and-ad-platforms); requirements: [PRD AC-M1–M10](../PRD.md#marketing--acquisition). The [decision record](#decision-record) at the end lists every decision with its date._
 
-> **Open inputs.** Anything marked **⟨OPEN-n⟩** is a decision that hasn't been made yet; see [Open decisions](#11-open-decisions). The plan is built to work whatever the answers, and the decisions change the numbers, not the structure.
+**How to read this plan.** Part A is the **term template**: the same structure runs every school term. Part B is the **Term 1 2027 campaign**, the first instance, with dates, budget and a week-by-week calendar. Each later term copies Part A and fills in Part B.
 
 ---
 
-## 1. Campaign Overview
+# Part A — The term template
+
+## A1. Campaign overview
 
 | | |
 |---|---|
-| **Campaign name** | **"Ons het dit."** ("We've got this." Tone: unflappable, from the Design Brief.) Pilot phase: **Slaag Stigtersgesinne** (Slaag founding families) |
-| **One-line summary** | Get Afrikaans parents of Grade 4–7 children to swap the night-before textbook quizzing for Slaag: first a paid pilot in January, then a partner-led, Meta-supported launch in February, carried through the Term 1 test season. |
-| **Primary objective** | **⟨OPEN-4⟩ paying families by 31 March 2027** (end of Term 1). The working proposal is in §7. |
-| **Secondary objectives** | 1. Fill the January pilot with **30–50 paying families** who use the pilot textbooks. 2. Build a **waitlist of 300+ parents** by 10 January. 3. Get each confirmed partner campaign live by launch. 4. Prove the activation and retention bar from PRD AC-L4: ≥ 60% of tests added get ≥ 1 completed session, and ≥ 70% of paying families renew in month 2. |
+| **Cadence** | **One marketing campaign per school term**, independent of product milestones (pilot, launch) |
+| **Goal** | **Sign-ups**: a sign-up is a **paying family** (the first successful payment that activates a subscription). Gross sign-ups count; cancellations are dealt with later, outside the campaign |
+| **Offer** | **None.** **R149 per month** per family (up to 3 children); the copy leans on **"kanselleer enige tyd"** ("cancel any time"). Access continues to the end of the paid month |
+| **Audience** | **Mothers** of Grade 4–7 children in Afrikaans or dual-medium schools |
+| **Paid channel** | **Meta only** (Facebook and Instagram), set up by hand; no paid ad-management tool |
+| **Budget** | **R3,000 per month on average**, tuned **weekly** to the school, teaching and test cycle: more during term, less in holidays |
 
-### Phases at a glance
+## A2. Phases of a term
 
-| Phase | Dates (2026–27) | Goal | What's live in the product |
+The term is split into thirds, plus a short warm-up before school opens and a holiday phase after the term's assessments.
+
+| Phase | When | Intensity | Purpose and call to action |
 |---|---|---|---|
-| **0 Foundations** | 30 Nov – 18 Dec | Everything the campaign depends on is ready | Nothing public yet |
-| **1 Pilot recruitment** | 7 Dec – 10 Jan (paid ads paused 22 Dec – 2 Jan) | Waitlist → 30–50 pilot families | Waitlist page only |
-| **2 Pilot** | ~11 Jan – 31 Jan | Pilot families succeed; collect proof | Pilot scope: **one textbook per subject per grade, Term 1**, full billing |
-| **3 Launch** | 1 Feb – 21 Feb | Convert waitlist + partner members + Meta audiences | All launch textbooks (Term 1), **partner campaigns, landing pages, codes**, weekly digest |
-| **4 Test-season sustain** | 22 Feb – 31 Mar | Ride the Term 1 tests; month-2 renewals | Same |
+| **Warm-up** | ~1 week before school opens | Low | "Back to school, calmer this term." Awareness, with sign-up available |
+| **Base** | First third of the term | Low–medium | **Awareness and trust**: how Slaag works, their own textbook, you know where you stand. A soft CTA, but sign-up is always one tap away |
+| **Ramp** | Second third, as schools publish test and exam schedules | Medium–high | **More spend, more ad variety, a stronger CTA**: "Tests are coming. Start now." |
+| **Push** | Last third, until the assessment deadline | **High** | **Keep pushing during test time**: last-minute mothers, Slaag's Last-minute mode: "Test tomorrow? We have a plan for that too." |
+| **Holiday** | From the assessment deadline until the next term's warm-up | **Low** | **Celebrate Slaag families'** well-earned break; mothers who haven't signed up feel they're missing out, **without blame** |
 
-**Hard constraint from the architecture doc:** if the pilot isn't ready, the **pilot date moves**, not its scope. Every date below is therefore relative to the pilot start (**P-day**, currently ~11 January). If P-day moves, slide Phases 1–4 with it; don't compress them.
+**Assessment deadlines (indicative, product owner 2026-11-24):** Term 1 before 19 March · Term 2 (12 weeks, the longest) before 25 June · Term 3 before 22 September · Term 4 in November or early December. Confirm each against the published school calendar before planning the term.
 
----
+## A3. Target audience
 
-## 2. Target Audience
+> **A mother of a Grade 4–7 child** in an Afrikaans or dual-medium school, typically in a town or suburb. She checks her phone in short bursts. She worries whether her child is ready for Friday's test, and today she handles it by quizzing from the textbook the night before and following the class WhatsApp group. She finds solutions on **Facebook, in mothers' and school groups, through word of mouth, and through her child's school**. She cares most about **"are we on track?"**, peace at home, and her child's confidence.
 
-### Primary: "Marelize", the worried parent
-> Working mother of a Grade 4–7 child in an Afrikaans or dual-medium school, typically in a town or suburb. She checks her phone in short bursts. She worries about whether her child is ready for Friday's test, and today she handles it by quizzing from the textbook the night before and reading the class WhatsApp group. She finds solutions through **Facebook, mother and school groups, word of mouth, and her civic organisation's newsletters** (AfriForum, Solidariteit, OUTA). She cares most about **"are we on track?"**, peace at home, and her child's confidence.
+- **Pains:** the evening battle at the kitchen table; not knowing what will be tested; hearing about a test too late; guilt that she can't help enough; tutors that cost a lot and are hard to schedule.
+- **Objections:** "Another screen", "Will my child use it?", "Is it our textbook?", "R149 every month?", "I'm on an iPhone".
+- **Buying stage:** mostly **aware of the problem, not of a solution**. Ads open on the problem, not the product.
+- **Out of scope for now:** fathers, grandparents and Afrikaans families outside South Africa. **Children are never targeted.** They appear only through mother-facing messages.
 
-- **Pain points:** the evening battle and tears at the kitchen table; not knowing what will be tested; finding out about a test too late; feeling guilty that she can't help enough; tutors that are expensive and hard to schedule.
-- **Motivations:** a calm home, a child who feels capable, a good report, credible Afrikaans help that fits *her child's* textbook.
-- **Objections:** "Another app with screen time", "Will my child actually use it?", "Is it our textbook?", "What does it cost every month?", "I'm on an iPhone".
-- **Buying stage:** mostly **problem-aware, solution-unaware**. She isn't looking for an app; she's looking for less stress around tests. Ads must open on the problem, not the product.
+## A4. Key messages
 
-### Secondary: the child as the influencer ("Anja", 10)
-The child doesn't buy, but a child who **wants** to keep using Slaag drives renewals and word of mouth. Marketing **never targets children directly** (Meta policy, plus our values). The child's experience appears in parent-facing creative ("your child won't believe it's homework").
-
-### Tertiary: the gatekeepers and multipliers
-Partner organisations (their members, newsletters and events), Afrikaans teachers and parent associations (*ouerverenigings*) as **referrers** (schools are reference data only, not customers in year 1), and Afrikaans media.
-
----
-
-## 3. Key Messages
-
-**Core message (Afrikaans / English)**
+**Core message**
 > **Slaag maak jou kind toetsgereed, uit hul eie handboek, en jy weet altyd waar julle staan.**
 > *Slaag gets your child test-ready from their own textbook, and you always know where you stand.*
 
-| # | Supporting message | Pain it answers | Proof point (what we can show) |
+| # | Supporting message | Pain it answers | Lead phase |
 |---|---|---|---|
-| 1 | **It's their textbook, in Afrikaans.** Not generic exercises: the test scope you enter, from the book on their desk. | "Is it relevant to our school?" | Supported textbooks list per grade; teacher-reviewed content (AC-C); pilot families' schools |
-| 2 | **You know where you stand.** An alert when a session is done, with the score, weak spots and the next step. A readiness answer, not charts. | "Are we on track?" / guilt | Parent dashboard readiness card; session-complete alert (AC-O4) |
-| 3 | **Your child actually wants to do it.** Short sessions, instant feedback, credits, badges and Snippie, never shaming. | "Will my child use it?" / screen-time worry | Pilot completion rate (AC-L4 ≥ 60%); child quotes (with parental consent) |
-| 4 | **Calmer than the night before.** Add the test date; Slaag plans one session at a time, even when it's last-minute. | Evening battles, late discovery | The three strategies (Incremental, Standard, Last-minute); pilot parent testimonials |
+| 1 | **Their textbook, in Afrikaans.** No generic exercises: questions come from the test scope you enter | "Is it relevant to our school?" | Warm-up, base |
+| 2 | **You know where you stand.** After every session: the score, the weak spots and the next step. An answer, not charts | "Are we on track?" / guilt | Base, ramp |
+| 3 | **Your child actually wants to do it.** Short sessions, instant feedback, credits and badges; never shamed | "Will my child use it?" / screen time | Base, ramp |
+| 4 | **Calmer than the night before.** Enter the test date and Slaag plans one session at a time, even with a test tomorrow | Evening battles, late discovery | Ramp, push |
 
-**Message hierarchy for every ad and page:** *Why should I care?* (the evening before the test) → *What is it?* (test prep from their own textbook) → *Why Slaag?* (Afrikaans, their textbook, you see progress) → *What do I do?* (join the waitlist / subscribe).
+**Price line:** *R149 per maand vir die hele gesin (tot 3 kinders). Kanselleer enige tyd.* (Under R50 per child for three children.)
 
-**Variations by channel**
-- **Meta ads:** problem first, conversational, one emoji at most, short. Parent's point of view.
-- **Partner newsletters:** credible and warm, with the partner's member benefit up front: "As a member you get ⟨OPEN-1 discount⟩ for 12 months."
-- **Organic and mother groups:** a founder's personal voice, asking for help ("we're looking for 50 founding families"), not ad copy.
-- **Media/PR:** the bigger story: an Afrikaans ed-tech startup making exam stress smaller for families.
+**Holiday message:** *celebrate, create envy, no blame*, e.g. *"Kwartaal klaar, toetse geskryf – Slaag-gesinne, julle het hierdie vakansie verdien! 🌴"*
 
-**Voice guardrails (from the Design Brief):** the cool older cousin, not a teacher or a cartoon. Address parents as **"jy"**, never guilt-tripping, no "don't let your child fall behind" fear copy, no flags or heritage symbols, and never a pronoun for Snippie.
+**Voice rules** ([Design Brief](../../DESIGN-BRIEF.md)): the cool older cousin, not a teacher or a cartoon. Address the reader as **"jy"** everywhere. **Never guilt-trip** or use fear copy ("don't let your child fall behind"). No flags or heritage symbols. **No Snippie in ads** for now (the name isn't cleared and the artwork isn't final).
+
+## A5. Channels
+
+| # | Channel | Role | Effort |
+|---|---|---|---|
+| 1 | **Meta paid ads** (Facebook and Instagram) | The engine: reach mothers, retarget checkout drop-offs, scale what works | Medium (weekly) |
+| 2 | **Organic Facebook and Instagram pages** | Credibility when a mother checks Slaag out; ~3 posts a week of test-season tips, how it works and behind the scenes | Medium |
+| 3 | **Email** | Mothers who registered but didn't pay; subscriber news and the holiday celebration | Low–medium |
+| 4 | **Founder posts in mothers' and school Facebook groups** | The highest trust, at no cost; follow each group's rules | Low |
+| 5 | **Afrikaans media and PR** (e.g. Maroela Media, Netwerk24/Rapport, RSG) | Credibility and a launch spike; a press release and interviews | Medium |
+| 6 | **Teachers and parent associations** (as referrers) | A credible voice on test prep; a one-page leaflet with QR for school newsletters | Medium |
+
+**Not now:** partners (moved after launch), Google Search, TikTok, influencers, offers.
+
+## A6. Measurement
+
+| Measure | Definition | Source |
+|---|---|---|
+| **Main: sign-ups** | First successful payments in the campaign window, gross | Product (Billing `SubscriptionStarted`, AC-M4) |
+| Cost per sign-up (Meta) | Meta spend ÷ sign-ups attributed to Meta | Spend from the Meta Marketing API; sign-ups from touchpoints |
+| Landing-page conversion | Sign-ups ÷ landing-page visitors | Touchpoints (AC-M3) |
+| Checkout drop-off | Checkouts started without a sign-up | `CheckoutStarted` vs `SubscriptionStarted` |
+| Engagement | Tests with at least one completed session (PRD target ≥ 60%) | Product |
+| Month-2 renewal | **Information only**; churn is out of scope for the campaign | Product |
+
+**Tracking setup** (see [Architecture → Marketing](../logical-design/ARCHITECTURE.md#marketing-campaigns-attribution-and-ad-platforms)):
+- **No Meta Pixel** or any third-party tag. Slaag records every arrival itself (tags + Meta click ID) as a touchpoint.
+- Slaag's **server** sends Meta `InitiateCheckout`, `Subscribe` (R149, ZAR) and custom `SubscriptionCancelled`, `SubscriptionSuspended` and `SubscriptionReactivated`, only for families with marketing-measurement consent; **never child data**.
+- **Daily audiences:** the hashed email of every Parent user, by status. **Active** subscribers are excluded from ads; **checkout drop-offs** (checkout started, no sign-up, last 14 days) are retargeted; **cancelled and suspended** families are kept for future win-back campaigns.
+- **Weekly report, every Monday:** Slaag pulls last week's spend and results through the **free Meta Marketing API**, combines them with product sign-ups, and produces a one-page summary with up to three actions. Fallback: a CSV export from Ads Manager into `docs/marketing/reports/`.
+
+## A7. Creative production
+
+- **Claude builds the first sets as code-based images**: branded type cards and phone mock-ups using the brand colours (green `#0E7A5A`, tangerine `#FF8A3D`) and the Nunito font, 1:1 (1080×1080) and 9:16 (1080×1920). They live in `docs/marketing/creative/`.
+- **The product owner** adds or replaces visuals in Canva and records short app screen recordings as needed.
+- Production cost is zero; the whole budget goes to ad spend. **Refresh creative every 2–3 weeks** in the ramp and push phases.
 
 ---
 
-## 4. Channel Strategy
+# Part B — Term 1 2027
 
-**Decision (2026-11-23):** paid media is **Meta only** (Facebook and Instagram), set up by hand in Ads Manager using click-by-click guides from this repo. **No ad-management connector for now**: the ~$49/month goes into ad spend instead. Reconsider when we run more than ~3 campaigns at once or the weekly reporting loop becomes a chore.
+## B1. Dates
 
-| Channel | Type | Why it fits | Formats | Effort | Phases |
+Term 1 runs from **Wednesday 13 January to Friday 19 March 2027** (48 school days); Term 2 opens on 6 April 2027 ([2027 school calendar](https://www.gov.za/about-sa/school-calendar)). **Start gate:** the campaign starts on **5 January 2027 if the product works**; otherwise every date below moves with the product.
+
+| Phase | Dates | Weeks |
+|---|---|---|
+| **Groundwork** (nothing public) | 30 Nov – 4 Jan | W1–W5 |
+| **Warm-up** | Tue 5 Jan – Tue 12 Jan | W6 |
+| **Base** | Wed 13 Jan – Wed 3 Feb | W7–W9 |
+| **Ramp** | Thu 4 Feb – Wed 24 Feb | W10–W12 |
+| **Push** | Thu 25 Feb – Fri 19 Mar | W13–W16 |
+| **Holiday** | Sat 20 Mar – Sun 4 Apr | W16–W18 |
+
+## B2. Target and warning line
+
+**Target: 250 sign-ups by 19 March 2027** (from about R12,000 of Meta spend plus the free channels). This is a **stretch target**: about R48 per sign-up, well below typical paid cost per sign-up, so the free channels have to do a lot of the work. At R149 a month, 250 families are about **R37,000 a month** in recurring revenue.
+
+**Cumulative warning line** (weighted to the phases; checked every Monday):
+
+| By the end of | Sign-ups (cumulative) | If below |
+|---|---|---|
+| Warm-up (12 Jan) | 10 | Check tracking and the landing page before spending more |
+| Base (3 Feb) | 60 | Change creative and audiences; push free channels harder |
+| Ramp (24 Feb) | 140 | Move budget from the push phase forward; add retargeting |
+| Push (19 Mar) | **250** | — |
+
+## B3. Budget: R12,000 Meta spend for the term
+
+| Phase | Budget | Per week (approx.) | Share |
+|---|---|---|---|
+| Warm-up | R600 | R600 | 5% |
+| Base | R2,400 | R800 | 20% |
+| Ramp | R3,600 | R1,200 | 30% |
+| Push | R4,800 | R1,450 | 40% |
+| Holiday | R600 | R250 | 5% |
+| **Total** | **R12,000** | | |
+
+**Weekly tuning:** within each phase, put 60–70% behind the best-performing ad and keep 15–20% for testing new ones. Budget moves between weeks according to the report, while staying near R3,000 a month on average across the year.
+
+## B4. Calendar
+
+| Week | Phase | What happens | Channel | Owner | Status |
 |---|---|---|---|---|---|
-| **Partner campaigns** (AfriForum, Solidariteit, OUTA: ⟨OPEN-3⟩) | Earned/partner | The PRD names partners as **the key distribution channel**: trusted, matches the target audience, low cost per family | Newsletter feature, member email, social post, event QR code, co-branded landing page + campaign code (product feature from **launch**) | Medium–High (relationship work) | Pitch in 0–2; live in 3–4 |
-| **Meta ads** | Paid | Where Marelize spends her time; precise targeting (parents, Afrikaans language, age of children where available, regions) | Static 1:1 and 9:16, short screen-recording video, carousel; lead → conversion objectives | Medium | 1 (test), 3–4 (scale) |
-| **Waitlist + email** | Owned | Captures demand before checkout exists; nurtures through the holidays; the cheapest conversion at launch | Welcome email, 3–4 nurture emails, launch email, month-2 renewal emails | Low–Medium | 1–4 |
-| **Landing pages** (waitlist → launch → partner) | Owned | Web-only checkout means **every** journey ends on the web | Waitlist page (Phase 1), launch page with checkout (3), partner pages (product, 3) | Medium | 0–4 |
-| **Facebook page + Instagram (organic)** | Owned | Needed for ads anyway; gives credibility when a parent checks us out | 3 posts/week: tips for test season, behind the scenes, Snippie, pilot stories | Medium | 1–4 |
-| **Mother and school Facebook groups, personal networks** | Earned/community | Highest trust for pilot recruitment; costs nothing | Founder post asking for founding families (check each group's rules on promotion) | Low | 1–2 |
-| **Afrikaans media** (e.g. Maroela Media, Netwerk24/Rapport, RSG) | Earned/PR | Credibility with parents and partners; launch spike | Press release, founder interview, "pilot results" story | Medium | 3 |
-| **Teachers and parent associations** (as referrers) | Earned | Teachers are credible voices on test prep | One-page information leaflet + QR code for school newsletters (with the principal's permission) | Medium | 3–4 |
-
-**Not now:** Google Search (needs budget and a search-intent baseline; revisit after launch), TikTok (wrong audience for the buyer), influencers (revisit with pilot proof), WhatsApp broadcasts (the PRD excludes WhatsApp notifications; parents may *share* links themselves, which we encourage).
-
-### Measurement plumbing (must be live before any paid spend)
-- **Meta Pixel + Conversions API** on the waitlist page, sign-up and **after the PayFast return** (the purchase event).
-- **UTM convention:** `utm_source=meta|partner-<code>|email|organic|press`, `utm_campaign=pilot-waitlist|launch-feb27|sustain-t1`, `utm_content=<ad-variant-id>`.
-- The product already records each family's **acquisition entry point** (AC-A30) and, from launch, **partner reports** (AC-A35). Marketing reads those; don't build a parallel system.
-
----
-
-## 5. Content Calendar
-
-Week numbers start Monday. **W1 = 30 Nov 2026.** P-day (pilot start) ≈ W7. Leave ~20% of slots free for reactive content.
-
-| Week | Content piece | Channel | Owner / notes | Status |
-|---|---|---|---|---|
-| **W1** 30 Nov | Lock positioning + this plan; decide ⟨OPEN-1…4⟩ | — | Founder | ☐ |
-| W1 | Create Meta Business account, ad account (ZAR), Facebook page + Instagram; install Pixel | Meta | Founder (guide from Claude) | ☐ |
-| W1–2 | **Waitlist landing page** live (copy: Content Pack 01) + email tool + welcome email | Web, email | Claude drafts, Founder publishes. **Must be live before any ad or post** | ☐ |
-| W2 7 Dec | Founder post seeking **founding families** in 5–10 mother/school groups + personal networks | Organic/community | Founder; check group rules | ☐ |
-| W2 | **Meta test campaign** (objective: leads → waitlist), 3 ad variants, small daily budget | Meta | Claude: setup guide + copy; Founder: launches | ☐ |
-| W2 | Partner pitch pack (one page: member benefit, audience fit, reporting we provide) | Partner | Claude drafts; Founder sends ⟨OPEN-3⟩ | ☐ |
-| W3 14 Dec | Review Meta results (CSV export) → kill the weakest variant, shift budget | Meta | Weekly loop | ☐ |
-| W3 | Nurture email 1: "What Slaag is and isn't" + handbook screener (which textbook does your child use?) | Email | Screens for pilot textbooks | ☐ |
-| W4–5 22 Dec – 2 Jan | **Paid ads paused** (holidays). 1–2 light organic posts. | Organic | Low attention; save budget | ☐ |
-| **W6** 4 Jan | "Back to school" push: Meta ads resume, nurture email 2, organic "new year, new term, calmer tests" | Meta, email, organic | Back-to-school planning is a natural moment | ☐ |
-| W6 | **Invite pilot families** (screened for supported textbooks), checkout link, onboarding email | Email | Pilot is paid; price ⟨OPEN-1⟩ | ☐ |
-| **W7** 11 Jan | **P-day: pilot starts.** Onboarding check-ins; ask permission for testimonials | Email, phone | Founder | ☐ |
-| W7–9 | Organic: pilot diary ("week 1 with our founding families"), tips for test season | Organic | 3 posts/week | ☐ |
-| W8 | Partner agreements signed; campaign terms (window, discount, period) entered in back office | Partner | Product feature ships at launch | ☐ |
-| W9 25 Jan | **Launch creative** produced from pilot proof: 3–5 new ads, launch landing page, press release | All | Needs testimonials + consent | ☐ |
-| **W10** 1 Feb | **Launch.** Waitlist launch email; Meta switches to **conversion** objective; partner newsletters go out; press release | All | Partner pages and codes live (product) | ☐ |
-| W10–11 | Media interviews; parent-association leaflet to friendly schools | PR, earned | Founder | ☐ |
-| W12 15 Feb | First full weekly report: CPA by channel, partner conversion, activation | Analytics | Claude analyses the CSVs + product reports | ☐ |
-| W13–14 | **Creative refresh 1**; retargeting of landing-page visitors who didn't subscribe | Meta | Refresh every 2–3 weeks | ☐ |
-| W14 1 Mar | Month-2 **renewal** emails for pilot families: "here's what your child mastered" | Email | Retention, AC-L4 ≥ 70% | ☐ |
-| W15–16 | "Test next week?" timely ads + organic; partner reminder (window closing, if applicable) | Meta, partner | Genuine urgency only | ☐ |
-| W16–17 | **Creative refresh 2**; lookalike audience from paying families (once there are 100+) | Meta | | ☐ |
-| W18 29 Mar | End-of-term **"look what you did"** recap per family (Spotify Wrapped-style, Design Brief) → shareable; campaign retrospective | Email, organic | Feeds the Term 2 plan | ☐ |
+| **W1** 30 Nov | Groundwork | Create the Meta Business account, **ad account in ZAR**, Facebook page and Instagram profile | Meta | Product owner (guide from Claude) | ☐ |
+| W1 | Groundwork | Rework the content pack to these decisions | — | Claude | ☐ |
+| W2 7 Dec | Groundwork | **Meta API access:** system user with a token for the Conversions API, Custom Audiences and Marketing API; save the token in the environment; allow `graph.facebook.com` | Meta | Product owner + Claude | ☐ |
+| W2 | Groundwork | **Code-based ad images**, set 1 (warm-up and base) | Creative | Claude | ☐ |
+| W2–W3 | Groundwork | Landing page copy and design; privacy-notice line and **marketing-measurement consent** | Web | Claude drafts; product team builds | ☐ |
+| W3 14 Dec | Groundwork | Product build: touchpoint capture, the five Billing events, server-side Meta events, daily audience sync (PRD AC-M1, M3–M8) | Product | Product team | ☐ |
+| W3 | Groundwork | Media list, press release draft, teacher and parent-association leaflet | PR, referrers | Claude drafts | ☐ |
+| W4 21 Dec | Groundwork | Weekly report script on the Meta Marketing API; organic post bank (~30 posts) | Reporting, organic | Claude | ☐ |
+| W5 28 Dec | Groundwork | **Ads Manager guide**: campaigns, audiences and ads built **paused**; end-to-end test of tracking (a test checkout reaches Meta) | Meta | Product owner + Claude | ☐ |
+| **W6** 5 Jan | **Warm-up** | **Start gate: product works?** Switch on warm-up ads ("back to school"); first organic posts; founder group posts | Meta, organic, groups | Product owner | ☐ |
+| W7 13 Jan | **Base** | School opens. Base ads: textbook + "you know where you stand"; how-it-works posts | Meta, organic | Product owner | ☐ |
+| W7 | Base | Press release to Afrikaans media; leaflet to friendly schools' newsletters | PR, referrers | Product owner | ☐ |
+| W8 20 Jan | Base | First weekly report → first adjustments | Reporting | Claude | ☐ |
+| W9 27 Jan | Base | Creative set 2 (ramp): stronger CTA, more variants; check the warning line (60 by 3 Feb) | Creative | Claude | ☐ |
+| **W10** 4 Feb | **Ramp** | Spend up to ~R1,200/week; 4–6 ad variants; "tests are coming" posts as schools publish schedules | Meta, organic | Product owner | ☐ |
+| W10 | Ramp | **Retargeting** of checkout drop-offs switched on | Meta | Product owner | ☐ |
+| W11 11 Feb | Ramp | Email to registered-but-not-paid mothers | Email | Claude drafts | ☐ |
+| W12 18 Feb | Ramp | Creative set 3 (push): "Test tomorrow?" and Last-minute mode; warning line (140 by 24 Feb) | Creative | Claude | ☐ |
+| **W13** 25 Feb | **Push** | Spend up to ~R1,450/week; strongest CTA; "kanselleer enige tyd" prominent | Meta | Product owner | ☐ |
+| W14 4 Mar | Push | Creative refresh; second founder group posts; parent-association reminder | Meta, groups, referrers | Product owner | ☐ |
+| W15 11 Mar | Push | Last full test week: maximum push on the best ads | Meta | Product owner | ☐ |
+| **W16** 20 Mar | **Holiday** | Spend down to ~R250/week; **"Slaag families earned this break"** ads, posts and subscriber email | Meta, organic, email | Claude drafts | ☐ |
+| W17 29 Mar | Holiday | **Term 1 retrospective**: what worked, cost per sign-up by phase and channel → **Term 2 plan** (copy Part A, new Part B) | Reporting | Claude + product owner | ☐ |
 
 ### Dependencies (hard order)
-1. **Positioning + price ⟨OPEN-1⟩ → landing-page copy → page live → ads and posts.** No traffic before the page exists.
-2. **Pixel + CAPI on the page and after PayFast → any paid spend.** Otherwise we can't tell which ads produce paying families.
-3. **Pilot textbooks known → screener in the email → pilot invitations.** Pilot content covers only the most-used textbook per subject per grade.
-4. **Parent consent (POPIA: children's data) → any testimonial, child quote or child image in creative.**
-5. **"Snippie" trademark clearance (open item in the Design Brief) → Snippie as the face of paid ads.** Until then, lead with app screens and parents.
-6. **Partner agreement + campaign configured → partner newsletters**, which point at the partner landing page (a launch feature).
+1. **Product works → campaign starts** (5 Jan gate).
+2. **Touchpoint capture + server-side Meta events + consent live → any paid spend.** Without them Meta can't optimise for sign-ups and cost per sign-up can't be measured.
+3. **Meta API token + allowed host → weekly report script and audience sync.**
+4. **Active-subscriber audience uploaded → ads exclude existing families** (no wasted spend).
+5. **Snippie cleared and final art → Snippie in ads** (not this term unless both are done).
 
----
+## B5. Content pieces for Term 1
 
-## 6. Content Pieces Needed
+| # | Asset | Phase | Priority | By |
+|---|---|---|---|---|
+| C1 | Landing page (problem → solution → 4 messages → R149 + cancel any time → FAQ) | All | Must | W3 |
+| C2 | Ad set 1: warm-up and base (3 variants, 1:1 + 9:16) | Warm-up, base | Must | W2 |
+| C3 | Ad set 2: ramp (4–6 variants) | Ramp | Must | W9 |
+| C4 | Ad set 3: push and Last-minute (4–6 variants) | Push | Must | W12 |
+| C5 | Holiday celebration ad + post + subscriber email | Holiday | Must | W15 |
+| C6 | Organic post bank (~30 posts) | All | Must | W4 |
+| C7 | Founder post for groups (2 versions) | Warm-up, push | Must | W5 |
+| C8 | Email: registered-but-not-paid | Ramp | Must | W10 |
+| C9 | Press release + media kit | Base | Nice | W3 |
+| C10 | Teacher and parent-association leaflet (PDF + QR) | Base | Nice | W3 |
+| C11 | Ads Manager setup guide (click by click, built paused) | Groundwork | Must | W5 |
+| C12 | Weekly report script (Meta Marketing API) | Groundwork | Must | W4 |
 
-| # | Asset | Type | Contents | Priority | Needed by |
-|---|---|---|---|---|---|
-| A1 | Waitlist / founding-family page | Landing page | Problem → solution → 4 value props → founding-family offer → short form → FAQ | **Must** | W1 |
-| A2 | Meta ad set v1 (3 variants) | Ad creative + copy | Peace of mind / child experience / founding families | **Must** | W2 |
-| A3 | Welcome email | Email | Thanks, what's next, the textbook question | **Must** | W1 |
-| A4 | Founder post for groups | Social (organic) | Personal ask for founding families | **Must** | W2 |
-| A5 | Ads Manager setup guide | Internal how-to | Click by click, every field filled in | **Must** | W2 |
-| A6 | Pixel + CAPI implementation | Code | Events: Lead, CompleteRegistration, Purchase (after PayFast) | **Must** | W2 |
-| A7 | Nurture emails 1–3 | Email | What it is; how a session works; back to school | **Must** | W3, W6 |
-| A8 | Partner pitch pack | One-pager | Member benefit, audience, reporting, co-branding rules | **Must** | W2 |
-| A9 | Pilot invitation + onboarding emails | Email | Checkout link, set-up steps, support | **Must** | W6 |
-| A10 | Launch landing page | Landing page | A1 + proof + price + checkout | **Must** | W9 |
-| A11 | Launch ad set v2 (3–5 variants) | Ad creative | Built on pilot proof | **Must** | W9 |
-| A12 | Partner newsletter copy (per partner) | Email/article | Member benefit, co-branded | **Must** | W9 |
-| A13 | Press release + media kit | PR | Story, founder quote, screenshots, Snippie | Nice | W9 |
-| A14 | Organic post bank (≈ 30 posts) | Social | Test-season tips, behind the scenes, Snippie, stories | Nice → Must by W7 | W5 |
-| A15 | Parent-association leaflet | Print/PDF | One page + QR | Nice | W10 |
-| A16 | Renewal emails (month 2) | Email | Progress made, next tests | **Must** | W13 |
-| A17 | End-of-term recap | Email + shareable | "Look what you did" | Nice | W17 |
-
-**Content Pack 01** ([content/01-pilot-recruitment.md](content/01-pilot-recruitment.md)) drafts A1–A4.
-
----
-
-## 7. Success Metrics
-
-| KPI | Target (proposal) | How it's tracked | Cadence |
-|---|---|---|---|
-| **Primary: paying families by 31 Mar 2027** | ⟨OPEN-4⟩. Working proposal: **250** (pilot 40 + waitlist conversion 60 + partners 100 + Meta 50) | Product: active subscriptions by acquisition entry point (AC-A30) | Weekly |
-| Waitlist sign-ups by 10 Jan | 300 | Email tool + Pixel `Lead` | Weekly |
-| Pilot families (paying, active) | 30–50 | Product | Weekly in January |
-| Cost per waitlist lead (Meta) | Planning assumption R40–R100; replace with W2–3 actuals | Ads Manager CSV | Weekly |
-| Cost per paying family (Meta) | Planning assumption R200–R500; replace with launch actuals | Pixel `Purchase` + entry point | Weekly from W10 |
-| Partner conversion (landing visit → subscription) | ≥ 5% | Partner reports (AC-A35) | Weekly from W10 |
-| Activation | ≥ 60% of tests added get ≥ 1 completed session (AC-L4) | Product | Weekly |
-| Month-2 renewal | ≥ 70% (AC-L4) | Product | Monthly |
-
-**Reporting loop (no connector):** every Monday, export last week's Ads Manager results as CSV into `docs/marketing/reports/YYYY-MM-DD-meta.csv`. Claude analyses it together with the product numbers and writes a one-page summary with up to three actions.
-
----
-
-## 8. Budget Allocation
-
-Budget is ⟨OPEN-2⟩. Three tiers, all for **30 Nov 2026 – 31 Mar 2027**:
-
-| | **Lean: R5,000** | **Base: R15,000** | **Plus: R30,000** |
-|---|---|---|---|
-| Meta ad spend (70%) | R3,500 | R10,500 | R21,000 |
-| Creative production (15%): mascot art for ads, simple video edits, a stock photo or two | R750 | R2,250 | R4,500 |
-| Testing + contingency (15%) | R750 | R2,250 | R4,500 |
-
-**Meta spend by phase:** Phase 1 test 15% · Phase 3 launch 45% · Phase 4 sustain 40%. Within each phase, put 60–70% behind the best-performing variant and keep 15–20% for new tests.
-
-**Tools:** free tiers only (an email tool with a free plan, Meta Business Suite for scheduling). No paid ad-management connector (decision of 2026-11-23).
-
----
-
-## 9. Risks and Mitigations
+## B6. Risks and mitigations
 
 | Risk | Mitigation |
 |---|---|
-| **The pilot slips** (the architecture doc says the date moves, not the scope) | Plan relative to P-day; email messaging doesn't promise a date before W6; the waitlist nurture continues |
-| **Textbook mismatch:** a parent signs up, but their child's textbook isn't supported (the pilot covers one per subject per grade) | Screen for textbooks before inviting pilot families; the launch page lists supported textbooks; keep a "notify me when my textbook is added" list |
-| **Partner deals don't land by launch** | The launch works without them: waitlist + Meta + PR. Partners become a Phase 4 boost, not a dependency |
-| **Political association.** Partner co-branding could make Slaag read as political | Slaag-branded everywhere; co-branding only on partner landing pages and partner channels (Design Brief); no heritage symbols |
-| **Meta targeting for Afrikaans speakers is imprecise** | Use language + regions + parent/interest signals; let the Afrikaans copy self-select; use a lookalike audience from paying families once there are 100+ |
-| **iPhone parents** (no iOS app; web only) | Name it in the FAQ: works in the browser on iPhone; the onboarding email explains "add to home screen" |
-| **Children's privacy** | Never target children; no child faces or names without written parental consent; POPIA-compliant waitlist consent |
+| **The product isn't ready by 5 January** | The start gate moves the whole calendar; nothing public goes out before the product works |
+| **250 is a stretch** (~R48 per sign-up) | Free channels from day one; warning line every Monday; move push budget forward if the ramp is behind |
+| **Meta matching without a Pixel** is weaker | Strong first-party click-ID capture, hashed emails, IP and user agent on every server event; check event match quality in W7–W8 |
+| **Low marketing-consent rates** weaken Meta's signal | Clear, honest consent wording; measure the opt-in rate in the first weekly report |
+| **Afrikaans targeting is imprecise** | Language + regions + parent signals; the Afrikaans copy self-selects; lookalike audiences once there are ~100 paying families |
+| **iPhone mothers** (no iOS app) | The FAQ says Slaag works in the browser; the onboarding email explains "add to home screen" |
+| **Children's privacy** | Never target children; no child faces or names in creative without written consent; no child data to Meta |
+
+## B7. Next steps
+
+1. **Rework Content Pack 01** to these decisions (C1, C2, C7): no pilot, waitlist, founding families or partners.
+2. Build **ad set 1 as code-based images** (C2).
+3. Write the **Ads Manager setup guide** and the **Meta API access steps** (C11, W2).
 
 ---
 
-## 10. Next Steps
+## Decision record
 
-1. **Decide ⟨OPEN-1…4⟩** (price + partner discount, budget tier, partners, target), ideally this week.
-2. Review and approve **Content Pack 01** (waitlist page, ads, welcome email, founder post).
-3. Set up Meta Business + ad account + pages; Claude writes the **Ads Manager setup guide** (A5) and the **Pixel/CAPI** code (A6).
-4. Publish the waitlist page → start the founder posts → start the Meta test (W2).
-5. Send the partner pitch pack (A8) to confirmed contacts.
+All confirmed with the product owner on 2026-11-23/24.
 
----
-
-## 11. Open decisions
-
-| ID | Decision | Why it matters | Needed by |
-|---|---|---|---|
-| ⟨OPEN-1⟩ | Standard monthly family fee (the PRD makes it a config value) and the partner discount (% or rand, period) | Landing page, FAQ, ads, partner pitch | W1 |
-| ⟨OPEN-2⟩ | Marketing budget tier (§8) | Meta spend, creative | W1 |
-| ⟨OPEN-3⟩ | Which partners are in discussion or agreed, and contacts | Partner track timing | W2 |
-| ⟨OPEN-4⟩ | Paying-family target for 31 March 2027 (the PRD leaves it to the business, AC-L4) | Primary KPI, budget sizing | W1 |
-| ⟨OPEN-5⟩ | Founding-family offer (e.g. a price lock, a founder badge, early access) within what billing supports in the pilot | Pilot recruitment hook | W1 |
-| ⟨OPEN-6⟩ | Pilot size cap (proposal: 50) | Honest scarcity in copy | W1 |
-
----
-
-## Decision log
-
-| Date | Decision | Why |
-|---|---|---|
-| 2026-11-23 | Paid media is **Meta only**, managed by hand; **no ad-management connector** (e.g. Adspirer) for now | ~$49/month is better spent on ads at this scale; Claude provides setup guides and analyses CSV exports |
-| 2026-11-23 | Campaign planning follows the Marketing plugin's `campaign-plan` method; content follows `content-creation` / `draft-content` | A consistent, executable structure |
+| # | Decision |
+|---|---|
+| 1 | **One campaign per school term**, independent of the pilot and launch. Base (first third), ramp (second third), push (last third, until the assessment deadline) |
+| 2 | Audience: **mothers** of Grade 4–7 children; children never targeted |
+| 3 | December is groundwork; the **campaign starts 5 Jan 2027 if the product works** |
+| 4 | Meta budget **R3,000 a month on average**, tuned weekly; Term 1 ≈ R12,000 |
+| 5 | **Holidays:** lower spend; celebrate Slaag families and create envy **without blame** |
+| 6 | Price **R149 a month** per family, up to 3 children |
+| 7 | **Partners dropped** as a key channel (moved after launch, D8) |
+| 8 | Channels: Meta paid, organic Facebook and Instagram, email, founder group posts, Afrikaans media and PR, teachers and parent associations |
+| 9 | Target: **250 sign-ups by the end of Term 1**; a sign-up is a paying family; gross count, churn later |
+| 10 | **No offer**; "cancel any time" |
+| 11 | Core message: *"Slaag maak jou kind toetsgereed, uit hul eie handboek, en jy weet altyd waar julle staan."* |
+| 12 | Four supporting messages kept |
+| 13 | **"Jy"** everywhere |
+| 14 | **No Snippie in ads** for now |
+| 15 | Creative: **Claude builds code-based images first**; product owner adds Canva later |
+| 16 | Measures: sign-ups, cost per sign-up, landing-page conversion, tests with a completed session, month-2 renewal (information only); **weekly Monday report** |
+| 17 | **Free Meta Marketing API** for the report; no paid connector |
+| 18 | Meta signals: server-side `InitiateCheckout`, `Subscribe`, custom cancelled/suspended/reactivated; **no Pixel**; daily hashed emails of every Parent user; consent-gated; never child data |

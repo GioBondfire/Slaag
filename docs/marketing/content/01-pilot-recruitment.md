@@ -1,5 +1,7 @@
 # Content Pack 01 — Pilot Recruitment (Phase 1)
 
+> ⚠️ **Superseded, pending rework (2026-11-24).** Written before the decisions in [CAMPAIGN-PLAN.md](../CAMPAIGN-PLAN.md): it still contains the pilot, waitlist, founding families and partners, and uses Snippie in an ad. Don't publish anything from it. It will be replaced by a Term 1 content pack.
+
 _Drafted 2026-11-23 with the Marketing plugin's `draft-content` method, following the `content-creation` guidelines. Covers assets **A1–A4** from the [Campaign Plan](../CAMPAIGN-PLAN.md#6-content-pieces-needed). Copy is in Afrikaans; notes are in English._
 
 **Brand voice applied** (from the [Design Brief](../../../DESIGN-BRIEF.md)): encouraging, unflappable, clever, warm, cheeky. The cool older cousin, not a teacher or a cartoon. Address parents as **jy**. No guilt or fear copy. Never a pronoun for Snippie. No flags or heritage symbols.
