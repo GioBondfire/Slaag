@@ -87,7 +87,7 @@ The term is split into thirds, plus a short warm-up before school opens and a ho
 
 **Tracking setup** (see [Architecture → Marketing](../logical-design/ARCHITECTURE.md#marketing-campaigns-attribution-and-ad-platforms)):
 - **No Meta Pixel** or any third-party tag. Slaag records every arrival itself (tags + Meta click ID) as a touchpoint.
-- Slaag's **server** sends Meta `InitiateCheckout`, `Subscribe` (R149, ZAR) and custom `SubscriptionCancelled`, `SubscriptionSuspended` and `SubscriptionReactivated`, only for families with marketing-measurement consent; **never child data**.
+- Slaag's **server** sends Meta `InitiateCheckout`, `Subscribe` (R149, ZAR) and custom `SubscriptionCancelled`, `SubscriptionSuspended` and `SubscriptionReactivated`, for every family, disclosed in the privacy notice (no consent checkbox, no opt-out); **never child data**.
 - **Daily audiences:** the hashed email of every Parent user, by status. **Active** subscribers are excluded from ads; **checkout drop-offs** (checkout started, no sign-up, last 14 days) are retargeted; **cancelled and suspended** families are kept for future win-back campaigns.
 - **Weekly report, every Monday:** Slaag pulls last week's spend and results through the **free Meta Marketing API**, combines them with product sign-ups, and produces a one-page summary with up to three actions. Fallback: a CSV export from Ads Manager into `docs/marketing/reports/`.
 
@@ -149,7 +149,7 @@ Term 1 runs from **Wednesday 13 January to Friday 19 March 2027** (48 school day
 | W1 | Groundwork | Rework the content pack to these decisions | — | Claude | ☐ |
 | W2 7 Dec | Groundwork | **Meta API access:** system user with a token for the Conversions API, Custom Audiences and Marketing API; save the token in the environment; allow `graph.facebook.com` | Meta | Product owner + Claude | ☐ |
 | W2 | Groundwork | **Code-based ad images**, set 1 (warm-up and base) | Creative | Claude | ☐ |
-| W2–W3 | Groundwork | Landing page copy and design; privacy-notice line and **marketing-measurement consent** | Web | Claude drafts; product team builds | ☐ |
+| W2–W3 | Groundwork | Landing page copy and design; **privacy-notice line** on sharing with Meta | Web | Claude drafts; product team builds | ☐ |
 | W3 14 Dec | Groundwork | Product build: touchpoint capture, the five Billing events, server-side Meta events, daily audience sync (PRD AC-M1, M3–M8) | Product | Product team | ☐ |
 | W3 | Groundwork | Media list, press release draft, teacher and parent-association leaflet | PR, referrers | Claude drafts | ☐ |
 | W4 21 Dec | Groundwork | Weekly report script on the Meta Marketing API; organic post bank (~30 posts) | Reporting, organic | Claude | ☐ |
@@ -171,7 +171,7 @@ Term 1 runs from **Wednesday 13 January to Friday 19 March 2027** (48 school day
 
 ### Dependencies (hard order)
 1. **Product works → campaign starts** (5 Jan gate).
-2. **Touchpoint capture + server-side Meta events + consent live → any paid spend.** Without them Meta can't optimise for sign-ups and cost per sign-up can't be measured.
+2. **Touchpoint capture + server-side Meta events + privacy-notice line live → any paid spend.** Without them Meta can't optimise for sign-ups and cost per sign-up can't be measured.
 3. **Meta API token + allowed host → weekly report script and audience sync.**
 4. **Active-subscriber audience uploaded → ads exclude existing families** (no wasted spend).
 5. **Snippie cleared and final art → Snippie in ads** (not this term unless both are done).
@@ -180,7 +180,7 @@ Term 1 runs from **Wednesday 13 January to Friday 19 March 2027** (48 school day
 
 | # | Asset | Phase | Priority | By |
 |---|---|---|---|---|
-| C1 | Landing page `slaag.co.za/toetse`: **already designed** on the design canvas, page "Landing Blad" (https://claude.ai/artifact/WaWrEGrcdCzBe9NqiDhK9G); updated 2026-11-24 for R149, no partners, no Snippie on public pages, profile wording, optional marketing consent at registration | All | Must | ✅ |
+| C1 | Landing page `slaag.co.za/toetse`: **already designed** on the design canvas, page "Landing Blad" (https://claude.ai/artifact/WaWrEGrcdCzBe9NqiDhK9G); updated 2026-11-24 for R149, no partners, no Snippie on public pages, profile wording | All | Must | ✅ |
 | C2 | Ad set 1: warm-up and base (3 variants, 1:1 + 9:16) | Warm-up, base | Must | W2 |
 | C3 | Ad set 2: ramp (4–6 variants) | Ramp | Must | W9 |
 | C4 | Ad set 3: push and Last-minute (4–6 variants) | Push | Must | W12 |
@@ -200,7 +200,7 @@ Term 1 runs from **Wednesday 13 January to Friday 19 March 2027** (48 school day
 | **The product isn't ready by 5 January** | The start gate moves the whole calendar; nothing public goes out before the product works |
 | **250 is a stretch** (~R48 per sign-up) | Free channels from day one; warning line every Monday; move push budget forward if the ramp is behind |
 | **Meta matching without a Pixel** is weaker | Strong first-party click-ID capture, hashed emails, IP and user agent on every server event; check event match quality in W7–W8 |
-| **Low marketing-consent rates** weaken Meta's signal | Clear, honest consent wording; measure the opt-in rate in the first weekly report |
+| **Sharing with Meta without consent** (POPIA) | Accepted risk (product owner, 2026-11-24): privacy-notice line only; never child data; revisit if a parent or the Information Regulator raises it |
 | **Afrikaans targeting is imprecise** | Language + regions + parent signals; the Afrikaans copy self-selects; lookalike audiences once there are ~100 paying families |
 | **iPhone mothers** (no iOS app) | The FAQ says Slaag works in the browser; the onboarding email explains "add to home screen" |
 | **Children's privacy** | Never target children; no child faces or names in creative without written consent; no child data to Meta |
@@ -236,7 +236,8 @@ All confirmed with the product owner on 2026-11-23/24. Nothing in this plan is a
 | 15 | Creative: **Claude builds code-based images first**; product owner adds Canva later |
 | 16 | Measures: sign-ups, cost per sign-up, landing-page conversion, tests with a completed session, month-2 renewal (information only); **weekly Monday report** |
 | 17 | **Free Meta Marketing API** for the report; no paid connector |
-| 18 | Meta signals: server-side `InitiateCheckout`, `Subscribe`, custom cancelled/suspended/reactivated; **no Pixel**; daily hashed emails of every Parent user; consent-gated; never child data |
+| 18 | Meta signals: server-side `InitiateCheckout`, `Subscribe`, custom cancelled/suspended/reactivated; **no Pixel**; daily hashed emails of every Parent user; never child data |
+| 23 | **No marketing consent checkbox and no opt-out**; sharing with Meta disclosed in a privacy-notice line only (risk accepted) |
 | 19 | Term 1 budget split: warm-up R600 (5%), base R2,400 (20%), ramp R3,600 (30%), push R4,800 (40%), holiday R600 (5%) |
 | 20 | Weekly warning line: 10 sign-ups by 12 Jan, 60 by 3 Feb, 140 by 24 Feb, 250 by 19 Mar |
 | 21 | Retargeting window: checkout started without a sign-up in the **last 14 days** |
