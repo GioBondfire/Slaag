@@ -17,7 +17,38 @@ Most tests sit in the inner rings, where they are fast and need no I/O. Few end-
 | **Grader evaluation** | Verdict agreement with moderator marking **≥ 90%** (AC-E9) on a moderator-marked evaluation set of children's Afrikaans answers; rerun on any change to grader, prompt, rubric format or `AnswerEvaluator` provider | Evaluation set | On grader changes |
 | **Device & data budget** | 2 GB Android device runs sessions and animations smoothly; ≤ 5 MB per 15-min session (AC-G7, G8); web journeys on the browsers in AC-G7a | Real devices | Before pilot, then per release |
 
-**Grader spike (prototype, thrown away):** 3–5 days, before `Marking` is built for real. Run Haiku 5.5 with Sonnet 5.5 escalation against ~200 Afrikaans written answers marked by curators per key point, and measure Verdict and key-point agreement and the escalation rate. The prototype code is discarded; the **evaluation set is kept** as the grader evaluation above.
+**Grader spike (prototype, thrown away):** 3–5 days, before `Marking` is built for real. Run Haiku 5.5 with Sonnet 5.5 escalation against ~200 Afrikaans written answers marked by moderators per key point, and measure Verdict and key-point agreement and the escalation rate. The prototype code is discarded; the **evaluation set is kept** as the grader evaluation above.
+
+## Content AI evaluation
+Adopted 2026-11-24. A fixed, growing set of inputs with gold outputs for every AI task in the Content pipeline, so a prompt, model or pipeline change is shown to help before it touches real content. With AI review as the year-1 default reviewer, this and the curator's spot checks are the main measures of content quality.
+
+**Parts:** *eval cases* (input + gold output, labelled by the curator), *scorers* (exact where possible: text error rate, set matching; an AI judge with a rubric where judgement is needed, itself checked against curator labels), *eval runs* (prompt version, model, score per metric, cost; stored and comparable with production provenance).
+
+| Task | Metrics | Starting target |
+|---|---|---|
+| Page reading | Verbatim text error rate; margin keyword boxes found; page number; quality flag | Text error ≤ 1% |
+| Fact extraction | Recall; precision; one idea per fact; verbatim accuracy; fact type; importance tier; key terms | Margin keyword recall ≥ 98%; recall ≥ 95%; precision ≥ 90% |
+| Paraphrases | Same meaning; key terms kept (AI judge) | — (set after first run) |
+| Fact matching | Accuracy on same / different / same-but-changed pairs; false merges weighted above misses | False merges ≤ 1% |
+| Index tree and standard mapping | Nodes, page ranges, mapping to the right standard node | — (set after first run) |
+| Standard extraction | Nodes and levels against a gold tree | — (set after first run) |
+| Question generation | Answerable from source facts only; one right answer for multiple choice; plausible distractors; Afrikaans quality; Grade 4–7 suitability; rubric covers the model answer | Answerable ≥ 99%; one right answer ≥ 98% |
+| AI reviewer | Planted errors caught; bad items passed | Catches ≥ 90% of planted errors |
+
+Targets are starting values, adjusted after the first run.
+
+**The set:**
+- **First gold set, ready before the first real textbook is ingested:** about **30 pages** across 3 subjects and several grades, chosen for variety (margin keyword boxes, tables, maps, lists, a blurry photo, a two-page spread), plus **3 tables of contents** and **one section of a CAPS document** (about 600 gold facts).
+- **Labelling:** the curator corrects AI drafts; **5 pages are labelled from scratch** to measure how much correcting drafts biases the labels.
+- **Planted errors:** about 200 deliberately wrong candidates and questions of known kinds (wrong word in verbatim text, wrong tier, invented fact, ambiguous question), to measure the AI reviewer.
+- **Growth from real work:** any curator edit, rejection or spot-check result can be added to the set **with one click, by the curator's choice**, tagged with the error type.
+- **Held out:** about a third of the pages are never looked at while tuning prompts.
+- Stored privately like other source material (closed textbook content).
+
+**Use:**
+- **Gate:** every change to a prompt, model or pipeline code for a task runs that task's evaluation; it is accepted only if the target metric improves and no other metric drops beyond a tolerance (CI gate 8).
+- **Production signals per prompt version:** spot-check error rate, curator edit and reject rates, problem reports per 1,000 answers, AI-reviewer doubt rate.
+- **Where:** a separate developer tool (`evals/content/`), run from the command line or CI; each run costs a few dollars.
 
 ## Safety Net Map
 | # | Flow | Test level | Status |
@@ -42,5 +73,6 @@ Run in this order; a failing gate stops the pipeline.
 5. **Concurrency tests** for the 15 invariants
 6. **Migration compatibility:** every schema change works with the currently running version (expand-contract)
 7. **Grader evaluation ≥ 90%:** only on changes to grading, prompts, rubric format or the grading provider adapter
+8. **Content AI evaluation:** only on changes to a Content prompt, model or pipeline task code; the target metric improves and no other metric drops beyond tolerance
 
 Adapter contract tests against real provider sandboxes run on a schedule (nightly) and before each release, not on every change.

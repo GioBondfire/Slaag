@@ -299,6 +299,25 @@ src/
     └── reports/                   ← coverage, spot-check error rate
 ```
 
+## `evals/content/` (developer tool, outside the product code)
+
+```
+evals/content/
+├── README.md               ← how to run, add cases, read results
+├── cases/                  ← private storage reference (closed textbook content is not committed)
+│   ├── page-reading/       ← page image + gold transcription
+│   ├── extraction/         ← page + gold facts (verbatim, type, tier, key terms, links)
+│   ├── matching/           ← candidate/fact pairs: same | different | same-but-changed
+│   ├── index-tree/         ← table of contents + gold tree and mappings
+│   ├── standards/          ← CAPS section + gold tree
+│   ├── questions/          ← facts + gold judgements of generated questions
+│   └── ai-review/          ← planted errors of known kinds
+├── splits.json             ← tuning vs held-out cases
+├── scorers/                ← text error rate, set matching, AI judge (with its own calibration cases)
+├── run.ts                  ← runs one task's eval against a prompt version and model; records cost
+└── results/                ← stored runs, compared with the baseline per metric
+```
+
 ## `apps/worker/src/`
 
 ```
