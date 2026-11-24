@@ -328,6 +328,7 @@ One use case per operation. Each loads aggregates, calls domain behaviour, saves
 | `SubmitAiReview` | Job | Submits an independent AI check for each new or changed item (fact candidate, anchor, link set, question) |
 | `RecordAiReview` | Job (AI result) | Confident → approves (auto-approval logged as AI); doubtful → curator queue with reasons |
 | `DrawSpotCheckSample` | Scheduled job | Samples auto-approved items at the configured rate into the curator's spot-check queue |
+| `AddToEvalSet` | Curator | Adds a production item (an edit, rejection or spot-check result, with its input) to the Content AI evaluation set, tagged with the error type ([TESTING.md › Content AI evaluation](TESTING.md#content-ai-evaluation)) |
 | `RecordSpotCheck` | Curator | Pass / fail (with edits); updates the measured error rate per textbook and item kind |
 
 ### 6.12 Query services (back office reads)
@@ -463,6 +464,7 @@ plus the events `FactsMerged` and `FactSplit`. Never verbatim text, page images,
 | O11 | Standards and language | One language-independent node with text per language; a later language's document is matched to existing nodes |
 | O12 | Where Standards live | A module inside the Content context |
 | O14 | Exhibit types | Diagram, table, chart/graph, map, photo, illustration, timeline, other |
+| O15 | Measuring AI quality in the pipeline | **Content AI evaluation set** with a gate on every prompt, model or pipeline change; first gold set before the first textbook; see [TESTING.md › Content AI evaluation](TESTING.md#content-ai-evaluation) |
 
 ### Still open
 | # | Open point | Suggested direction |
