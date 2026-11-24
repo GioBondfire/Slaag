@@ -33,7 +33,7 @@ Confirmed in Round 0 (2026-11-10). Platform note: native store apps were first d
 | Prep Session Engine | active | Full adaptive engine with every technique; strategy layer (Incremental / Standard / Last-minute) chosen by runway ratio; language-model-based grading of written answers against rubrics | AC-E1…E25 |
 | Parent Oversight & Alerts | active | Email + push alerts, missed-session detection, weekly digest, per-child dashboard | AC-O1…O7 |
 | Child Experience & Gamification | active | Fun, low-stress Afrikaans UX; in-app credits, levels, badges, streaks, cosmetics; parent reward goals | AC-G1…G9 |
-| Schools / teachers / tutors | deferred | Group subscriptions, flipped classroom, pre/post quizzes, tutor assessment | Deferred by user in Round 0 (2026-11-10): long-term opportunity, not year 1. (Schools are captured as **reference data** only; see AC-A18.) |
+| Schools / teachers / tutors | deferred | Group subscriptions, flipped classroom, pre/post quizzes, tutor assessment, **teaching-assistance features for teachers** | Deferred by user in Round 0 (2026-11-10): long-term opportunity, not year 1. (Schools are captured as **reference data** only; see AC-A18.) "Teacher" is reserved for this future segment; it is not a staff role (staff roles: content curator, moderator, system administrator; AC-C35). |
 | English-speaking users | deferred | Expansion beyond Afrikaans communities | Deferred by user in Round 0 (2026-11-10): year 1 is 100% Afrikaans. The platform is built to support languages from day 1 (AC-X1…X8), so English can later be switched on without rework. English may launch as a **separate brand on its own domain** on the same platform. |
 | Non-education extensions | deferred | Other Slaag Group businesses for Afrikaner households | Deferred by user in Round 0 (2026-11-10) |
 | iOS app | deferred | Native iPhone/iPad app on the Apple App Store | Deferred by user on 2026-11-16: year 1 is the Android app + responsive web app; iPhone users use the web app |
@@ -463,6 +463,7 @@ Greenfield: the repo currently contains only tooling and planning docs.
 | 2026-11-23 | **AI review and edition labels:** AI review is the year-1 default reviewer with curator spot checks, teacher review switchable per textbook or subject (AC-C10, C18, C19, C34); edition labels on uploads (AC-C3); verbatim only from open sources (AC-C14); exhibit types (AC-C9). |
 | 2026-11-23 | **Roles:** the teacher role is dropped; content curators do all content work and system administrators can do anything (AC-C35; teacher wording replaced throughout). Teachers remain only as external labellers of the grader evaluation set (AC-E9). |
 | 2026-11-23 | **Moderator role:** the external answer markers are now **moderators**, a staff role that marks children's answers against rubrics ("close" queue, grader agreement, evaluation set); no teacher role remains (AC-C35, E9, E12). |
+| 2026-11-24 | **Teacher as future scope:** "teacher" is reserved for the deferred schools/teachers segment, including teaching-assistance features for teachers; moderators work in Prep (Scope table). |
 
 ## Interview Transcript
 <details>
