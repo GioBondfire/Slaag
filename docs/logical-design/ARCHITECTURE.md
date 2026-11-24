@@ -432,7 +432,7 @@ Added 2026-11-24. Campaign strategy: [../marketing/CAMPAIGN-PLAN.md](../marketin
 **Rules.**
 - **No child data ever leaves the system:** only Parent users' hashed emails (and phone, if held) and the account's ID as `external_id`.
 - Events and uploads are sent **only for accounts with marketing-measurement consent** on the brand membership; a privacy-notice line explains it (POPIA). Withdrawal or erasure removes the account's users from every audience.
-- Each delivery uses the source domain event's ID as the ad platform's `event_id`, so retries and browser/server duplicates are removed by the platform; deliveries go through an outbox like every other cross-context effect.
+- Each delivery uses the source domain event's ID as the ad platform's `event_id`, so retried deliveries are removed by the platform; deliveries go through an outbox like every other cross-context effect.
 - The **spend import** is a scheduled batch (daily, the previous 7 days re-imported to absorb late corrections), idempotent by (platform, ad, day).
 - **No ad-platform browser tag** (no Meta Pixel) on any page, in line with [TECH-STACK.md](../TECH-STACK.md) "no third-party analytics SDK on any screen" (user decision 2026-11-24). Every ad-platform event is sent from Slaag's server. Matching uses the ad click ID captured first-party on the `Touchpoint` (sent as the platform's click identifier, e.g. `fbc` built from `fbclid`), the Parent user's hashed email, the account ID as `external_id`, and the request's IP address and user agent recorded with the event. Landing-page views are measured from touchpoints, not sent to the ad platform.
 
