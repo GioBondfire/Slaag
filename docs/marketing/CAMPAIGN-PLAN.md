@@ -95,7 +95,8 @@ The term is split into thirds, plus a short warm-up before school opens and a ho
 
 - **Claude builds the first sets as code-based images**: branded type cards and phone mock-ups using the brand colours (green `#0E7A5A`, tangerine `#FF8A3D`) and the Nunito font, 1:1 (1080×1080) and 9:16 (1080×1920). They live in `docs/marketing/creative/`.
 - **The product owner** adds or replaces visuals in Canva and records short app screen recordings as needed.
-- Production cost is zero; the whole budget goes to ad spend. **Refresh creative every 2–3 weeks** in the ramp and push phases.
+- Production cost is zero; the whole budget goes to ad spend.
+- **Refresh creative every 2–3 weeks** in the ramp and push phases, **and sooner when the weekly report shows ad fatigue** (frequency above ~3 per person and cost per result rising on an ad).
 
 ---
 
@@ -214,7 +215,7 @@ Term 1 runs from **Wednesday 13 January to Friday 19 March 2027** (48 school day
 
 ## Decision record
 
-All confirmed with the product owner on 2026-11-23/24.
+All confirmed with the product owner on 2026-11-23/24. Nothing in this plan is an unconfirmed assumption except the indicative assessment deadlines for Terms 2–4.
 
 | # | Decision |
 |---|---|
@@ -236,3 +237,7 @@ All confirmed with the product owner on 2026-11-23/24.
 | 16 | Measures: sign-ups, cost per sign-up, landing-page conversion, tests with a completed session, month-2 renewal (information only); **weekly Monday report** |
 | 17 | **Free Meta Marketing API** for the report; no paid connector |
 | 18 | Meta signals: server-side `InitiateCheckout`, `Subscribe`, custom cancelled/suspended/reactivated; **no Pixel**; daily hashed emails of every Parent user; consent-gated; never child data |
+| 19 | Term 1 budget split: warm-up R600 (5%), base R2,400 (20%), ramp R3,600 (30%), push R4,800 (40%), holiday R600 (5%) |
+| 20 | Weekly warning line: 10 sign-ups by 12 Jan, 60 by 3 Feb, 140 by 24 Feb, 250 by 19 Mar |
+| 21 | Retargeting window: checkout started without a sign-up in the **last 14 days** |
+| 22 | Creative refresh every 2–3 weeks in ramp and push, and sooner when the data shows fatigue |
