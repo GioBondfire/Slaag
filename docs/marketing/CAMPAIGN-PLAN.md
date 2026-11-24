@@ -180,7 +180,7 @@ Term 1 runs from **Wednesday 13 January to Friday 19 March 2027** (48 school day
 
 | # | Asset | Phase | Priority | By |
 |---|---|---|---|---|
-| C1 | Landing page (problem → solution → 4 messages → R149 + cancel any time → FAQ) | All | Must | W3 |
+| C1 | Landing page `slaag.co.za/toetse`: **already designed** on the design canvas, page "Landing Blad" (https://claude.ai/artifact/WaWrEGrcdCzBe9NqiDhK9G); updated 2026-11-24 for R149, no partners, no Snippie on public pages, profile wording, optional marketing consent at registration | All | Must | ✅ |
 | C2 | Ad set 1: warm-up and base (3 variants, 1:1 + 9:16) | Warm-up, base | Must | W2 |
 | C3 | Ad set 2: ramp (4–6 variants) | Ramp | Must | W9 |
 | C4 | Ad set 3: push and Last-minute (4–6 variants) | Push | Must | W12 |
@@ -207,7 +207,7 @@ Term 1 runs from **Wednesday 13 January to Friday 19 March 2027** (48 school day
 
 ## B7. Next steps
 
-1. **Rework Content Pack 01** to these decisions (C1, C2, C7): no pilot, waitlist, founding families or partners.
+1. **Rework Content Pack 01** to these decisions (C2, C7): no pilot, waitlist, founding families or partners. The landing page (C1) lives on the design canvas, not in the content pack.
 2. Build **ad set 1 as code-based images** (C2).
 3. Write the **Ads Manager setup guide** and the **Meta API access steps** (C11, W2).
 
