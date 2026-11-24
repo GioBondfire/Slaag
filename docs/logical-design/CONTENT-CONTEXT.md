@@ -63,6 +63,8 @@ content/
     outbound/             repositories, ContentAI, SourceRepository, MediaStore, publisher
 ```
 
+The file-by-file layout across the monorepo is in [CONTENT-MODULE-STRUCTURE.md](CONTENT-MODULE-STRUCTURE.md).
+
 The **catalogue contract** (effective importance, rubric format, published shapes) is the one piece other contexts compile against. It is defined once and versioned ([ARCHITECTURE.md › Design Conventions](ARCHITECTURE.md#design-conventions): one source per contract).
 
 ---
