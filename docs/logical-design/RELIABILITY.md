@@ -36,7 +36,7 @@ All values below are **starting budgets** (2026-11-16), to be tuned from pilot m
 | Suspended/cancelled family data | 30-day warning, then deletion at 12 months (AC-A16) |
 
 **Self-inflicted load**
-- [ ] Campaign landing pages served from the edge cache (a partner newsletter can reach hundreds of thousands of members at once). (Owner: team, P1)
+- [ ] Landing pages (marketing campaigns and partners) served from the edge cache (a partner newsletter can reach hundreds of thousands of members at once). (Owner: team, P1)
 - [ ] Rate limits on checkout, sign-in (AC-A1a) and **link-code redemption** (guessing an 8-character code). (Owner: team, P1)
 - [ ] The session-due push fan-out is spread over 1–2 minutes through the queue. (Owner: team, P1)
 
@@ -68,7 +68,7 @@ All values below are **starting budgets** (2026-11-16), to be tuned from pilot m
 ## Deploy vs Release
 - **Zero-downtime deploys:** start the new version, pass the health check, switch traffic, keep the previous version ready.
 - **Feature flags per brand and per family cohort** (pilot cohort first).
-- **Kill switches:** LLM grading (forces Close), each prep strategy (falls back to Standard), campaigns, each language.
+- **Kill switches:** LLM grading (forces Close), each prep strategy (falls back to Standard), offers, ad-platform event delivery and audience sync, each language.
 - **Expand-contract schema changes:** every migration is backward-compatible with the running version, so rollback never needs a schema rollback.
 - **Contract compatibility:** the server supports the current and previous mobile API versions; the Android app enforces a minimum version. Domain events are versioned; handlers accept the old and new shape during a transition.
 - **Rollback:** redeploy the previous build within **10 minutes**. Content rollback = republish the previous (immutable) version.

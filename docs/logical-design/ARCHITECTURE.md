@@ -4,16 +4,17 @@ Logical design only: technology-neutral. Components are named by role; technolog
 
 ## System Context
 
-**What the system does.** A multi-brand, multi-language platform that helps parents of Grade 4–7 children prepare them for school tests and exams. Parents subscribe per family on the web and enrol up to 3 children with their textbooks. A parent or child adds a test with a date and scope. An adaptive engine drills the child towards mastery of teacher-reviewed, importance-weighted facts from the child's own textbook. Content is produced in a back office where AI drafts and teachers review. Year 1 runs one brand with Afrikaans only. No code may assume a particular brand or language.
+**What the system does.** A multi-brand, multi-language platform that helps parents of Grade 4–7 children prepare them for school tests and exams. A parent subscribes per **account** on the web and adds up to 3 children with their textbooks. A parent or child adds a test with a date and scope. An adaptive engine drills the child towards mastery of teacher-reviewed, importance-weighted facts from the child's own textbook. Content is produced in a back office where AI drafts and teachers review. Marketing campaigns per school term bring families in and are measured end to end. Year 1 runs one brand with Afrikaans only. No code may assume a particular brand or language.
 
-**Actors.** Parent (web, Android), child (linked device or the parent's app; no credentials), content curator and teacher reviewer (back office, web only), staff (partners, campaigns, support).
+**Actors.** Parent (a User with the Parent role in an Account; web, Android), child (a User with the Child role; linked device or the parent's app; no credentials), content curator and teacher reviewer (back office, web only), staff (partners, offers, marketing campaigns, support).
 
 **Delivery channels.** Responsive web app, Android app (through a versioned mobile API), back office.
 
 **Outbound integrations (by role).**
 | Role | Used by | Purpose |
 |---|---|---|
-| Payment provider | Billing & Campaigns | Checkout, recurring billing, card update, amount change, status webhooks; one merchant account per brand |
+| Payment provider | Billing | Checkout, recurring billing, card update, amount change, status webhooks; one merchant account per brand |
+| Ad platform (Meta in year 1) | Marketing | **Marketing API:** weekly import of spend and results per ad campaign, ad set and ad. **Conversions API:** server-side conversion and lifecycle events. **Custom Audiences API:** hashed Parent-user emails per audience segment |
 | Social identity provider | Identity & Access | Parent sign-in (alongside email + password) |
 | Transactional email provider | Notifications | Parent emails, digests, billing notices |
 | Push notification provider | Notifications | Parent and child push on Android |
@@ -57,13 +58,13 @@ Source-code dependencies point inward only. Nothing in an inner ring names anyth
 | 3. Adapters | **Inbound adapters** (the outside calling in): web, mobile-API-per-version and back-office endpoints with their presenters; job, event and scheduled-trigger handlers. **Outbound adapters** (use cases calling out): repository implementations; provider gateways and translators; `MediaStore`, `Notifier` and publisher implementations | Application, Domain |
 | 4. Drivers | Frameworks, the data store, provider SDKs, the job runner; the **composition root** that wires every concrete implementation | Everything |
 
-**Data crossing boundaries.** Plain request/response models only. The data store's records, provider payloads and channel request objects never cross inward. Use cases return **message keys**, never text; presenters localise them to the family's language and brand.
+**Data crossing boundaries.** Plain request/response models only. The data store's records, provider payloads and channel request objects never cross inward. Use cases return **message keys**, never text; presenters localise them to the account's language and brand.
 
 **Request context.** Brand, language and actor (parent, or child on a linked device) are resolved at the edge and passed inward as plain IDs/keys.
 
 **Between modules.** A module calls another module's published use cases, or reacts to its domain events. It never reads or writes another module's data.
 
-**Modules = bounded contexts** (Phase 2; see below): Prep · Content · Family · Billing & Campaigns · Identity & Access · Rewards · Notifications · Platform Config. The provisional Planner and Prep Engine modules from Phase 1 were merged into **Prep**.
+**Modules = bounded contexts** (Phase 2; see below): Prep · Content · Account · Billing · Marketing · Identity & Access · Rewards · Notifications · Platform Config. The provisional Planner and Prep Engine modules from Phase 1 were merged into **Prep**. A context may be divided into **internal packages** (e.g. Marketing's Campaigns, Acquisition, Ad platforms, Reporting); a package is not a module and has no published interface of its own.
 
 ### Boundary map
 | Part likely to change | Boundary | Why |
@@ -71,22 +72,23 @@ Source-code dependencies point inward only. Nothing in an inner ring names anyth
 | Inbound adapters (web, mobile API v1/v2, back office) | Full: one thin inbound adapter per entry point + presenters | Three channels already; the mobile API is versioned |
 | Transactional data store | Full: repository port per module | Core testable without the store; data outlives code |
 | Payment provider | Full + anti-corruption translator (`BillingGateway`, webhook translator) | Unusual states and webhooks; one merchant per brand; highest vendor risk |
+| Ad platform (Meta) | Full + anti-corruption translators: `AdInsightsSource` (inbound import), `ConversionSink` (outbound events), `AudienceSink` (outbound customer lists) | API versions change often; Meta's terms (ad set, fbclid, event names) must never pass into Marketing's model; a second ad platform must be an adapter, not a redesign |
 | AI content provider | Full: `ContentAI` port | Models and providers change fast; expensive work |
 | LLM grader | Full: `AnswerEvaluator` port with two steps | Cost cap and "close" fallback; the core engine depends on it |
 | Email + push | Partial: one `Notifier` port, a strategy per channel | Simple; a new channel must not touch business rules |
-| Sign-in / identity provider | Partial: the identity module exposes only `ParentId` / `ChildId` | The provider's sign-in flow stays at the edge |
+| Sign-in / identity provider | Partial: the identity module exposes only `UserId` | The provider's sign-in flow stays at the edge |
 | Object storage | Partial: `MediaStore` port | Used only by Content |
 | Clock, scheduled triggers | Partial: `Clock` port + trigger adapter | All date logic testable |
 | Brand and language | Resolved at the edge into the request context; the core sees IDs/keys only | PRD AC-B1: no code may assume a brand |
 | Prep strategies | Plug-in boundary inside the core | PRD AC-E20: add strategies without changing planner, grader or runner |
-| Plain reference data (school list, credit table, partner records) | Collapsed: inbound adapter → repository | No business rules to protect |
+| Plain reference data (school list, credit table) | Collapsed: inbound adapter → repository | No business rules to protect |
 
 ### First feature layered: "Add a test → suggest the next session"
 PRD AC-P1–P4, P9–P10, C11, E13–E14, O1.
 
 1. **Inbound adapter:** the web or mobile-API endpoint resolves the request context and builds `AddAssessmentRequest { child, actor, type, subject, date, scope (index nodes | page ranges) }`.
 2. **Use case `AddAssessment` (Prep, planning module):**
-   - Access (whether this actor may act for this child) is already settled by the **request-context resolver** at the edge (Phase 5, S9); the use case asks Family's published interface whether the subject is active with a confirmed textbook.
+   - Access (whether this actor may act for this child) is already settled by the **request-context resolver** at the edge (Phase 5, S9); the use case asks Account's published interface whether the subject is active with a confirmed textbook on the child's `LearnerProfile`.
    - **`ContentCatalogue`** (Content's published interface): scope → approved fact references with tier, weight, difficulty.
    - `Assessment` entity enforces its invariants (date today or later; scope resolves to at least one fact).
    - **`PrepPlan.plan(assessment, mastery, today)`** (Phase 5, S1): works out runway, picks the `PrepStrategy` plug-in using the child's `LearnerTuning` (internal to Prep), and suggests the next session.
@@ -106,27 +108,32 @@ PRD AC-P1–P4, P9–P10, C11, E13–E14, O1.
 |---|---|---|
 | **Prep** | Assessments, scope, runway and strategy, portions, next-session suggestion, prep sessions, grading policy, mastery and readiness, per-child tuning | **Core** |
 | **Content** | Textbooks, index tree + curriculum cross-reference, uploads/pages, facts (paraphrases, importance, links), questions (model answer, rubric), generation runs, review gates, versions, problem reports | **Core fact model** (importance tiers, fact links, model answers, rubrics); ingestion and review workflow are supporting |
-| **Family** | Household, children (name, grade, school, subjects with textbook), brand memberships (language, consent, entry point), school reference data | Supporting |
-| **Billing & Campaigns** | Subscription lifecycle per brand membership, fee and discount, partners, campaigns, membership numbers, fee reversion | Supporting (payment processing itself is generic, behind a translation layer) |
-| **Identity & Access** | Parent sign-in identity shared across brands, account linking, staff and reviewer roles, device-link codes, linked devices | Generic; device linking is supporting |
+| **Account** | Accounts (the customer: holder, members with roles), learner profiles of Child members (name, grade, school, subjects with textbook), brand memberships (language, consent, entry point), school reference data | Supporting |
+| **Billing** | Subscription lifecycle per brand membership, fee, **offers** (discount, discount period, sign-up window, cap), membership numbers, fee reversion; publishes Access and the subscription lifecycle events | Supporting (payment processing itself is generic, behind a translation layer) |
+| **Marketing** | **Marketing campaigns** per school term with phases and budgets, **partners** and landing links (codes, QR codes), **touchpoints** and attribution, ad-platform integration (spend import, conversion and lifecycle events, audiences), marketing and sales-ops reporting. Internal packages: **Campaigns**, **Acquisition**, **Ad platforms**, **Reporting** | Supporting (ad platforms are generic, behind translation layers) |
+| **Identity & Access** | **Users** (sign-in identity shared across brands; a child is a User without credentials), identity linking, staff permissions, device-link codes, linked devices | Generic; device linking is supporting |
 | **Rewards** | Credit ledger, levels, badges, cosmetics, streaks, parent reward goals | Supporting |
 | **Notifications** | Alert preferences (mutes per type and channel), push and email delivery, weekly digest | Generic |
 | **Platform Config** | Brands, allowed and default languages, language resolution, message catalogues | Supporting |
 
-Parent dashboard, readiness views, partner reports and content coverage are **read models** built from these contexts, not contexts of their own (Phase 4).
+Parent dashboard, readiness views, partner and marketing reports and content coverage are **read models** built from these contexts, not contexts of their own (Phase 4).
+
+**Account vs User.** An **Account** is the customer: a higher-order construct whose **holder** is an individual today and may be a company later. **Users** (Identity & Access) are people; they belong to an Account as **members** with a **role** (Parent, Child; later e.g. Teacher). The word "account" means only the customer account; Identity & Access speaks of Users and identity linking.
 
 ### Context map
 ```
                   Platform Config  (upstream to all: brand + language lookup)
                          │
-  Identity & Access ──► Family ──► Prep ◄── Content (published catalogue)
-         ▲                ▲          │            │
-         │      Billing & Campaigns  │            ├─ ACL ─► AI content provider
-         │       (publishes Access)  │            └─ problem reports ◄── Prep
-         │                │          ├─ ACL ─► LLM grading provider
-         │                └─ ACL ─► payment provider
-         │                           │ events
-         └────────────────────── Notifications, Rewards (react to Prep/Billing/Family events)
+  Identity & Access ──► Account ──► Prep ◄── Content (published catalogue)
+         ▲                ▲           │            │
+         │             Billing        │            ├─ ACL ─► AI content provider
+         │   (publishes Access +      │            └─ problem reports ◄── Prep
+         │    lifecycle events)       ├─ ACL ─► LLM grading provider
+         │          │   │  └─ ACL ─► payment provider
+         │          │   ▼
+         │          │  Marketing ── ACL ─► ad platform (Meta: insights in; events + audiences out)
+         │          │   events
+         └──────────┴─────────── Notifications, Rewards (react to Prep/Billing/Account events)
 ```
 
 | Upstream → Downstream | Pattern | What crosses |
@@ -134,14 +141,19 @@ Parent dashboard, readiness views, partner reports and content coverage are **re
 | Content → Prep | Open Host Service + Published Language (**content catalogue**) | Approved, live versions only: scope → fact-set resolution; fact references with their **in-scope anchors** (anchor ID, page number, index node) and **effective importance** (`effectiveImportance`, defined once in the catalogue contract), difficulty, links and lineage; live questions with their **anchor IDs**, model answer and rubric. Never pages, verbatim text, drafts or review state (PRD AC-C24) |
 | Content → Prep | Domain events (Published Language) | `FactsMerged {from[], into}`, `FactSplit {from, into[]}`: Prep carries mastery over (see [Content: facts, anchors and lineage](#content-facts-anchors-and-lineage)) |
 | Prep → Content | Customer–Supplier | Problem reports on a question (AC-C21) |
-| Billing & Campaigns → all | Published Language | **Access** per brand membership (`AccessGranted` / `AccessSuspended`). Subscription states never leave Billing |
+| Billing → all | Published Language | **Access** per brand membership (`AccessGranted` / `AccessSuspended`), read live for authorisation |
+| Billing → Marketing (and any subscriber) | Published Language (domain events) | **Subscription lifecycle facts:** `SubscriptionStarted` (first successful payment activates it; carries fee charged, currency, offer ID if any), `SubscriptionCancelled` (with reason), `SubscriptionSuspended`, `SubscriptionReactivated`; plus `CheckoutStarted`. The lifecycle **state machine** and provider terms stay private to Billing |
+| Marketing → Billing | Customer–Supplier | A landing link or code refers to an **Offer** by ID; Billing validates and applies it at checkout |
 | Payment provider → Billing | Anti-Corruption Layer | Provider subscriptions and webhooks translated into Billing events; provider terms never pass the translator |
+| Marketing ↔ ad platform | Anti-Corruption Layer (both directions) | **In:** spend and results per ad translated into `AdSpend` records. **Out:** Billing lifecycle facts → conversion events (`SubscriptionStarted` → `Subscribe`; cancelled, suspended, reactivated → custom events of the same name); audience segments → hashed Parent-user emails. Meta's terms never pass the translators |
+| Account → Marketing | Customer–Supplier | Parent-role members' `UserId`s per account and the account's marketing consent; Marketing fetches emails from Identity & Access for audience uploads only, hashed in the adapter |
 | AI content provider → Content | Anti-Corruption Layer | Page reading, extraction, generation results as Content drafts |
 | LLM grading provider → Prep | Anti-Corruption Layer | Borderline-answer evaluation as a Verdict proposal against the rubric |
-| Identity & Access → Family, Prep, Rewards, Notifications | Customer–Supplier | `ParentId`, `ChildId`, `DeviceId`; an authenticated actor |
-| Family → Prep, Rewards, Notifications | Customer–Supplier | Child grade, active subjects with textbook, family language per brand |
+| Identity & Access → Account, Prep, Rewards, Notifications, Marketing | Customer–Supplier | `UserId`, `DeviceId`; an authenticated actor; a User's email for Notifications and Marketing audience uploads |
+| Account → Prep, Rewards, Notifications | Customer–Supplier | Members and roles; a Child member's grade and active subjects with textbook; account language per brand |
 | Prep → Notifications, Rewards | Domain events (Published Language) | `AssessmentAdded`, `AssessmentChanged` (with actor), `SessionScheduled`, `SessionMissed`, `SessionCompleted`, `PortionCompleted`, `StrategySwitched`, `ResultRecorded` |
-| Family → all | Domain event | `FamilyErasureDue`: every context erases its own data (AC-A16–A17) |
+| Account → all | Domain event | `AccountErasureDue`: every context erases its own data (AC-A16–A17); Marketing also removes the account's users from every uploaded audience |
+| Account → Marketing | Domain event | `MarketingConsentWithdrawn`: stop sending the account's events and remove its users from audiences |
 | Platform Config → all | Open Host Service; downstream conformist | Brand record, allowed/default languages, message lookup |
 
 ### Aggregates and invariants
@@ -162,13 +174,17 @@ Other aggregates are referenced by ID only; consistency between aggregates is ev
 | Content | **FactLinkSet** | One per fact: its outgoing typed links (elaborates / part of with a position / related) to other facts by `FactId`; versioned and lightly reviewed as one item, apart from the fact core and anchors; no "duplicates" link (a restatement is another anchor on the same fact). A link is live only while both its facts are live (computed) |
 | Content | **GenerationRun** | Started only by a curator; a **fact selection** across any source documents (ready for questions, approved since, by structure, hand-picked); mode **generate more** or **regenerate**; options; urgency (batch or real time); logs who, when, selection, options, counts created / dropped as duplicate / dropped as invalid, model, prompt version, cost |
 | Content | **ReviewBatch** | One per **generation run and source document**: that run's mechanical-type questions for that source; ~10% sample with ≥95% pass, otherwise review the whole batch; none of them go live until the batch passes |
-| Billing | **Subscription** | One per brand membership; lifecycle state machine; each provider event applied exactly once and late events never move it to a wrong state; at most one overdue email and one suspension email per failure episode; at most one discount, a campaign discount once per family per brand; fee history |
-| Billing | **Campaign** | Sign-up window and cap; pausing or ending stops new sign-ups only |
-| Billing | **Partner** | Belongs to one brand |
-| Family | **Family** | At most 3 children |
-| Family | **Child** | A subject is active only with a confirmed textbook |
-| Family | **BrandMembership** | Language within the brand's allowed languages; consent timestamp recorded |
-| Identity | **ParentIdentity** | One account per verified email, whatever the sign-in method |
+| Billing | **Subscription** | One per brand membership; lifecycle state machine; each provider event applied exactly once and late events never move it to a wrong state; at most one overdue email and one suspension email per failure episode; at most one discount, an offer discount once per account per brand; fee history; publishes `SubscriptionStarted` **exactly once** (first successful payment) and `SubscriptionReactivated` (never a second `SubscriptionStarted`) for later activations |
+| Billing | **Offer** | Discount (percentage or rand amount), discount period, sign-up window and cap; optionally tied to a Partner (by ID); pausing or ending stops new sign-ups only |
+| Marketing | **MarketingCampaign** | One per brand and school term; ordered **phases** (holiday, warm-up, base, ramp, push) with date ranges that don't overlap and a planned budget each; key messages; channels |
+| Marketing | **Partner** | Belongs to one brand; recorded permission to use its name and logo; optional membership-number format |
+| Marketing | **LandingLink** | A trackable entry point (URL with tags, code, QR) belonging to a campaign and/or partner; may refer to an Offer by ID; stable once published |
+| Marketing | **Touchpoint** | One recorded arrival: landing link or UTM tags, ad click ID, landing page, time; linked to a `BrandMembership` by ID at sign-up, never changed afterwards |
+| Marketing | **AdSpend** | One per ad-platform ad per day: spend, impressions, clicks, platform-reported results; written only by the import, idempotent by (platform, ad, day) |
+| Account | **Account** | One **holder** (an individual today; an organisation later); at least one member with the Parent role; **at most 3 members with the Child role** |
+| Account | **LearnerProfile** | One per Child member: grade, school, subjects; a subject is active only with a confirmed textbook. Kept apart from Account so school edits don't serialize the whole account |
+| Account | **BrandMembership** | Language within the brand's allowed languages; consent timestamps recorded (product terms, and **marketing measurement** for ad-platform events and audiences) |
+| Identity | **User** | One User per verified email, whatever the sign-in method; a Child user has no credentials and acts only through a linked device or a parent's app |
 | Identity | **DeviceLinkCode** | Single use, one child, valid 15 minutes |
 | Identity | **LinkedDevice** | Holds a long-lived device credential used only to obtain **30-minute access tokens**; once revoked, it can't obtain a new access token, so it stops working within 30 minutes |
 | Rewards | **CreditLedger** | One per child; credits only from credit-table activities |
@@ -209,13 +225,28 @@ Other aggregates are referenced by ID only; consistency between aggregates is ev
 | Portion | An ordered slice of the scope under Incremental, with a study-by date | `Portion` |
 | Session | A prep session only (diagnostic, system, ad-hoc, last-minute, portion, cumulative review) | `PrepSession` |
 | Missed session | A scheduled session not started within 2 hours | `SessionMissed` |
-| Subscription | A family's paid plan for one brand, with its lifecycle (Billing only) | `Subscription` |
+| User | A person known to the system (Identity & Access): a parent who signs in, or a child without credentials | `User`, `UserId` |
+| Account | The customer: holder plus members with roles; owns brand memberships and subscriptions. Never used for a sign-in identity | `Account`, `AccountId` |
+| Account holder | Who the account belongs to: an individual today, an organisation later | `AccountHolder` |
+| Member / role | A User in an Account with a role: **Parent** (manages and pays) or **Child** (the learner); later e.g. Teacher | `Member`, `MemberRole` |
+| Child | A User with the Child role; in Prep, the learner | `UserId` (role Child) |
+| Learner profile | A Child member's grade, school and subjects with textbooks | `LearnerProfile` |
+| Subscription | An account's paid plan for one brand, with its lifecycle (Billing only) | `Subscription` |
+| Sign-up | The first successful payment that activates a subscription; the campaign's unit of success | `SubscriptionStarted` |
+| Subscription lifecycle events | Billing's published facts: started, cancelled, suspended, reactivated; the state machine itself stays private | `SubscriptionStarted`, `SubscriptionCancelled`, `SubscriptionSuspended`, `SubscriptionReactivated` |
 | Provider subscription | The payment provider's own record; only inside the translation layer | `ProviderSubscription` |
-| Access | Whether a brand membership's children may use the product; all other contexts see only this | `Access` |
+| Access | Whether a brand membership's children may use the product; read live for authorisation | `Access` |
 | Brand | A configuration record for one branded offering | `Brand` |
-| Brand membership | A family's relationship with one brand: language, consent, entry point, subscription | `BrandMembership` |
-| Partner | An organisation that runs campaigns within a brand; never a brand | `Partner` |
-| Campaign | A partner offer: sign-up window, discount, discount period | `Campaign` |
+| Brand membership | An account's relationship with one brand: language, consent, entry point, subscription | `BrandMembership` |
+| Offer | A discount for sign-ups in a window: discount, discount period, cap; optionally for a partner's members (Billing) | `Offer` |
+| Partner | An organisation whose members may get an Offer; never a brand (Marketing) | `Partner` |
+| Marketing campaign | One school term's marketing: phases, budget per phase, key messages, channels. Never an ad-platform campaign and never an offer | `MarketingCampaign` |
+| Phase | A slice of a marketing campaign with its own intensity and call to action: holiday, warm-up, base, ramp, push | `CampaignPhase` |
+| Landing link | A trackable entry point (tagged URL, code, QR) for a campaign or partner | `LandingLink` |
+| Touchpoint | One recorded arrival through a landing link, tags or ad click, linked to a brand membership at sign-up | `Touchpoint` |
+| Ad campaign / ad set / ad | The ad platform's own objects; only inside the Ad platforms translators and Reporting read models | `AdRef` |
+| Ad spend | Imported spend and results per ad per day | `AdSpend` |
+| Audience segment | A set of Parent users defined by subscription status (active, cancelled, suspended) for upload to an ad platform | `AudienceSegment` |
 | Device link | Authorising a device for one child with a one-time code or QR | `DeviceLinkCode`, `LinkedDevice` |
 | Device credential | Long-lived secret a linked device holds; used only to obtain access tokens | `DeviceCredential` |
 | Access token | Short-lived (30 min) proof that a linked device may act for its child; verified without a store lookup | `DeviceAccessToken` |
@@ -228,9 +259,10 @@ One system of record, **partitioned logically by context**. Each context owns it
 
 | Context | Logical shape (by access pattern) | Notes |
 |---|---|---|
-| Identity & Access | Relational: identities, sign-in methods, linked devices, link codes | Unique on normalised email |
-| Family | Relational: family → children → subject enrolments; family × brand memberships | Children shared across brands |
-| Billing & Campaigns | Relational, plus **append-only** status, discount and fee histories, plus an **inbox of provider events** for deduplication | AC-A26, A37 |
+| Identity & Access | Relational: users, sign-in methods, linked devices, link codes | Unique on normalised email |
+| Account | Relational: account → members (user, role); learner profile → subject enrolments; account × brand memberships | Children shared across brands |
+| Billing | Relational, plus **append-only** status, discount and fee histories, plus an **inbox of provider events** for deduplication; offers | AC-A26, A37 |
+| Marketing | Relational: campaigns → phases; partners, landing links; **append-only touchpoints**; **ad spend per ad per day** (idempotent import); an **outbox of ad-platform deliveries** (event ID = source domain event ID) | Ad-platform IDs live only in the adapter's mapping table |
 | Content | Relational + **trees** (index tree) + **shallow typed links** (one hop; no graph store needed); **append-only versions**, published versions immutable | Longest-lived, most valuable data; not hard-deleted except for legal reasons |
 | Prep | `Assessment` as a self-contained aggregate (scope, portions, strategy history); **append-only response log** per session; **mastery** keyed by (assessment, fact), updated per answer | Hottest writes |
 | Rewards | **Append-only credit ledger**; balance derived | |
@@ -376,18 +408,46 @@ liveVersion(item)
 - **Every transition is logged** (who, when, from, to, reason).
 - The module publishes `VersionApproved`, `ItemHeld`, `ItemReleased`, `ItemRetired`; the catalogue projection and its per-version cache update from them.
 
+### Marketing: campaigns, attribution and ad platforms
+Added 2026-11-24. Campaign strategy: [../marketing/CAMPAIGN-PLAN.md](../marketing/CAMPAIGN-PLAN.md).
+
+**Internal packages** (one bounded context, one published interface):
+| Package | Owns | Notes |
+|---|---|---|
+| **Campaigns** | `MarketingCampaign` with its phases, budgets, key messages and channels | One campaign per school term; phases follow the term (holiday → warm-up → base → ramp → push, ending at the assessment deadline) |
+| **Acquisition** | `Partner`, `LandingLink`, `Touchpoint`; attribution of a sign-up to its touchpoints | A visit's tags and ad click ID are captured first-party at the landing page and stored with the touchpoint; linked to the `BrandMembership` at registration |
+| **Ad platforms** | Translators `AdInsightsSource`, `ConversionSink`, `AudienceSink`; mapping table of platform IDs | Only package that knows Meta's terms |
+| **Reporting** | Read models: cost per sign-up by campaign, phase, channel and ad; landing-page conversion; checkout drop-off; weekly report | Built from Marketing's own data plus Billing's lifecycle events; partner reports live here too |
+
+**Signals to the ad platform** (user decisions, 2026-11-24):
+| Moment | Source | Ad-platform event | Path |
+|---|---|---|---|
+| Checkout started (redirect to the payment provider) | Web checkout page | `InitiateCheckout` | **Browser**, through the ad platform's tag; parent web pages only (see open item below) |
+| First successful payment activates the subscription | Billing `SubscriptionStarted` | `Subscribe` (value = fee charged, ZAR) | **Server** (`ConversionSink`) |
+| Cancelled | Billing `SubscriptionCancelled` | custom `SubscriptionCancelled` | Server |
+| Suspended | Billing `SubscriptionSuspended` | custom `SubscriptionSuspended` | Server |
+| Reactivated | Billing `SubscriptionReactivated` | custom `SubscriptionReactivated` (**never** a second `Subscribe`) | Server |
+| Audience segments (active / cancelled / suspended) | Marketing, from Account + Billing | Customer-list upload of **every Parent user's email on the account**, hashed (SHA-256, normalised) in the adapter | Server, daily sync; removals on erasure or withdrawn consent |
+
+**Rules.**
+- **No child data ever leaves the system:** only Parent users' hashed emails (and phone, if held) and the account's ID as `external_id`.
+- Events and uploads are sent **only for accounts with marketing-measurement consent** on the brand membership; a privacy-notice line explains it (POPIA). Withdrawal or erasure removes the account's users from every audience.
+- Each delivery uses the source domain event's ID as the ad platform's `event_id`, so retries and browser/server duplicates are removed by the platform; deliveries go through an outbox like every other cross-context effect.
+- The **spend import** is a scheduled batch (daily, the previous 7 days re-imported to absorb late corrections), idempotent by (platform, ad, day).
+- **Open item:** [TECH-STACK.md](../TECH-STACK.md) decided "no third-party analytics SDK on any screen" (reason: device identifiers on child screens). The browser-side `InitiateCheckout` requires the ad platform's tag on the **public landing pages and the parent's checkout page only**, never in the Android app or any child screen. Confirm this exception, or send `InitiateCheckout` server-side from Billing's `CheckoutStarted` instead (no browser tag at all).
+
 ### Paths that must not race (serialized writes)
 Every rule is enforced **explicitly**, by a conditional update, a uniqueness rule or a per-aggregate version check. None relies on the store's default isolation level.
 
 | # | Invariant | Race | Enforcement |
 |---|---|---|---|
-| 1 | ≤ 3 children per family | Two concurrent "add child" requests each see 2 | Writes to the `Family` aggregate are serialized |
+| 1 | ≤ 3 Child members per account | Two concurrent "add child" requests each see 2 | Writes to the `Account` aggregate are serialized |
 | 2 | Link code single use | Two devices redeem at once | Conditional update unused → used |
-| 3 | One account per verified email | Concurrent sign-ups with different methods | Uniqueness on normalised email |
+| 3 | One User per verified email | Concurrent sign-ups with different methods | Uniqueness on normalised email |
 | 4 | Each provider event applied once; no backward moves | Repeated or out-of-order webhooks | Event ID recorded in the same transaction as the state change; writes to each `Subscription` serialized; reconciled against the provider-reported status |
 | 5 | One overdue + one suspension email per episode | Retried webhook sends a second email | Email intent recorded in the same transaction as the status change (outbox), sent with an idempotency key |
-| 6 | Campaign sign-up cap | Last places taken twice | Conditional increment on the campaign |
-| 7 | Campaign discount once per family per brand | Concurrent checkouts | Uniqueness on (family, brand) |
+| 6 | Offer sign-up cap | Last places taken twice | Conditional increment on the offer |
+| 7 | Offer discount once per account per brand | Concurrent checkouts | Uniqueness on (account, brand) |
 | 8 | One suggested next session; parent's strategy choice wins | Parent and child edit at once | Version check on `Assessment` |
 | 9 | Missed vs Started | Child starts while the missed-session job runs | Conditional Scheduled → Missed only if not started |
 | 10 | Each answer counted once in mastery | Background answer sync retries | Client-generated response ID; response and mastery update in one transaction |
@@ -395,6 +455,8 @@ Every rule is enforced **explicitly**, by a conditional update, a uniqueness rul
 | 12 | Credits once per activity | Redelivered event | Triggering event ID is the ledger entry key |
 | 13 | A revoked device can't obtain a new access token | A refresh races the revocation | Refresh is a conditional check against the `LinkedDevice` record (only non-revoked devices get a token). Requests themselves are verified from the 30-minute access token alone, with no store lookup, so a revoked device keeps working for **at most 30 minutes** |
 | 14 | Suspension blocks children immediately | Stale copy of Access | Access read from Billing's published query at request time; never copied |
+| 15 | `SubscriptionStarted` once per subscription; reactivation never counts as a sign-up | First payment webhook redelivered, or a reactivation payment | Flag "has started" set in the same transaction as the event in the outbox; later activations publish `SubscriptionReactivated` |
+| 16 | Each lifecycle event sent to the ad platform once | Outbox redelivery | Delivery keyed by the source event ID; the same ID sent as the platform's `event_id` |
 
 ### Consistency between contexts
 - Domain events use a **transactional outbox**: an event is saved in the same transaction as its state change and delivered **at least once** through the work queue. **Every handler is idempotent**, keyed by event ID. Delay is seconds, inside the 5-minute alert limits (AC-O1, O4).
@@ -407,7 +469,8 @@ Every rule is enforced **explicitly**, by a conditional update, a uniqueness rul
 | Readiness % | Maintained by Prep in the same transaction as mastery | None |
 | Content coverage | Computed on read inside Content | None |
 | Weekly digest | Scheduled batch, Sunday evening | Weekly |
-| Partner & campaign reports | Scheduled batch, daily | ≤ 24 h |
+| Partner reports, marketing reports (cost per sign-up, conversion, checkout drop-off) | Scheduled batch, daily, after the ad-spend import (Marketing › Reporting) | ≤ 24 h |
+| Audience segments uploaded to the ad platform | Scheduled batch, daily; removals within 24 h | ≤ 24 h |
 | Per-child tuning | Batch after each Result is recorded | Per assessment |
 
 ### Hot keys
@@ -423,9 +486,10 @@ Each context exposes one small published interface that hides a lot behind it; p
 |---|---|---|
 | Prep | add/change assessment, switch strategy, start/finish session, submit answer, record result, dashboard queries | Planning, strategies, importance, mastery, marking, LLM grading, cost cap |
 | Content | `ContentCatalogue` (see [Content: the live catalogue](#content-the-live-catalogue)): resolve scope (facts with in-scope anchors and `effectiveImportance`), session bundle (questions anchored in the child's source document), fact lineage, report a problem; back office: upload, review, re-anchor, generate, publish | AI pipeline, versioning, review gates, page reading, reconciliation, image storage |
-| Billing & Campaigns | checkout, handle provider event, cancel, reactivate, start card update, `access(membership)` | Lifecycle state machine, provider quirks, discounts, reversion |
+| Billing | checkout (optionally with an offer), handle provider event, cancel, reactivate, start card update, `access(membership)`; offers in the back office; publishes lifecycle events | Lifecycle state machine, provider quirks, discounts, reversion |
+| Marketing | record touchpoint, attribute sign-up, campaign/partner/landing-link management (back office), reporting queries; handlers for Billing and Account events; scheduled spend import and audience sync | Ad-platform APIs and terms, hashing, delivery retries, attribution rules |
 | Identity & Access | sign-in flows, issue/redeem link code, refresh device access token, revoke device, authenticate request | Provider sign-in, credentials, token issuing and verification, rate limits |
-| Family | register, add child, enrol subject, directory queries | Consent, memberships, schools |
+| Account | register, add member (Parent or Child), enrol subject, set consent, directory queries | Consent, memberships, roles, schools |
 | Notifications | `notify(recipient, alertType, payload)` + event handlers, set mutes | Channels, devices, templates, digest |
 | Rewards | event handlers, set goal, balance/goal queries | Credit table, levels, streaks |
 | Platform Config | resolve brand, resolve language, `Messages.render(messageKey, params, {brand, language})` | Brand records, fallback rules, message catalogues |
@@ -474,6 +538,8 @@ Adopted 2026-11-16 (Phase 5); apply in every code review.
 | `Clock`, `EventPublisher` (outbox), `FeatureFlags` | All | 2 (tracer bullet) |
 | `IdentityProvider` (social sign-in) | Identity & Access | 2 |
 | `MediaStore` | Content | 3 |
+| `ConversionSink`, `AudienceSink` (ad platform, outbound) | Marketing | 2 (needed before the first campaign) |
+| `AdInsightsSource` (ad platform, inbound) | Marketing | 3 (repo script bridges until built) |
 | `SourceRepository` (source PDFs by file ID + revision) | Content | 2 |
 | `SimilarityIndex` (meaning-based search: reconciliation, duplicate questions) | Content | 2 |
 
@@ -488,16 +554,19 @@ Adopted 2026-11-16 (Phase 5); apply in every code review.
 | Rubric format change | Catalogue contract version + `Marking` | Rubric version contract tests |
 | **New question type** | Content generation + `Marking` + client rendering (3 places; inherent to the problem) | Question type defined once in the catalogue contract; clients render from it |
 | Mobile API change | Mobile-API inbound adapter; versions N and N-1 supported | Mobile API contract tests (N, N-1) |
+| New ad platform (e.g. Google Ads) | Marketing › Ad platforms adapters only | Ad-platform contract tests |
+| New member role (e.g. Teacher) | Account (role + invariants) + authorisation at the edge | Role contract tests |
 
 ## v1 Scope & Staging
 Signed off 2026-11-16 (Phase 8). The time is fixed (pilot January 2027, launch February 2027); scope was cut to fit, never the expensive-to-reverse decisions.
 
-**Never cut (expensive to reverse; all in v1):** brand and language resolved at the edge, with no hard-coded text or brand; one parent identity across brands with per-brand memberships; stable fact and anchor IDs, fact lineage with mastery carry-over, immutable content versions, responses recording question and rubric versions; outbox, idempotency and the 14 no-race invariants; Access as Billing's only published state; device linking; POPIA consent and self-service family deletion; outcomes (Results, strategy history) recorded from day 1.
+**Never cut (expensive to reverse; all in v1):** brand and language resolved at the edge, with no hard-coded text or brand; one parent identity across brands with per-brand memberships; stable fact and anchor IDs, fact lineage with mastery carry-over, immutable content versions, responses recording question and rubric versions; outbox, idempotency and the 16 no-race invariants; Access plus the four subscription lifecycle facts as Billing's only published language; device linking; POPIA consent (including marketing-measurement consent) and self-service account deletion; outcomes (Results, strategy history) recorded from day 1; touchpoints and lifecycle events recorded from the first campaign.
 
 | Stage | In scope |
 |---|---|
-| **Pilot (January 2027)** | Parent sign-in and account linking; family, children, schools, subjects; device linking. **Full billing lifecycle** (pilot is paid): checkout, webhooks, Overdue → Suspended → reactivation, cancellation, card update and expiry warnings. **Content pipeline** for the **most-used textbook per subject per grade, Term 1**, including the **AI index-tree proposal** from the table-of-contents photo and **meaning-based duplicate detection** for "generate more questions"; simple back-office tools (one-by-one importance edits, coverage as a table of counts). **Prep:** all three strategies (Incremental, Standard, Last-minute), every technique, a **simple mastery rule** behind `Mastery`, the two-step grader. Per-event alerts, missed-session detection, parent dashboard. **Full gamification** (credits, celebration, streaks, levels, badges, cosmetics, parent reward goals). Brand and language seams |
-| **Launch (February 2027)** | The other launch textbooks (Term 1). **Partner campaigns:** partners, campaigns, co-branded landing pages, codes, membership numbers, discounts, **automatic fee reversion**, **full partner reporting** (AC-A35). **Weekly digest** |
+| **Before the first marketing campaign (target 5 January 2027, moves with product readiness)** | Marketing minimum: `Touchpoint` capture on landing pages and at registration; `SubscriptionStarted` / `Cancelled` / `Suspended` / `Reactivated` published by Billing and delivered as ad-platform events through `ConversionSink`; `InitiateCheckout` on the checkout page; daily audience sync of Parent users' hashed emails through `AudienceSink`; marketing-measurement consent and privacy-notice line. The weekly spend import runs as a repo script until `AdInsightsSource` is built |
+| **Pilot (January 2027)** | Parent sign-in and identity linking; accounts, members and roles, learner profiles, schools, subjects; device linking. **Full billing lifecycle** (pilot is paid): checkout, webhooks, Overdue → Suspended → reactivation, cancellation, card update and expiry warnings. **Content pipeline** for the **most-used textbook per subject per grade, Term 1**, including the **AI index-tree proposal** from the table-of-contents photo and **meaning-based duplicate detection** for "generate more questions"; simple back-office tools (one-by-one importance edits, coverage as a table of counts). **Prep:** all three strategies (Incremental, Standard, Last-minute), every technique, a **simple mastery rule** behind `Mastery`, the two-step grader. Per-event alerts, missed-session detection, parent dashboard. **Full gamification** (credits, celebration, streaks, levels, badges, cosmetics, parent reward goals). Brand and language seams |
+| **Launch (February 2027)** | The other launch textbooks (Term 1). **Partners and offers:** partners, offers, co-branded landing links, codes, membership numbers, discounts, **automatic fee reversion**, **full partner reporting** (AC-A35). **Weekly digest**. *Note 2026-11-24: partners are no longer a key marketing channel for Term 1 (see [CAMPAIGN-PLAN.md](../marketing/CAMPAIGN-PLAN.md)); whether partner and offer features can move after launch is an open product decision.* |
 | **After launch** | The Debt Ledger below (D1–D7), each with its revisit trigger |
 
 **No circuit breaker:** if pilot readiness is at risk, nothing moves from pilot to launch; the pilot date moves instead (user decision, 2026-11-16).
@@ -531,11 +600,11 @@ Deliberately deferred work (Phase 8, 2026-11-16). Each keeps its seam from day 1
 | 2026-11-16 | **Dependency Rule enforced through ports owned by use cases;** full boundaries at inbound adapters, data store, payment provider, AI content provider and LLM grader; partial at notifications, identity, object storage and clock; collapsed for plain reference data | Full boundaries go where change or vendor risk is likely; the rest avoids ceremony | Collapse the data-store boundary (core not testable without the store); full boundaries everywhere (ceremony with no protection) |
 | 2026-11-16 | **Brand and language resolved at the edge;** the core handles IDs and message keys only | Multi-brand and multi-language from day 1 without code changes (PRD AC-B1, X1) | Brand/language checks inside use cases (leaks "Slaag" and language assumptions inward) |
 | 2026-11-16 | **Modules interact only through published use cases and domain events** | Keeps future service seams open; prevents a shared-data monolith | Shared access to tables across modules |
-| 2026-11-16 | **Eight bounded contexts:** Prep, Content, Family, Billing & Campaigns, Identity & Access, Rewards, Notifications, Platform Config | Each has its own language and changes for its own reasons | One unified model (contradictory "Child", "Subscription", "Fact") |
+| 2026-11-16 | **Eight bounded contexts:** Prep, Content, Family, Billing & Campaigns, Identity & Access, Rewards, Notifications, Platform Config. *Revised 2026-11-24: nine contexts; Family → Account, Billing & Campaigns → Billing, new Marketing (see below).* | Each has its own language and changes for its own reasons | One unified model (contradictory "Child", "Subscription", "Fact") |
 | 2026-11-16 | **Planner and Prep Engine merged into one Prep context** | They share Assessment, Session, Mastery, Strategy and Portion with one meaning; splitting forces a shared kernel | Two contexts with a shared Assessment/Mastery model |
 | 2026-11-16 | **Content is one context exposing a published content catalogue** of approved live versions | Prep must never see drafts or pages; one context keeps versioning and publishing together | Separate Authoring and Catalogue contexts (more moving parts for one team) |
 | 2026-11-16 | **Core domain = Prep + Content's fact model** (importance, links, model answers, rubrics); ingestion/review workflow, Family, Billing, Rewards, Platform Config are supporting; sign-in, payment processing, email/push, AI providers are generic | The engine is only as good as the facts it drills | Prep alone as core (under-invests in fact quality) |
-| 2026-11-16 | **Billing publishes only Access;** subscription states and provider terms stay inside Billing behind a translation layer | Keeps provider quirks (failed-attempt webhooks, paused status) out of every other context | Other contexts reading subscription status |
+| 2026-11-16 | **Billing publishes only Access;** subscription states and provider terms stay inside Billing behind a translation layer. *Revised 2026-11-24: Billing also publishes four lifecycle facts (see below); the state machine and provider terms still stay inside.* | Keeps provider quirks (failed-attempt webhooks, paused status) out of every other context | Other contexts reading subscription status |
 | 2026-11-16 | **Terms fixed:** Verdict (answer outcome), Result (post-test rating + score), Grade (school grade only), Access, Session (prep only), Scope vs fact set, Mastery vs Readiness | Removes the PRD's double meanings of "grade", "mark", "subscription", "session" | Keep PRD wording as is |
 | 2026-11-16 | **AssessmentMastery is its own aggregate,** separate from Assessment | Written on every answer; keeps Assessment small and avoids write contention | Mastery inside Assessment |
 | 2026-11-16 | **Scale up one system of record vertically; no replicas, shards or regions in year 1** | Estimates show < ~100 GB/year and at most a few hundred writes/s at 10,000 families | Read replicas or sharding up front (operational cost with no load to justify it) |
@@ -587,4 +656,11 @@ Deliberately deferred work (Phase 8, 2026-11-16). Each keeps its seam from day 1
 | 2026-11-22 | **Publish per item:** each fact, question or edit goes live as soon as its version is approved | Content reaches children as fast as teachers approve it; caching stays per item version | Catalogue releases per textbook |
 | 2026-11-22 | **Extraction produces `FactCandidate`s;** a `Fact` and its `FactId` exist only after Gate 1 approval; paraphrases sit inside the `Fact` | Rejected drafts never consume IDs; reconciliation proposals have a natural home; the core fact model holds only approved knowledge | Draft facts in a draft state (IDs for rejected drafts, review state inside the core model) |
 | 2026-11-22 | **The "duplicates" fact link is dropped;** restatements become additional anchors on one fact | One fact, one mastery record; no link semantics to share | Keeping a duplicates link alongside anchors |
+| 2026-11-24 | **Family → Account.** An Account is the customer, a higher-order construct whose holder is an individual today and may be an organisation later; Users belong to it as members with a role (Parent, Child; later e.g. Teacher); at most 3 Child members. A Child member's grade, school and subjects live in a separate `LearnerProfile` aggregate | Generic enough for companies, schools and tutors later; roles instead of fixed "parent/child" types; school edits don't serialize the account | "Family" (household-only); grade and subjects inside the Account aggregate |
+| 2026-11-24 | **Identity & Access speaks of Users;** "account" means only the customer account; account linking → identity linking; staff roles → permissions | One meaning per word across contexts | "Account" for both sign-in identity and customer |
+| 2026-11-24 | **New Marketing bounded context** with internal packages Campaigns, Acquisition, Ad platforms and Reporting. Owns marketing campaigns per school term (phases), partners, landing links, touchpoints, attribution, ad-platform integration and marketing/sales-ops reporting | A new language (spend, touchpoint, attribution, phase) that changes for its own reasons; a context is named after its capability, not one entity | "Campaign" as the context name (collides with ad-platform campaigns and organic acquisition has no campaign); attribution inside Family or Billing |
+| 2026-11-24 | **Billing & Campaigns → Billing; its `Campaign` becomes `Offer`.** Partners, landing links, codes and partner reporting move to Marketing; the discount, discount period and fee reversion stay in Billing; Marketing refers to an Offer by ID | "Campaign" meant three things; *where families come from* (Marketing) is separate from *what they pay* (Billing) | Keep partners in Billing; move discounts to Marketing |
+| 2026-11-24 | **Billing publishes subscription lifecycle facts:** `SubscriptionStarted` (exactly once, first successful payment), `SubscriptionCancelled`, `SubscriptionSuspended`, `SubscriptionReactivated`; plus `CheckoutStarted` for funnel reporting | `AccessGranted` doesn't equal a sign-up (it also fires on reactivation); the ad platform and reporting need explicit facts | Inferring sign-ups from `AccessGranted`; exposing subscription status |
+| 2026-11-24 | **Ad-platform signals (Meta, Conversions API):** `Subscribe` on `SubscriptionStarted`; custom `SubscriptionCancelled` / `Suspended` / `Reactivated` from day one; `InitiateCheckout` from the browser on the checkout page; daily upload of **every Parent user's hashed email** per audience segment. Never child data; only with marketing-measurement consent | Optimise ads on real sign-ups; retarget checkout drop-offs; lifecycle data ready for future targeted campaigns; exclude active subscribers | Paid ad-management connector; optimising on clicks; account-holder email only |
+| 2026-11-24 | **Free ad-platform Marketing API** for the spend import (weekly report), first as a repo script, later as `AdInsightsSource` | No connector fee; the money goes to ad spend (user decision) | Paid connector (~$49/month); manual CSV export |
 | 2026-11-22 | **"Inbound adapters" and "outbound adapters"** name the two halves of the adapter ring; our own apps go through inbound adapters like any outside caller, as one thin translation step | Names the direction of each edge; the Android app runs on untrusted devices with old versions in use, and several channels share one set of use cases | "Delivery" (doesn't say inbound), "driving/driven adapters" (less obvious), "interface layer" (clashes with TypeScript `interface`), "gateway" (usually means outbound) |

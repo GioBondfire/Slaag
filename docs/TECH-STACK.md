@@ -88,7 +88,7 @@ The user's standing preferences for Slaag (2026-11-16). The decisions below star
 | Web | Data fetching & forms | TanStack Query + TanStack Form (Zod validators) | decided |
 | Web | Internationalisation | Paraglide JS (compiled, typed messages; TanStack Start middleware + router rewrite) | decided |
 | Web | Offline behaviour | Prefetch session questions in memory + retried answer posts; no service worker | decided |
-| Web | Landing pages | Inside TanStack Start: prerendered/SSR routes, Paraglide language paths, partner campaign pages from campaign records | decided |
+| Web | Landing pages | Inside TanStack Start: prerendered/SSR routes, Paraglide language paths, marketing-campaign and partner landing pages from Marketing's landing-link records | decided |
 | Web | In-app reminders | Server returns due reminders on app open; shown as in-app notices (no web push) | decided (default) |
 | Android | Language, UI toolkit, architecture ◆ | Kotlin; Jetpack Compose; MVVM + Repository; Retrofit + OkHttp | decided |
 | Android | SDK levels & low-RAM targets | minSdk 26, targetSdk 36, compileSdk 37; baseline profiles; tested on a real 2 GB device | decided |
@@ -378,7 +378,7 @@ The user's standing preferences for Slaag (2026-11-16). The decisions below star
 - **Status:** decided
 
 #### Landing pages
-- **Choice:** routes inside the TanStack Start app, prerendered or SSR: language paths (`/af`, `/en`) via Paraglide; partner co-branded campaign pages (PRD Revision 11) rendered from campaign records; brand theme from the brand record; campaign tags carried into sign-up (K8 entry-point rule).
+- **Choice:** routes inside the TanStack Start app, prerendered or SSR: language paths (`/af`, `/en`) via Paraglide; partner co-branded landing pages (PRD Revision 11) rendered from Marketing's partner and landing-link records; brand theme from the brand record; campaign tags carried into sign-up (K8 entry-point rule).
 - **Why:** one deploy, one i18n and brand setup, no funnel hand-off between two apps.
 - **Alternatives rejected:** a separate Astro site — duplicates brand and i18n setup; a hosted site builder — monthly cost, K7/K8 rules enforced by hand.
 - **Status:** decided
@@ -501,7 +501,7 @@ The user's standing preferences for Slaag (2026-11-16). The decisions below star
 ### Back office
 
 #### Approach
-- **Choice:** a separate TanStack Start + Mantine app, `apps/backoffice`, on its own subdomain, reusing `packages/core` and `packages/db`. Staff-only Google sign-in through Better Auth with an allow-list and roles. Covers photo-PDF intake from Drive, ingestion status, Gate 1 fact review, question generation, Gate 2 review, versioning, brand/settings/campaign records, and the per-device support timeline.
+- **Choice:** a separate TanStack Start + Mantine app, `apps/backoffice`, on its own subdomain, reusing `packages/core` and `packages/db`. Staff-only Google sign-in through Better Auth with an allow-list and roles. Covers photo-PDF intake from Drive, ingestion status, Gate 1 fact review, question generation, Gate 2 review, versioning, brand/settings records, offers (Billing), marketing campaigns, partners and landing links (Marketing), and the per-device support timeline.
 - **Why:** no admin code in the parent/child bundle; independent deploys and access policy.
 - **Alternatives rejected:** `/admin` inside the main app — admin code and permissions next to the child experience; an admin framework (Refine) — review queues and side-by-side page/fact review would still be custom.
 - **Status:** decided
@@ -587,7 +587,7 @@ The user's standing preferences for Slaag (2026-11-16). The decisions below star
 ### Analytics
 
 #### Product & behaviour analytics
-- **Choice:** server-side product events only, written to Postgres by the shared services (sessions started/completed/abandoned, tests added, strategy switches, suggestions ignored, repeated failures on a fact). No third-party analytics SDK on any screen. The back office gets a per-device support timeline (events, errors, app version, last sync) and an alert when a device's answer outbox hasn't synced. Campaign attribution comes from tagged links carried into sign-up. Analysis by SQL (a BI tool such as Metabase can be added later).
+- **Choice:** server-side product events only, written to Postgres by the shared services (sessions started/completed/abandoned, tests added, strategy switches, suggestions ignored, repeated failures on a fact). No third-party analytics SDK on any screen. The back office gets a per-device support timeline (events, errors, app version, last sync) and an alert when a device's answer outbox hasn't synced. Campaign attribution comes from tagged links carried into sign-up (Marketing `Touchpoint`). *2026-11-24: the ad platform's browser tag is proposed for public landing pages and the parent checkout page only (never the app or child screens) — open item in [ARCHITECTURE.md › Marketing](logical-design/ARCHITECTURE.md#marketing-campaigns-attribution-and-ad-platforms).* Analysis by SQL (a BI tool such as Metabase can be added later).
 - **Category:** Build
 - **Why:** children under 13 use the app — no tracking SDK keeps Play Families policy and POPIA simple; the engine already records outcomes server-side. Crash and error diagnosis is covered by Sentry, Android Vitals and Better Stack.
 - **Preference:** specified by the user
