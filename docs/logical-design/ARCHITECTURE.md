@@ -426,7 +426,7 @@ Added 2026-11-24. Campaign strategy: [../marketing/CAMPAIGN-PLAN.md](../marketin
 | Cancelled | Billing `SubscriptionCancelled` | custom `SubscriptionCancelled` | Server |
 | Suspended | Billing `SubscriptionSuspended` | custom `SubscriptionSuspended` | Server |
 | Reactivated | Billing `SubscriptionReactivated` | custom `SubscriptionReactivated` (**never** a second `Subscribe`) | Server |
-| Audience segments (active / cancelled / suspended) | Marketing, from Account + Billing | Customer-list upload of **every Parent user's email on the account**, hashed (SHA-256, normalised) in the adapter | Server, daily sync; removals on erasure or withdrawn consent |
+| Audience segments (active / cancelled / suspended) | Marketing, from Account + Billing | Customer-list upload of **every Parent user's email on the account**, hashed (SHA-256, normalised) in the adapter | Server, daily sync; removals on account erasure |
 
 **Rules.**
 - **No child data ever leaves the system:** only Parent users' hashed emails (and phone, if held) and the account's ID as `external_id`.
