@@ -7,8 +7,8 @@ Logical design only: technology-neutral. Technology choices live in [../TECH-STA
 ## Context
 - **Started:** 2026-11-16
 - **Source:** [../PRD.md](../PRD.md) (approved 2026-11-14, revised 2026-11-16)
-- **What the system does:** helps parents of Grade 4–7 children prepare them for school tests and exams. Parents subscribe per family on the web, enrol up to 3 children with their textbooks, and add tests with a date and scope. An adaptive engine drills the child towards mastery of teacher-reviewed facts taken from their own textbook. Content is produced in a back office where AI drafts and teachers review. One platform serves several brands and languages; year 1 has one brand and Afrikaans only.
-- **Core differentiator:** the prep engine. It uses importance-weighted facts (margin keywords first), mastery tracked per assessment, prep strategies chosen by runway (Incremental / Standard / Last-minute), and rubric-based correct / partial / incorrect grading. It runs on teacher-reviewed facts taken from the child's own textbook.
+- **What the system does:** helps parents of Grade 4–7 children prepare them for school tests and exams. Parents subscribe per family on the web, enrol up to 3 children with their textbooks, and add tests with a date and scope. An adaptive engine drills the child towards mastery of curator-reviewed facts taken from their own textbook. Content is produced in a back office where AI drafts and curators review. One platform serves several brands and languages; year 1 has one brand and Afrikaans only.
+- **Core differentiator:** the prep engine. It uses importance-weighted facts (margin keywords first), mastery tracked per assessment, prep strategies chosen by runway (Incremental / Standard / Last-minute), and rubric-based correct / partial / incorrect grading. It runs on curator-reviewed facts taken from the child's own textbook.
 - **Year-1 load:** medium. 1,000–10,000 families, so roughly 2,000–20,000 children. Peaks are on weekday afternoons and before exams.
 - **Outbound dependencies (by role):** payment provider (checkout, recurring billing, card update, status webhooks); identity provider for social sign-in; transactional email provider; push notification provider; AI document-reading and content-generation provider; LLM grading provider (borderline answers, cost-capped); object storage for page images.
 - **System of record:** the platform's transactional store (identity, families, subscriptions, content and versions, assessments, sessions, responses, mastery).
@@ -85,15 +85,15 @@ All 8 phases done; team-topologies skipped (one team). Exit checklist:
 - [ ] Billing on the pilot's critical path: payment-sandbox contract tests and Safety Net Map #4 green before the pilot (owner: team, due: before Jan 2027 pilot, P1)
 - [ ] Weekly check of pilot readiness against the January date; with no circuit breaker, decide early whether the pilot date moves (owner: user, weekly, P1)
 - [ ] Build the tracer bullet (TESTING.md Safety Net Map #1) and make it the first CI gate (owner: team, P1)
-- [ ] Grader spike: collect ~200 teacher-marked Afrikaans written answers; run the two-step grader prototype; measure agreement (owner: user + team, 3–5 days, P1)
+- [ ] Grader spike: collect ~200 moderator-marked Afrikaans written answers, marked per rubric key point; run Haiku 5.5 with Sonnet 5.5 escalation; measure Verdict and key-point agreement and the escalation rate (owner: user + team, 3–5 days, P1)
 - [ ] Tech decision needed → docs/TECH-STACK.md: how one contract source generates server and Android types; dependency-rule checking; sandbox accounts for payment, push, email and AI providers (owner: user, P1)
 - [ ] Pre-pilot testing per RELIABILITY.md: load test, soak, GameDay (owner: team, due: before Jan 2027 pilot, P1)
 - [ ] Tech decision needed → docs/TECH-STACK.md: feature-flag and kill-switch mechanism; how breakers, bulkheads and per-workload connection limits are implemented; where metrics, alerts and correlation IDs go (owner: user, P1)
-- [ ] Define the rubric format in the content catalogue's published contract before Marking or question generation is built (owner: user + Claude, P1)
+- [x] Define the rubric format in the content catalogue's published contract before Marking or question generation is built — done 2026-11-23, format version 1 (ARCHITECTURE.md › Content: rubric format)
 - [ ] Tech decision needed → docs/TECH-STACK.md: confirm the store's default isolation level, and the mechanisms for the 14 serialized-write invariants and the transactional outbox (owner: user, P1)
 - [ ] Define how long backups are kept, so erased family data ages out of backups within a stated period (POPIA; AC-A16–A17) (owner: user, P2)
 - [ ] Tech decision needed → docs/TECH-STACK.md: check the hosting/backup setup meets RPO 15 min and RTO 4 h, and schedule a restore test before the pilot (owner: user, P1)
-- [ ] Tech decision needed → docs/TECH-STACK.md: confirm how grader step 1 (similarity check, ~45/s in the burst) is computed and that the LLM grading provider's rate limits allow ~25 concurrent calls (owner: user, P1)
+- [ ] Tech decision needed → docs/TECH-STACK.md: confirm the LLM grading provider's rate limits allow ~45 written answers/s in the burst (~90 calls in flight) plus escalations (owner: user, P1)
 - [ ] Pilot: measure the real share of sessions starting in the same 15 minutes, the share of written answers going to the LLM, and LLM latency; revisit Phase 3 numbers (owner: user, due: Jan 2027, P2)
-- [ ] Have a contracted teacher confirm the Afrikaans words for the glossary terms (Fact, Verdict, Result, Readiness, Portion…) and add an Afrikaans column to the glossary (owner: user, P2)
+- [ ] Have a moderator confirm the Afrikaans words for the glossary terms (Fact, Verdict, Result, Readiness, Portion…) and add an Afrikaans column to the glossary (owner: user, P2)
 - [ ] Update PRD wording on the next revision to use Verdict / Result / Access (PRD uses "grade" and "mark" for answers) (owner: user, P3)

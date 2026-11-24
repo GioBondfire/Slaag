@@ -4,9 +4,9 @@ Logical design only: technology-neutral. Components are named by role; technolog
 
 ## System Context
 
-**What the system does.** A multi-brand, multi-language platform that helps parents of Grade 4–7 children prepare them for school tests and exams. Parents subscribe per family on the web and enrol up to 3 children with their textbooks. A parent or child adds a test with a date and scope. An adaptive engine drills the child towards mastery of teacher-reviewed, importance-weighted facts from the child's own textbook. Content is produced in a back office where AI drafts and teachers review. Year 1 runs one brand with Afrikaans only. No code may assume a particular brand or language.
+**What the system does.** A multi-brand, multi-language platform that helps parents of Grade 4–7 children prepare them for school tests and exams. Parents subscribe per family on the web and enrol up to 3 children with their textbooks. A parent or child adds a test with a date and scope. An adaptive engine drills the child towards mastery of curator-reviewed, importance-weighted facts from the child's own textbook. Content is produced in a back office where AI drafts and curators review. Year 1 runs one brand with Afrikaans only. No code may assume a particular brand or language.
 
-**Actors.** Parent (web, Android), child (linked device or the parent's app; no credentials), content curator and teacher reviewer (back office, web only), staff (partners, campaigns, support).
+**Actors.** Parent (web, Android), child (linked device or the parent's app; no credentials), content curator and system administrator (back office, web only), staff (partners, campaigns, support).
 
 **Delivery channels.** Responsive web app, Android app (through a versioned mobile API), back office.
 
@@ -24,7 +24,7 @@ Logical design only: technology-neutral. Components are named by role; technolog
 **Load reality.** Medium: 1,000–10,000 families in year 1 (≈2,000–20,000 children). Peaks are on weekday afternoons and before exams.
 
 ### Back-of-envelope sizing (Phase 3)
-Sized for the top of the range (10,000 families) in exam season. Assumptions, to check in the pilot: ~1.7 children/family; ~50% of children active on an exam-season school day (~10,000), ~3,000 parents active; ~1.5 sessions per active child per day (~15,000 sessions/day); ~30 answers + ~10 other requests per session; ~30% of answers written, ~20% of those borderline → ~6% of all answers go to the LLM grader.
+Sized for the top of the range (10,000 families) in exam season. Assumptions, to check in the pilot: ~1.7 children/family; ~50% of children active on an exam-season school day (~8,500, rounded up to ~10,000 for headroom), ~3,000 parents active; ~1.5 sessions per active child per day (~15,000 sessions/day); ~30 answers + ~10 other requests per session; ~30% of answers written, ~20% of those borderline → ~6% of all answers go to the LLM grader.
 
 | Measure | Estimate | Derivation |
 |---|---|---|
@@ -33,8 +33,8 @@ Sized for the top of the range (10,000 families) in exam season. Assumptions, to
 | Afternoon peak | ~50/s | ~70% of traffic falls 15:00–20:00 |
 | **Burst when sessions are due** | **~200/s** | Suggested times cluster (AC-P9: last session's time, else a default such as 16:00); 30% of sessions starting in the same 15 min: 4,500 × 40 ÷ 900 s |
 | Push fan-out in the burst | ~9,000 in 1–2 min | Child + parent push at the scheduled time (AC-O2) |
-| LLM grading calls | ~27,000/day; ~9/s in the burst, ~25 in flight | 6% of answers; 1–3 s each |
-| Similarity checks (grader step 1) | ~45/s in the burst | Every written answer |
+| LLM grading calls (primary) | ~45/s in the burst, ~90 in flight | Every written answer; 1–3 s each |
+| LLM grading escalations | Share measured in the grader spike and pilot | Only when a required key point is uncertain; capped per session |
 | Answers stored | ~66M/year, ~40 GB with indexes | ~180k/day averaged over the year × ~300 B |
 | Mastery estimates | ~60M/year, ~6 GB | ~400k assessments/year × ~150 facts in scope |
 | Content | ~9,000 pages, ~180k facts, ~450k questions; ~1 GB text with versions; ~25 GB page images | ~35 textbooks × ~250 pages |
@@ -104,11 +104,11 @@ PRD AC-P1–P4, P9–P10, C11, E13–E14, O1.
 ### Contexts and subdomain types
 | Context | Owns | Subdomain |
 |---|---|---|
-| **Prep** | Assessments, scope, runway and strategy, portions, next-session suggestion, prep sessions, grading policy, mastery and readiness, per-child tuning | **Core** |
+| **Prep** | Assessments, scope, runway and strategy, portions, next-session suggestion, prep sessions, grading policy, **moderation** (moderators marking "close" answers and grader agreement samples), mastery and readiness, per-child tuning | **Core** |
 | **Content** | Textbooks, index tree + curriculum cross-reference, uploads/pages, facts (paraphrases, importance, links), questions (model answer, rubric), generation runs, review gates, versions, problem reports | **Core fact model** (importance tiers, fact links, model answers, rubrics); ingestion and review workflow are supporting |
 | **Family** | Household, children (name, grade, school, subjects with textbook), brand memberships (language, consent, entry point), school reference data | Supporting |
 | **Billing & Campaigns** | Subscription lifecycle per brand membership, fee and discount, partners, campaigns, membership numbers, fee reversion | Supporting (payment processing itself is generic, behind a translation layer) |
-| **Identity & Access** | Parent sign-in identity shared across brands, account linking, staff and reviewer roles, device-link codes, linked devices | Generic; device linking is supporting |
+| **Identity & Access** | Parent sign-in identity shared across brands, account linking, staff roles (**content curator**, **moderator**, **system administrator**), device-link codes, linked devices | Generic; device linking is supporting |
 | **Rewards** | Credit ledger, levels, badges, cosmetics, streaks, parent reward goals | Supporting |
 | **Notifications** | Alert preferences (mutes per type and channel), push and email delivery, weekly digest | Generic |
 | **Platform Config** | Brands, allowed and default languages, language resolution, message catalogues | Supporting |
@@ -137,7 +137,7 @@ Parent dashboard, readiness views, partner reports and content coverage are **re
 | Billing & Campaigns → all | Published Language | **Access** per brand membership (`AccessGranted` / `AccessSuspended`). Subscription states never leave Billing |
 | Payment provider → Billing | Anti-Corruption Layer | Provider subscriptions and webhooks translated into Billing events; provider terms never pass the translator |
 | AI content provider → Content | Anti-Corruption Layer | Page reading, extraction, generation results as Content drafts |
-| LLM grading provider → Prep | Anti-Corruption Layer | Borderline-answer evaluation as a Verdict proposal against the rubric |
+| LLM grading provider → Prep | Anti-Corruption Layer | Judgements per rubric key point (met / missed / uncertain), misconceptions found, confidence; `Marking` decides the Verdict |
 | Identity & Access → Family, Prep, Rewards, Notifications | Customer–Supplier | `ParentId`, `ChildId`, `DeviceId`; an authenticated actor |
 | Family → Prep, Rewards, Notifications | Customer–Supplier | Child grade, active subjects with textbook, family language per brand |
 | Prep → Notifications, Rewards | Domain events (Published Language) | `AssessmentAdded`, `AssessmentChanged` (with actor), `SessionScheduled`, `SessionMissed`, `SessionCompleted`, `PortionCompleted`, `StrategySwitched`, `ResultRecorded` |
@@ -153,8 +153,11 @@ Other aggregates are referenced by ID only; consistency between aggregates is ev
 | Prep | **PrepSession** | Scheduled → Started → Completed, or **Missed** 2 h after the scheduled time; holds its responses; LLM grading spend within the per-session cost cap |
 | Prep | **AssessmentMastery** | One estimate per fact per assessment, never carried over to another assessment; changes only through graded responses, or through **fact lineage** (a split fact's children inherit its estimate; a merged fact takes the **lower** of its parents' estimates); a **Close** Verdict is neutral (no change; the fact is asked again later); an elaborating fact is drilled only after its keyword is mastered, **when the keyword fact is in the assessment's fact set**. Kept apart from Assessment because it is written on every answer |
 | Prep | **LearnerTuning** | One per child: strategy cut-offs and portion sizes |
-| Content | **Textbook** | Index tree confirmed once |
-| Content | **Page** | Identified by (source document, printed page number); each upload of it creates a **PageVersion** with its own pipeline state (see [Content: ingestion pipeline](#content-ingestion-pipeline)); a newer version supersedes the old one, and each anchor on the old version is re-matched to the new one (lightweight review, keeping its `AnchorId`) or left for a teacher to resolve |
+| Content | **Textbook** | Index tree confirmed once; **covers all its editions** (a materially different edition becomes a separate textbook); openness **open / closed** |
+| Content | **Standard** | A curriculum or industry standard (e.g. CAPS); its own level names and **mapping depth**; nodes with stable IDs; no versions (a revision that matters becomes a separate standard) |
+| Content | **Exhibit** | A diagram, table, graph or photo cropped from a source page region, **linked to the facts** it illustrates (not a fact itself); shown to learners only if its source is open or it has an approved **open alternative** |
+| Content | **BrandContentLicence** | Which sources (textbooks, standards) a brand offers; licences may overlap between brands |
+| Content | **Page** | Identified by (source document, **edition label**, printed page number); each upload of it creates a **PageVersion** with its own pipeline state (see [Content: ingestion pipeline](#content-ingestion-pipeline)); a newer version supersedes the old one, and each anchor on the old version is re-matched to the new one (lightweight review, keeping its `AnchorId`) or left for a curator to resolve |
 | Content | **Fact** | Stable `FactId`; the **fact core**: one canonical statement, 1–2 paraphrases, type, key terms; versioned and reviewed on its own, independently of its anchors; its typed links live in a separate `FactLinkSet`; a merge or split creates new `FactId`s and records lineage, and a merged fact keeps every anchor of the facts it replaces; only approved facts feed generation; created only by approving a `FactCandidate` |
 | Content | **SourceAnchor** | Its own aggregate, referencing one `FactId`; stable `AnchorId`; source document, page version, section, region, verbatim text, index and CAPS references, position type, signal, **tier and weight**; versioned and reviewed on its own, so one source can go live while another is still in review; re-anchoring, importance edits and region corrections create new anchor versions. A fact with no live anchor is in no scope |
 | Content | **FactCandidate** | Extraction output, reviewed at Gate 1; has no `FactId`. Carries a proposed statement, paraphrases, anchor (source, verbatim text, position type, signal, importance) and links, plus the reconciliation proposal (new fact / re-anchor an existing anchor / additional anchor on an existing fact). Resolved exactly once: approved as a new `Fact`, accepted as a match (anchor added to or moved on the existing fact), combined with other candidates, or rejected |
@@ -237,7 +240,7 @@ One system of record, **partitioned logically by context**. Each context owns it
 | Notifications | Preferences + delivery log | |
 | Platform Config | Small, read-mostly configuration | Cached |
 
-**Traceability:** every learner response records the exact **question version and rubric version** used (AC-C22; grader-vs-teacher agreement, AC-E9).
+**Traceability:** every learner response records the exact **question version and rubric version** used (AC-C22; grader-vs-moderator agreement, AC-E9).
 
 ### Fact set of an assessment: re-resolved live
 The `Assessment` keeps the scope as selected. Its fact set is re-resolved from the **current published catalogue** each time a session is planned. Mastery is keyed by a **fact ID that is stable across versions and re-anchoring**: an edited or re-anchored fact keeps its mastery; a split or merged fact gets new IDs and **carries its mastery over** (children of a split inherit the parent's estimate; a merged fact takes the lower of its parents' estimates); a removed fact drops out; a newly approved fact enters as unmastered (AC-C28, AC-C29, AC-P12).
@@ -268,14 +271,40 @@ SourceAnchor (aggregate; stable AnchorId; references one FactId; versioned)
 - **Links describe knowledge, not layout:** all link types are between facts and hold in every source. Page layout (body text repeating a margin keyword) is only the extraction signal for proposing *elaborates*. How a source presents a fact (e.g. as a margin keyword) lives on its anchor. Prep applies the elaborates gate only when the keyword fact is in the assessment's fact set.
 - **No "duplicates" link:** where the same knowledge appears twice, it is one fact with two anchors.
 - **Publishing is per item:** a fact, question or edit goes live as soon as its version is approved; there are no catalogue releases. Prep sees it from the next session plan; caches stay keyed by item version.
-- **Page replaced:** extraction of the new page produces candidates; reconciliation (AI proposes, a teacher confirms) matches each to an existing anchor, which moves to the new page version and keeps its `AnchorId` and `FactId`. This **re-anchoring** gets a lightweight "confirm match" review; a changed canonical statement goes through full Gate 1, and its questions through Gate 2. Unmatched candidates become new facts; an old anchor with no match is resolved by a teacher (retire it, or re-anchor elsewhere); a fact left with no anchor is retired.
+- **Page replaced:** extraction of the new page produces candidates; reconciliation (AI proposes, a curator confirms) matches each to an existing anchor, which moves to the new page version and keeps its `AnchorId` and `FactId`. This **re-anchoring** gets a lightweight "confirm match" review; a changed canonical statement goes through full Gate 1, and its questions through Gate 2. Unmatched candidates become new facts; an old anchor with no match is resolved by a curator (retire it, or re-anchor elsewhere); a fact left with no anchor is retired.
 - **Additional source:** a new anchor is attached to the existing fact instead of creating a second fact (lightweight review).
-- **Merge:** creates a new `FactId` that takes over **every anchor** of the merged facts; the old facts are retired with `mergedInto`. A merge or split counts as a **material** edit by default (its questions are held until Gate 2), unless the teacher marks it minor. **Split:** creates new `FactId`s; the teacher assigns or divides the anchors. Both publish lineage events, and the catalogue exposes lineage as the source of truth if an event is missed.
+- **Merge:** creates a new `FactId` that takes over **every anchor** of the merged facts; the old facts are retired with `mergedInto`. A merge or split counts as a **material** edit by default (its questions are held until Gate 2), unless the curator marks it minor. **Split:** creates new `FactId`s; the curator assigns or divides the anchors. Both publish lineage events, and the catalogue exposes lineage as the source of truth if an event is missed.
 - **Mastery carry-over** (owned by `Mastery` in Prep, idempotent, for every active assessment holding the old facts): a split fact's children **inherit** its estimate; a merged fact takes the **lower** of its parents' estimates.
 - **Effective importance** is defined once, in the catalogue's published contract: `effectiveImportance(fact, scope, anchorPreference?) → { anchor, tier, weight }`. With no preference, the **strongest anchor in scope** wins; with a preference (e.g. margin keywords only), the strongest anchor of that type wins, and a fact with no such anchor in scope drops out. Content uses it for generation defaults (AC-C13); Prep uses it for prep plans.
 - **Questions record the anchor(s) they were written from.** Prep only uses questions whose anchors are in the source document the child is enrolled with for that subject. When a fact is merged or split, its questions are re-pointed to the new fact and go back through Gate 2.
-- **Merge and split rewire links:** a merged fact takes the links of every merged fact, re-pointed to its new ID, and links between the merged facts are dropped; on a split, the teacher assigns each link to one of the new facts.
+- **Merge and split rewire links:** a merged fact takes the links of every merged fact, re-pointed to its new ID, and links between the merged facts are dropped; on a split, the curator assigns each link to one of the new facts.
 - **Coverage** includes, per source document, the facts in scope that have **no live question anchored in that document**; generation for that document closes the gap.
+
+### Content: standards, editions, exhibits and brand licensing
+Adopted 2026-11-23.
+
+**Standards.** A *standard* is a curriculum or industry standard for a knowledge area: CAPS first; Cambridge, IEB or industry standards later. "CAPS reference" is generalised to **standard references** everywhere.
+```
+Standard            e.g. CAPS; openness; level names; mapping depth
+ └─ StandardNode    stable ID (language-independent); level; title, description and
+                    content items **per language**; optional metadata
+                    (e.g. teaching time, assessment weighting); children
+```
+- **Each standard defines its own levels and mapping depth** (an attribute set when the standard is created): how deep textbooks are mapped to it. CAPS: about 4–5 levels, e.g. *subject > grade > term/theme > topic > subtopic*. Extraction goes **down to content items where the document lists them**, stored on the deepest node.
+- **One language-independent node, text per language.** Each language's document (e.g. CAPS Natuurwetenskappe in Afrikaans and Natural Sciences in English) is a source for the **same** nodes: the first document creates them; a later language's document is **matched** to existing nodes (AI proposes, curator confirms) and adds its language's text. Afrikaans and English textbooks then map to the same nodes.
+- **A module inside the Content context** for now; it can be published or split out if another context needs it.
+- **No versions.** A revision different enough to matter is registered as a separate standard.
+- **Standard documents are a source type** and go through the same intake, rendering, reading, retries and provenance as textbooks. DBE publishes CAPS as born-digital PDFs of about 100 pages, one per **phase × subject × language** (e.g. Intermediate Phase Natuurwetenskappe en Tegnologie, Afrikaans); several documents build up one standard. Extraction proposes **standard node candidates** (the tree and each node's content) instead of fact candidates; a curator confirms or corrects the structure against the document.
+- **Mapping:** a textbook's index node maps to one or more standard nodes, possibly in several standards; an anchor takes its standard references from its index node unless overridden. Fact reconciliation shortlists facts under the **same standard node at the mapping depth** (previously "same CAPS subtopic").
+
+**Editions.** A textbook covers all its editions; parents never choose an edition. Small differences between editions are accepted (a fact may have an anchor in one edition only; every child enrolled in the textbook gets it). A materially different edition is registered as a separate textbook.
+
+**Openness and exhibits.** Every source is **open** (Slaag may show its material) or **closed** (copyrighted; not shown to learners), set by the curator.
+- Diagrams, tables, graphs and photos cropped during reading are **exhibits**, linked to the facts they illustrate; they are not facts. Each exhibit has a **type**: diagram, table, chart/graph, map, photo, illustration, timeline, or **other** (catch-all).
+- **Openness also governs the verbatim question basis:** questions and model answers may use an anchor's verbatim text only when its source is **open**; closed sources always use paraphrases.
+- An exhibit from a **closed** source is never shown to learners. A curator can upload an **open alternative** (Slaag's own version) in the back office, linked to the original exhibit, versioned and reviewed. Learners only see exhibits from open sources or approved open alternatives.
+
+**Brand content licensing.** A `BrandContentLicence` lists which sources each brand offers; licences may overlap. The catalogue filters every query by the request's brand, and Family's textbook list for enrolment is filtered the same way. Managed in the back office.
 
 ### Content: ingestion pipeline
 Adopted 2026-11-22. Everything from upload to Gate 1 runs **automatically**; only question generation is curator-initiated (AC-C12).
@@ -300,13 +329,20 @@ newer PageVersion of the same page → Superseded (unfinished AI work discarded)
 ```
 
 - **Intake** is idempotent per (source file ID, revision). Pages are rendered to images in `MediaStore` (content-hashed) for reviewers and diagram crops; the AI reads the **original PDF pages**.
-- **Page identity:** reading detects the printed page number(s). A photo of a **spread** is split into two page versions; a page whose number is unclear goes to a curator **"assign page number"** queue.
-- **Index tree not a gate:** pages are read, extracted and reconciled before the index tree is confirmed. `IndexTreeConfirmed` (and every later tree correction) triggers **`PlacePages`** for all read page versions of that textbook: page → index node from the tree's page ranges; anchor → index node from its page and region, splitting a page at the headings captured during reading when a subtopic changes mid-page (an anchor spanning two pages goes by its start); the anchor's CAPS cross-reference comes from its node unless a teacher set one. Placement creates a new anchor version that is **auto-approved** (derived from a confirmed tree), or fills in a draft anchor. Unclear cases (no heading to split on, an anchor between nodes) and pages outside every range go to a curator **"unplaced"** queue, counted in coverage. **Anchors can go live before they are placed:** page-range scopes include them at once, index-node scopes once placed; Prep picks this up at the next session plan.
+- **Page identity:** (textbook, **edition label**, printed page number). Each upload carries an optional, curator-only **edition label** (never shown to parents); uploads without one belong to the textbook's **main edition**. Facts from every edition merge into the same facts as extra anchors. Parents' **page-range** scopes resolve against the main edition; index-node scopes don't depend on page numbers. Reading detects the printed page number(s). A photo of a **spread** is split into two page versions; a page whose number is unclear goes to a curator **"assign page number"** queue.
+- **Index tree not a gate:** pages are read, extracted and reconciled before the index tree is confirmed. `IndexTreeConfirmed` (and every later tree correction) triggers **`PlacePages`** for all read page versions of that textbook: page → index node from the tree's page ranges; anchor → index node from its page and region, splitting a page at the headings captured during reading when a subtopic changes mid-page (an anchor spanning two pages goes by its start); the anchor's CAPS cross-reference comes from its node unless a curator set one. Placement creates a new anchor version that is **auto-approved** (derived from a confirmed tree), or fills in a draft anchor. Unclear cases (no heading to split on, an anchor between nodes) and pages outside every range go to a curator **"unplaced"** queue, counted in coverage. **Anchors can go live before they are placed:** page-range scopes include them at once, index-node scopes once placed; Prep picks this up at the next session plan.
 - **Extraction** runs per page with the neighbouring pages' transcripts as context; an anchor's region may span **two consecutive pages**.
-- **Reconciliation** looks for a match first among the anchors on the superseded version of the same page, then among existing facts in the **same language and subject, across all grades** (`SimilarityIndex`), with an AI `MatchJudgement` proposing new / same / same with a core change. A teacher always confirms at Gate 1.
-- **`ContentAI` port:** `submit(task, urgency) → TaskRef` and `collect() → [(TaskRef, Done(result) | Failed(reason))]`, for `IndexProposal`, `PageReading`, `CandidateExtraction`, `MatchJudgement`. The adapter picks batch or real-time from `urgency`, batches tasks, and translates results into Content types; prompts and provider IDs stay inside it.
+- **Reconciliation** looks for a match first among the anchors on the superseded version of the same page, then among existing facts in the **same language and subject, across all grades**. No vector index: the search is narrowed to a **shortlist** (the old page version's anchors; then facts mapped to the **same standard node at the standard's mapping depth** (e.g. CAPS subtopic) as the candidate, trimmed by plain text search on key terms when a subtopic is large), and **one cheap-model `MatchJudgement` per page** compares the page's candidates with their shortlists, proposing new / same as fact X / same with a core change. Facts mapped to different CAPS subtopics are not compared; a duplicate that slips through is fixed later by a merge. A curator always confirms at Gate 1.
+- **`ContentAI` port:** `submit(task, urgency) → TaskRef` and `collect() → [(TaskRef, Done(result) | Failed(reason))]`, for `IndexProposal`, `PageReading`, `CandidateExtraction`, `MatchJudgement`, `QuestionGeneration`, `ModelAnswerCheck`, `DuplicateQuestionCheck`. The adapter picks batch or real-time from `urgency`, batches tasks, and translates results into Content types; prompts and provider IDs stay inside it.
 - **Out-of-order results:** a collector job hands each result to its `Record…` use case. Each page version advances independently; recording is idempotent per (page version, task kind, attempt); results for a superseded page version are ignored.
 - **Provenance:** every AI output records model, prompt version and cost, so pages can be re-extracted with better prompts (through the same reconciliation path) and cost is known per textbook.
+- **Failures and retries** (settings with decided defaults in one `ContentSettings`):
+  - **Steps with no AI cost** (fetch source, render, quality check, placement, shortlist search): retried automatically, 3 attempts (1 min → 10 min → 1 h), then `Failed` with an alert.
+  - **AI steps, transient failures that are usually not charged** (network error, rate limit, provider overloaded, expired batch request): a small number of automatic retries, which a setting can switch off.
+  - **AI steps, charged bad output** (invalid schema, cut-off answer): **no automatic retry**; the page version goes to `Failed` with the reason and the provider's message.
+  - **Content problems** (blur, skew) are never retried: the page is flagged for re-photographing.
+  - **Systemic protection:** when failures pass a threshold within one source document's upload or run (default: 5 in a row), the pipeline **pauses** for that source and alerts the curator, instead of spending more.
+  - **Manual retry** per page or in bulk (e.g. all failed pages of an upload), showing the **estimated cost before confirming**; a paused source is resumed by a curator after investigation.
 
 ### Content: question generation
 Adopted 2026-11-23. Generation is decoupled from uploads: a run selects **approved facts**, however and whenever they were approved.
@@ -324,10 +360,10 @@ StartGenerationRun(selection, mode, options, urgency)        ← curator only (A
 - **Fact selection** (any source documents): **ready for questions** (approved facts with a live anchor that has no questions yet), **approved since** a date or the last run, **by structure** (source documents, index nodes, page ranges), or **hand-picked**. Facts still in Gate 1 are skipped and picked up by a later run.
 - **Per anchor:** questions are written from anchors, so a fact with anchors in two selected sources gets questions for each.
 - **Units:** single facts (definitions, multiple choice, true/false, fill in the blank, "why"); **fact groups** for ordering and missing-step questions (one *part of* group) and paragraph questions (several linked facts). Every fact in a group needs a live anchor in the same source.
-- **Basis:** paraphrase (default) or **verbatim, meaning the anchor's verbatim text** (the wording in that textbook), not the canonical statement.
+- **Basis:** paraphrase (default) or **verbatim, meaning the anchor's verbatim text** (the wording in that textbook), not the canonical statement. Verbatim is allowed **only for anchors in open sources**.
 - **Draft question** carries type, proposed difficulty, fact IDs, **anchor IDs**, basis, model answer citing its facts, and rubric in the catalogue contract's format.
 - **Checks:** schema validation; a second AI pass checks **every** model answer contains nothing beyond its source facts (AC-C15a), failures dropped and counted; **mechanical rubrics are derived by code** from the question (correct option, sequence, blank, partial credit for ordering), never written by the AI.
-- **Duplicates:** existing questions on the same facts, **including rejected ones**, are sent to the AI as "avoid these"; afterwards a `SimilarityIndex` check drops anything too close, and logs it.
+- **Duplicates:** existing questions on the same facts, **including rejected ones**, are sent to the AI as "avoid these"; afterwards **one cheap-model `DuplicateQuestionCheck` per fact per run** compares the new drafts with that fact's existing questions and drops anything too close, logging it. No vector index is used.
 - **Modes:** **generate more** keeps existing questions and adds new ones (AC-C16); **regenerate** creates new drafts for the selected facts and **retires the old questions only once their replacements pass Gate 2**, so a fact is never left without live questions (use after a material edit, a better prompt or a rubric format change).
 
 ### Content: the live catalogue
@@ -351,6 +387,37 @@ reportProblem(questionId, version, reason)
 - **Never returned:** verbatim text, page images, drafts or review state (AC-C24). **Page numbers and index nodes are returned**, so Prep can point a child to their own textbook pages (Incremental "learn").
 - **Caching:** approved versions never change, so items are cached by (ID, version) with no invalidation; scope resolution queries the projection directly (about 180k facts).
 
+### Content: rubric format (catalogue contract, format version 1)
+Adopted 2026-11-23. The rubric is part of the content catalogue's published contract; `Marking` in Prep is its only interpreter. **For written types, the evaluator judges each key point and code decides the Verdict.**
+
+```
+Rubric (format version 1; versioned with its question)
+  questionType
+  — mechanical types (marked entirely by code) —
+  choice:        correctOptionIds[]
+  trueFalse:     correctValue; correction? → keyPoints   (for "true/false with correction")
+  blank:         blanks[] { acceptedAnswers[], spelling: exact | tolerant }
+  matching:      pairs[]; partialWhen: ≥ n correct pairs
+  ordering:      sequence[]; partialWhen: longest run in correct order ≥ n
+  — written types (key points judged by the evaluator, Verdict by code) —
+  keyPoints[]    { id, statement, weight, required, acceptedPhrasings[], factIds[] }
+  correctWhen:   all required points met AND total weight ≥ correctThreshold
+  partialWhen:   total weight ≥ partialThreshold
+  misconceptions[] { id, statement }   → any match forces Incorrect
+  neverCorrect[]                       answers that must never pass
+  tolerance:     spelling slips allowed; key terms must be recognisable (AC-E12)
+```
+
+- **Evaluator output** (stored on the response): `{ keyPointId → met | missed | uncertain, misconceptionIds[], confidence, evaluator }`. A required point that is *uncertain* (or low confidence) escalates to the more capable model; past the session cost cap the answer is **Close**.
+- **Escalation re-judges only the uncertain points:** the more capable model receives the question, model answer, the child's answer and **only the key points the first model marked uncertain**; the points already judged met or missed are kept. The escalation trigger is **not narrowed** in v1 (any uncertain required point or low confidence), so the grader spike and pilot give a quality baseline first; Peripheral facts escalate like any other.
+- **Prompt caching:** every grading request is ordered from most to least shared (fixed grading instructions → question, model answer and rubric → the child's answer), with a cache breakpoint after the fixed instructions, so the shared part is billed at the cache-read rate. The same ordering applies to content pipeline calls.
+- **Daily inference limit per child:** written answers sent to a model count against the child's daily limit (see [Usage limits](#usage-limits-generic)); past it, the answer is not sent to a model and the **child's sessions stop for the rest of the day**.
+- **Verdict rules in code:** a misconception or a `neverCorrect` match → Incorrect; all required points met and weight ≥ `correctThreshold` → Correct; weight ≥ `partialThreshold` → Partial; otherwise Incorrect. Changing thresholds lets stored responses be re-marked without asking the model again.
+- **Partial credit** is expressed by weights, required points and thresholds, not by listing allowed subsets of points.
+- **Fill in the blank:** code accepts exact matches and near matches within the spelling tolerance; an answer in the uncertain band between near match and clearly wrong is **Close** (no model call; the fact is asked again later).
+- **Mechanical rubrics** are derived by code from the question at generation time; written-type rubrics are generated with the question and reviewed at Gate 2.
+- **Worked example:** "Wat is fotosintese?" with K1 *plants make their own food* (2, required), K2 *energy from sunlight* (1), K3 *from water and carbon dioxide* (1); correct at 4, partial at 2. The answer "Plante maak hul eie kos met sonlig" → K1 met, K2 met, K3 missed → weight 3 → **Partial**, with feedback "you forgot water and carbon dioxide".
+
 ### Content: review and versioning
 Adopted 2026-11-22. One general **Review & Versioning** module (consolidation S10) serves every versioned item: the **fact core**, each **source anchor**, each fact's **link set**, and each **question** (with its model answer and rubric versioned together). A `FactCandidate` is not versioned; it is resolved once.
 
@@ -369,6 +436,11 @@ liveVersion(item)
 ```
 
 - **Policies per item type** decide review depth, the reviewer role and what approval triggers: **Gate 1** (full) for fact cores and new facts; **light review** for anchors and link sets; **Gate 2** for questions (judgement types fully reviewed; mechanical types in one `ReviewBatch` per generation run and source document, sampled).
+- **Reviewer mode per textbook or subject** (a setting): **AI review** (default for year 1, when reviewer capacity is close to zero) or **curator review** (switched on per textbook or subject when capacity exists).
+  - **AI review:** an independent AI check (a different prompt and, ideally, a different model from the one that produced the item) reviews **every** item: for fact candidates and anchors it compares them with the page image (verbatim accuracy, importance, links); for questions it checks the question, model answer and rubric against the source facts. **Confident pass → auto-approved and live; doubtful → the curator's queue.** This applies to judgement-type questions too.
+  - **Spot checks:** the curator reviews a random sample of auto-approved items at a rate they set; the results give a measured **error rate** per textbook and item kind.
+  - **Problem reports** from parents and children are the main safety net; ≥3 open reports still hide a question.
+  - **Curator review** keeps the original gates: every fact at Gate 1, sampled batches and full review of judgement types at Gate 2.
 - **One draft at a time per item.** A further edit joins the open draft or waits. Approving a draft based on version N when N+1 is live is refused; the editor rebases.
 - **Reviewers may approve their own edits** made while reviewing (AC-C10). Edits made outside review (e.g. by a curator) go to a reviewer's queue.
 - **Minor / material** applies to fact-core and link-set edits: material (e.g. adding or removing a step in a *part of* group) holds the affected questions until Gate 2; minor keeps them live and queues them for Gate 2.
@@ -395,6 +467,7 @@ Every rule is enforced **explicitly**, by a conditional update, a uniqueness rul
 | 12 | Credits once per activity | Redelivered event | Triggering event ID is the ledger entry key |
 | 13 | A revoked device can't obtain a new access token | A refresh races the revocation | Refresh is a conditional check against the `LinkedDevice` record (only non-revoked devices get a token). Requests themselves are verified from the 30-minute access token alone, with no store lookup, so a revoked device keeps working for **at most 30 minutes** |
 | 14 | Suspension blocks children immediately | Stale copy of Access | Access read from Billing's published query at request time; never copied |
+| 15 | A usage limit is never exceeded; the breach is flagged and alerted once per window | Concurrent answers from several devices of one child | Conditional increment on the (subject, limit, window) counter; the first increment that would pass the limit sets the flag and writes `UsageLimitReached` to the outbox in the same transaction |
 
 ### Consistency between contexts
 - Domain events use a **transactional outbox**: an event is saved in the same transaction as its state change and delivered **at least once** through the work queue. **Every handler is idempotent**, keyed by event ID. Delay is seconds, inside the 5-minute alert limits (AC-O1, O4).
@@ -429,12 +502,13 @@ Each context exposes one small published interface that hides a lot behind it; p
 | Notifications | `notify(recipient, alertType, payload)` + event handlers, set mutes | Channels, devices, templates, digest |
 | Rewards | event handlers, set goal, balance/goal queries | Credit table, levels, streaks |
 | Platform Config | resolve brand, resolve language, `Messages.render(messageKey, params, {brand, language})` | Brand records, fallback rules, message catalogues |
+| Usage Limits *(generic module, any context)* | `consume(subject, limitKey, amount) → Allowed \| LimitReached{firstBreach}`, `status(subject)`, staff: `clearFlag`, `setOverride` | Limit definitions, counters per window, flags, `UsageLimitReached` event |
 
 ### Consolidations
 | # | Smell avoided | Where | Design |
 |---|---|---|---|
 | S1 | Planning split into steps by time, as thin classes sharing the same knowledge | Prep | One deep **`PrepPlan`**: `plan(assessment, mastery, today) → decision {strategy, portion, nextSession, messageKeys}`; strategies are plug-ins inside it (AC-E20); runway never leaves it |
-| S2 | Grading knowledge leaking through the rubric format between Content and Prep | Content ↔ Prep | One **`Marking`** module in Prep: `mark(liveQuestion, answer, sessionBudget) → Verdict` for all question types; the rubric format is defined once, versioned, in the content catalogue's published contract |
+| S2 | Grading knowledge leaking through the rubric format between Content and Prep | Content ↔ Prep | One **`Marking`** module in Prep: `mark(liveQuestion, answer, sessionBudget) → Verdict` for all question types (mechanical types by code; written types from key-point judgements, Verdict by the rubric's rules in code); the rubric format is defined once, versioned, in the content catalogue's published contract |
 | S3 | Importance semantics duplicated across runway, selection, spacing, last-minute exclusion, readiness, weak keywords | Prep (+ catalogue contract) | Choosing which anchor's importance applies is **`effectiveImportance`**, defined once in the catalogue contract and used by both Content (generation defaults) and Prep. One **`Importance`** policy in Prep turns the effective tier + weight into priority, spacing and readiness weight; Content only assigns tiers and weights per anchor |
 | S4 | Fact-link semantics re-implemented in several places | Prep | Hidden inside one **`Mastery`** module (`record`, `estimate`, `readiness`); Content only stores typed links |
 | S5 | One port per need between contexts → thin pass-throughs | All contexts | **One published interface per context** (table above); `LearnerTuning` internal to Prep |
@@ -447,6 +521,23 @@ Each context exposes one small published interface that hides a lot behind it; p
 | S12 | Settings scattered | Prep | One **`PrepSettings`** with decided defaults; per-child tuning overrides |
 
 **Deliberately not merged:** Marking stays out of Content; Rewards and Notifications stay out of Prep (separate knowledge, separate reasons to change).
+
+### Usage limits (generic)
+Adopted 2026-11-23. A **generic module** any context uses to put a ceiling on how much one subject (a child, a parent, a device, a family) may consume in a time window, to protect against a compromised device or account and runaway cost. Limits are **settings with decided defaults**, not code.
+
+```
+UsageLimits.consume(subject, limitKey, amount = 1) → Allowed | LimitReached { firstBreach }
+UsageLimits.status(subject) → [{ limitKey, used, limit, window, flagged }]
+UsageLimits.clearFlag(subject, limitKey)              staff only
+UsageLimits.setOverride(subject, limitKey, limit)     staff only, with a reason
+```
+
+- **Limit definition** (setting): `limitKey`, subject type, window (calendar day in the platform time zone, Africa/Johannesburg), default limit, action on breach.
+- **Counter** per (subject, limit key, window), incremented with a conditional update (no-race invariant 15); counters for past windows are kept for reporting, then aged out.
+- **On the first breach in a window:** the subject is **flagged** and `UsageLimitReached { subjectType, subjectId, limitKey, window, used, limit }` is published through the outbox. **Notifications** sends a **system administrator** alert (a staff recipient, email); the flag is shown on the subject's record in the back office and the per-device support timeline, whichever device was used. Further breaches in the same window are counted but not alerted again.
+- **Callers decide what "not allowed" means** for their own work: the limit module never blocks requests itself.
+- **First limit:** `child.writtenAnswerInference.daily`, subject = **child** (not device, so it covers every device and the parent's app), default **300 written answers per day**. Prep's `Marking` calls `consume` before sending a written answer to a model (one count per answer, escalation included). Past the limit, **Prep stops the child's sessions for the rest of the day:** the answer that would pass the limit is not sent to a model, the current session ends with its progress saved, and no session can start until the next window; the child sees a neutral "done for today" message (a message key, no hard-coded text). The flag is **visible to staff only**. Staff clearing the flag or raising the limit lets sessions start again the same day; otherwise the counter resets with the next window. A suggested session that can't start because of the limit is **Missed as normal** (the parent gets the usual missed-session alert); accepted as an edge case.
+- **Future limits** (e.g. sign-in attempts, link-code redemption, sessions started per day) are new definitions on the same module, with no new mechanism.
 
 ## Design Conventions
 Adopted 2026-11-16 (Phase 5); apply in every code review.
@@ -475,7 +566,6 @@ Adopted 2026-11-16 (Phase 5); apply in every code review.
 | `IdentityProvider` (social sign-in) | Identity & Access | 2 |
 | `MediaStore` | Content | 3 |
 | `SourceRepository` (source PDFs by file ID + revision) | Content | 2 |
-| `SimilarityIndex` (meaning-based search: reconciliation, duplicate questions) | Content | 2 |
 
 ### Change impact (orthogonality)
 | Change | Modules touched | Guard |
@@ -548,7 +638,7 @@ Deliberately deferred work (Phase 8, 2026-11-16). Each keeps its seam from day 1
 | 2026-11-16 | **One system of record, partitioned logically by context;** no cross-context writes or write-path joins | One team, one backup/restore; seams kept clean for a later split | Separate stores per context (multi-step processes across contexts; more backups) |
 | 2026-11-16 | **Assessment fact sets are re-resolved live** from the published catalogue at each session plan; mastery keyed by stable fact ID | Content corrections and importance changes reach children from the next session (AC-C28, P12) | Fixed snapshot at creation (ignores corrections) |
 | 2026-11-16 | **Responses record the exact question and rubric version** | Traceability and grader validation survive content changes | Reference the question only |
-| 2026-11-16 | **14 invariants enforced explicitly** (conditional updates, uniqueness, per-aggregate version checks), never by default isolation | Write skew passes single-user tests and fails under load | Rely on the store's default isolation |
+| 2026-11-16 | **14 invariants enforced explicitly** (15 since 2026-11-23: usage limits) (conditional updates, uniqueness, per-aggregate version checks), never by default isolation | Write skew passes single-user tests and fails under load | Rely on the store's default isolation |
 | 2026-11-16 | **Transactional outbox + at-least-once delivery + idempotent handlers** for all cross-context events and outbound emails | No lost or doubled alerts, credits or billing emails | Publish after commit (events lost on crash); distributed transactions |
 | 2026-11-16 | **Derived views computed on read or by scheduled batch;** readiness % maintained with mastery | Enough at this scale; nothing extra to keep in sync | Event-driven projections for every view |
 | 2026-11-16 | **Access and device revocation read live** from the system of record on every request. *Device-revocation part superseded 2026-11-16 by the 30-minute access-token decision below; Access is still read live.* | Suspension and revocation must apply on the next request (AC-A12, A15) | Cached copies in other contexts |
@@ -578,6 +668,18 @@ Deliberately deferred work (Phase 8, 2026-11-16). Each keeps its seam from day 1
 | 2026-11-22 | **Fact-core edits are marked minor or material** when approved: minor keeps its questions live (queued for Gate 2), material takes them out until Gate 2 | A typo fix shouldn't pull questions; a changed meaning must | Always keep live; always take out |
 | 2026-11-22 | **Ingestion runs automatically from upload to Gate 1,** per page version, through `ContentAI` submit/collect; results are recorded idempotently in any order and carry model, prompt version and cost. See [Content: ingestion pipeline](#content-ingestion-pipeline) | Batch results arrive out of order and hours later; teachers shouldn't wait on each other; re-extraction with better prompts stays possible | Curator-triggered steps; request/response AI calls |
 | 2026-11-22 | **Pipeline rules:** spreads are split and unclear page numbers go to a curator queue; extraction sees neighbouring pages and an anchor may span two consecutive pages; reconciliation searches the same language and subject across all grades; pages are read and extracted before the index tree is confirmed and placed once it is; rendered page images for people, original PDF pages for the AI | User decisions | Blocking uploads on the index tree; per-grade matching; AI reading rendered images |
+| 2026-11-23 | **Standards** replace the CAPS-only cross-reference: each standard has its own levels and mapping depth, no versions (a material revision is a separate standard), and is ingested through the same pipeline as a new source type. **Textbooks span editions.** **Exhibits** (crops) are linked to facts, not facts; sources are **open or closed**, and closed-source exhibits reach learners only through an uploaded open alternative. **Brand content licences** filter the catalogue by brand. See [standards, editions, exhibits and brand licensing](#content-standards-editions-exhibits-and-brand-licensing) | Future curricula (Cambridge, IEB) without redesign; no edition friction for parents; copyright protection by design; brands choose their content | CAPS hard-coded; editions chosen by parents; diagram crops shown to learners |
+| 2026-11-24 | **Moderation belongs to Prep;** "teacher" is reserved for the deferred schools/teachers segment (future teaching-assistance features), not a staff role | Marking children's answers is grading, which Prep owns | Moderation in Content |
+| 2026-11-23 | **Moderator role:** staff who mark children's answers against rubrics ("close" queue, grader agreement samples, grader evaluation set) are **moderators**; they see answer text without names or identifiers. No teacher role remains | Clear name for answer marking, distinct from content curation | Calling them teachers |
+| 2026-11-23 | **Two back-office roles:** **content curator** (all content work, incl. review queues, spot checks, generation, standards, exhibits, reviewer mode) and **system administrator** (can do anything, incl. brand content licensing, settings, usage-limit flags); the teacher role is dropped and "teacher review" is now **curator review** | One person does most content work in year 1; fewer roles, less confusion | Separate teacher reviewer role |
+| 2026-11-23 | **AI review is the default reviewer in year 1:** an independent AI check (different prompt, ideally a different model) reviews every fact candidate, anchor and question; confident → live, doubtful → curator queue; curator spot checks at a set rate measure the error rate; problem reports are the safety net; teacher review is a per-textbook or per-subject setting | Almost no teacher capacity in year 1; content must still go live before the pilot | Teacher review of every fact (blocks all content without reviewers) |
+| 2026-11-23 | **Edition labels, standards in several languages, exhibit types, verbatim only from open sources:** pages identified by (textbook, edition label, page number), page ranges resolve against the main edition; one language-independent standard node with text per language; extraction down to content items where available; Standards as a module inside Content; exhibit type (diagram, table, chart/graph, map, photo, illustration, timeline, other) | No wrong page replacement across editions; Afrikaans and English textbooks share standard nodes; copyright | Separate trees per language; verbatim from any source |
+| 2026-11-23 | **Generic usage limits module;** first limit: 300 written answers sent to a model per child per day; past it, the child's sessions stop for the rest of the day; first breach flags the child (any device, staff-only) and alerts a system administrator; the child's sessions stop for the rest of the day. See [Usage limits](#usage-limits-generic) | Protects against a compromised device or account and runaway inference cost; one mechanism for future limits | Per-device limits (a compromised account uses several devices); per-endpoint rate limiting only |
+| 2026-11-23 | **Grading cost levers:** escalation trigger not narrowed until a quality baseline exists; escalation re-judges only the uncertain key points; prompt caching of fixed instructions; Peripheral facts escalate like others | Quality first, then tune from measured data; caching and partial re-judging cut cost without lowering quality | Narrow trigger or monthly escalation budget from day 1; skipping escalation for Peripheral facts |
+| 2026-11-23 | **Rubric format version 1 (O5):** the evaluator judges each key point and code decides the Verdict; partial credit by weights, required points and thresholds; fill-in-the-blank uncertain band → Close; mechanical types marked by code only. See [Content: rubric format](#content-rubric-format-catalogue-contract-format-version-1) | Feedback per key point, teacher-checkable grading, re-marking without model calls | The evaluator classifies whole answers (no reasons stored); listing allowed subsets of points; sending uncertain blanks to the model |
+| 2026-11-23 | **Grader stack:** Claude Haiku 5.5 primary (key-point judgements), Claude Sonnet 5.5 escalation when a required point is uncertain; TypeSafe Jev dropped (see TECH-STACK.md › Answer evaluation) | Jev classifies whole answers and can't judge key points; one vendor and one DPA | Jev primary with Haiku fallback (2026-11-16) |
+| 2026-11-23 | **No vector index (O3):** reconciliation uses a shortlist (old page anchors, then same CAPS subtopic trimmed by key-term text search) and one cheap-model call per page; duplicate questions use one cheap-model call per fact per run; the `SimilarityIndex` port is dropped | About one cheap call per page instead of ~200,000 vector lookups plus per-candidate expensive-model judgements; no extra extension or embedding model to run | pgvector with a multilingual embedding model (Afrikaans quality unknown) |
+| 2026-11-23 | **Pipeline retries (O4):** free steps retry automatically; AI steps retry automatically only for transient, usually uncharged failures; charged bad output waits for a manual retry; a source pauses after repeated failures; manual retries show the estimated cost | Control over AI spend; systematic failures are investigated, not repeated | Automatic retries on every step |
 | 2026-11-23 | **Content open points resolved** ([CONTENT-CONTEXT.md › Open points](CONTENT-CONTEXT.md#11-open-points)): merge/split is material by default (questions held until Gate 2) unless marked minor; regenerated questions retire the old ones per fact once one replacement is approved and the run's drafts for that fact are resolved; teacher reviewers retire facts and resolve orphaned anchors, teachers and curators may retire questions; index tree corrections re-run placement | A changed fact's questions aren't drilled unchecked; a fact never loses its live questions; retiring knowledge stays with teachers | Always keep questions live; retire old questions as soon as one replacement is approved |
 | 2026-11-23 | **The live catalogue is a stored projection** inside Content, updated from Review & Versioning events and rebuildable; liveness is stored and recalculated for dependants on each change; Prep gets page numbers and index nodes, never verbatim text or page images. See [Content: the live catalogue](#content-the-live-catalogue) | Simple, fast reads on the hot path; Incremental needs "study pages 12–14" | Liveness computed per query; index nodes only |
 | 2026-11-23 | **Question generation runs take a fact selection across any sources,** decoupled from uploads; Gate 2 batches per run and source document; modes generate more and regenerate (old questions retired only after replacements pass Gate 2); verbatim means the anchor's text; rejected questions count as duplicates; mechanical rubrics derived by code; every model answer AI-checked. See [Content: question generation](#content-question-generation) | Curation takes weeks across many PDFs; sampling stays meaningful per textbook; facts never lose their live questions; exact, repeatable mechanical marking | Runs tied to uploads or one source; one batch per run; regenerate that retires old questions first |
