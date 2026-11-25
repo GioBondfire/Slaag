@@ -166,6 +166,7 @@ content/
 │   │   │   ├── combine-candidates.ts
 │   │   │   ├── edit-candidate.ts
 │   │   │   ├── reject-candidate.ts
+│   │   │   ├── regenerate-with-feedback.ts   ← herskep met terugvoer (candidate or fact)
 │   │   │   └── resolve-orphaned-anchor.ts
 │   │   ├── facts/
 │   │   │   ├── edit-fact-core.ts
@@ -195,6 +196,7 @@ content/
 │   │   │   ├── review-sampled-question.ts
 │   │   │   ├── close-review-batch.ts
 │   │   │   ├── review-question.ts
+│   │   │   ├── regenerate-question-with-feedback.ts
 │   │   │   ├── retire-question.ts
 │   │   │   ├── retire-replaced-questions.ts
 │   │   │   ├── repoint-questions-after-lineage.ts
@@ -245,7 +247,8 @@ content/
         │   │   ├── question-generation.v1.md
         │   │   ├── model-answer-check.v1.md
         │   │   ├── duplicate-question-check.v1.md
-        │   │   └── ai-review.v1.md
+        │   │   ├── ai-review.v1.md
+        │   │   └── regeneration.v1.md
         │   ├── translate.ts                  ← provider output → Content draft types (anti-corruption)
         │   └── anthropic-content-ai.contract.test.ts
         ├── google-drive-source-repository.ts
