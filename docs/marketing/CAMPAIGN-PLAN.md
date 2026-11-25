@@ -59,6 +59,8 @@ The term is split into thirds, plus a short warm-up before school opens and a ho
 
 **Holiday message:** *celebrate, create envy, no blame*, e.g. *"Kwartaal klaar, toetse geskryf – Slaag-gesinne, julle het hierdie vakansie verdien! 🌴"*
 
+**Product descriptor** (fixed, locked up with the logo on every ad, post and landing-page header): **Slim toetsvoorbereiding · Graad 4–7** ("Smart test prep · Grade 4–7"). The headline grabs attention; the descriptor says what Slaag is.
+
 **Voice rules** ([Design Brief](../../DESIGN-BRIEF.md)): the cool older cousin, not a teacher or a cartoon. Address the reader as **"jy"** everywhere. **Never guilt-trip** or use fear copy ("don't let your child fall behind"). No flags or heritage symbols. **No Snippie in ads** for now (the name isn't cleared and the artwork isn't final).
 
 ## A5. Channels
@@ -238,6 +240,7 @@ All confirmed with the product owner on 2026-11-23/24. Nothing in this plan is a
 | 17 | **Free Meta Marketing API** for the report; no paid connector |
 | 18 | Meta signals: server-side `InitiateCheckout`, `Subscribe`, custom cancelled/suspended/reactivated; **no Pixel**; daily hashed emails of every Parent user; never child data |
 | 23 | **No marketing consent checkbox and no opt-out**; sharing with Meta disclosed in a privacy-notice line only (risk accepted) |
+| 24 | Fixed **product descriptor** next to the logo on every ad: *Slim toetsvoorbereiding · Graad 4–7* (2026-11-25) |
 | 19 | Term 1 budget split: warm-up R600 (5%), base R2,400 (20%), ramp R3,600 (30%), push R4,800 (40%), holiday R600 (5%) |
 | 20 | Weekly warning line: 10 sign-ups by 12 Jan, 60 by 3 Feb, 140 by 24 Feb, 250 by 19 Mar |
 | 21 | Retargeting window: checkout started without a sign-up in the **last 14 days** |

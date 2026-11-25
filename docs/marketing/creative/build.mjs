@@ -24,7 +24,11 @@ const logo = (size) => `
   <div style="display:flex;align-items:center;gap:${size * 0.28}px;color:${T.primary}">
     <svg width="${size}" height="${size}" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="10" fill="${T.primary}"/><path d="M9 16.5l4.5 4.5L23 11.5" fill="none" stroke="#FFF" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="25" cy="7" r="4" fill="${T.accent}"/></svg>
     <span style="font-size:${size * 0.85}px;font-weight:900;letter-spacing:-0.01em">Slaag</span>
+    <span style="align-self:stretch;width:3px;margin:${size * 0.12}px ${size * 0.08}px;background:${T.line};border-radius:2px"></span>
+    <span style="font-size:${size * 0.5}px;font-weight:800;color:${T.primaryDark}">${DESCRIPTOR}</span>
   </div>`;
+// Fixed product descriptor locked up with the logo on every ad (decision 2026-11-25).
+const DESCRIPTOR = 'Slim toetsvoorbereiding · Graad 4–7';
 
 const check = (c = T.primary, s = 28) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`;
 

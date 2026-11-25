@@ -2,7 +2,7 @@
 
 _Drafted 2026-11-24 with the Marketing plugin's `draft-content` method, from the angles chosen by the product owner. Campaign context: [CAMPAIGN-PLAN.md](../CAMPAIGN-PLAN.md) (Part B, asset C2). Images: [`../creative/term1-set1/`](../creative/term1-set1/), built with `node docs/marketing/creative/build.mjs term1-set1` (definitions in `creative/ads.mjs`)._
 
-**Voice applied:** the cool older cousin, "jy", no guilt or fear copy, no Snippie (Design Brief and campaign decisions 11–14). **Price line on every ad:** R149 per month for the whole family, cancel any time.
+**Voice applied:** the cool older cousin, "jy", no guilt or fear copy, no Snippie (Design Brief and campaign decisions 11–14). **On every image:** the logo with the fixed descriptor **"Slim toetsvoorbereiding · Graad 4–7"**, and the price line R149 per month for the whole family, cancel any time.
 
 ## Running order
 
