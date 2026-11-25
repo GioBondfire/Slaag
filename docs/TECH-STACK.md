@@ -74,7 +74,7 @@ The user's standing preferences for Slaag (2026-11-16). The decisions below star
 | Data | Source document repository | Google Drive (Shared Drive) for ingested source documents; back office reads via Drive API | decided |
 | Data | User-facing images & content files | Cloudflare R2 + Cloudflare CDN | decided |
 | Data | Backups | Continuous WAL archiving / PITR (WAL-G or pgBackRest) to Cloudflare R2 + Coolify scheduled pg_dump + Hetzner daily server backups; restore drill before pilot | decided |
-| Engine | Answer evaluation (grader) ◆ | AnswerEvaluationService: TypeSafe AI Jev primary; Claude Haiku 5.5 fallback below a configurable confidence threshold | decided (Afrikaans accuracy: research) |
+| Engine | Answer evaluation (grader) ◆ | AnswerEvaluationService: Claude Haiku 5.5 judges each rubric key point; Claude Sonnet 5.5 re-judges when a required point is uncertain; code decides the Verdict | decided (Afrikaans accuracy: research) |
 | API | Style: mobile BFF ◆ | `/api/mobile/v1/*` REST (Server Routes) for Android; Server Functions for web; both transport adapters over shared services | decided |
 | API | Versioning ◆ | Contract version (v1, v2) separate from app version; compile-time default, server config may select among versions the build supports; fixed trusted origins | decided |
 | API | Minimum supported app version | Server-driven minSupportedVersionCode (block + Play in-app update) and recommendedVersionCode (nudge) | decided |
@@ -103,7 +103,7 @@ The user's standing preferences for Slaag (2026-11-16). The decisions below star
 | Shared | Design tokens & brand theming | `packages/brands/<brand>.json` → generated Compose theme per flavor + seeded brand record driving the Mantine theme | decided |
 | Integrations | AI: page reading ◆ | PDFs directly to Claude Sonnet 5.5 (`claude-sonnet-5-5`); Batch API for production runs, real-time for urgent ingestion | decided |
 | Integrations | AI: content pipeline ◆ | Claude Opus 5.5 (`claude-opus-5-5`) via Batch API; real-time for curator-initiated runs | decided |
-| Integrations | AI: fallback grader | Claude Haiku 5.5 (`claude-haiku-5-5`), real-time | decided |
+| Integrations | AI: grader | Claude Haiku 5.5 (`claude-haiku-5-5`) primary, Claude Sonnet 5.5 (`claude-sonnet-5-5`) escalation, real-time | decided |
 | Integrations | Transactional email | Amazon SES (EU region) + React Email templates rendered in pg-boss jobs; per-brand verified domains | decided |
 | Integrations | Payments | PayFast (fixed by PRD) | decided |
 | Back office | Approach | Separate TanStack Start + Mantine app `apps/backoffice` on its own subdomain; staff-only Google sign-in with allow-list/roles | decided |
@@ -234,23 +234,25 @@ The user's standing preferences for Slaag (2026-11-16). The decisions below star
 ### Engine
 
 #### Answer evaluation (grader) ◆
-- **Context:** written answers are graded instantly against teacher-approved model answers and rubrics and marked correct, partial or incorrect (AC-E8). The grader must tolerate Afrikaans spelling slips, agree with teachers ≥ 90% of the time (AC-E9), and respect a per-session cost cap (AC-E11).
-- **Choice:** An `AnswerEvaluationService` abstraction in `packages/core`:
-  1. **Primary:** TypeSafe AI **Jev** (hosted API) classifies the answer as correct / partial / incorrect against the question's rubric, with calibrated per-option probabilities.
-  2. **Fallback:** only when Jev's confidence is below a configurable threshold, Claude Haiku 5.5 (`claude-haiku-5-5`) evaluates the answer with the teacher's rubric. The per-session cost cap applies here; once reached, a borderline answer is marked "close".
-  The threshold, cost cap and evaluator per language are configuration rows, not code.
+- **Context:** written answers are graded instantly against curator-approved model answers and rubrics and marked correct, partial or incorrect (AC-E8). The grader must tolerate Afrikaans spelling slips, agree with curators ≥ 90% of the time (AC-E9), and respect a per-session cost cap (AC-E11). Revised 2026-11-23: the evaluator judges **each key point** of the rubric and code decides the Verdict (ARCHITECTURE.md › Content: rubric format).
+- **Choice:** An `AnswerEvaluationService` abstraction in `packages/core`, behind Prep's `AnswerEvaluator` port:
+  1. **Primary:** Claude Haiku 5.5 (`claude-haiku-5-5`), real-time, judges each key point of the rubric as met / missed / uncertain, flags known misconceptions, and reports a confidence.
+  2. **Escalation:** when a **required** key point comes back uncertain, or confidence is below a configurable threshold, Claude Sonnet 5.5 (`claude-sonnet-5-5`) re-judges **only the uncertain key points**. The trigger is not narrowed until the grader spike and pilot give a quality baseline. The per-session cost cap applies; once reached, the answer is marked "close".
+  3. **Prompt caching:** fixed grading instructions first with a cache breakpoint, then question + model answer + rubric, then the child's answer. Cache reads are billed at ~0.1× the input price on Haiku 5.5 and 0.05× on Sonnet 5.5; the minimum cacheable prefix is 512 tokens on both, so the fixed instructions must be at least that long to cache.
+  4. **Daily limit per child:** at most 300 written answers per child per day go to a model (ARCHITECTURE.md › Usage limits); past it, the child's sessions stop for the rest of the day and a system administrator is alerted.
+  Mechanical question types (including fill-in-the-blank) are marked by code only, never by a model. The threshold, cost cap and evaluator per language are configuration rows, not code.
 - **Category:** Integrate
-- **Why:** Jev is an evaluation model (typed questions in, calibrated probabilities out), which maps directly onto a confidence threshold; it is very cheap (reported $0.042 per million input tokens, output free). The abstraction keeps evaluators replaceable.
-- **Preference:** specified by the user
-- **Alternatives rejected:** embedding similarity (pgvector) + pg_trgm, then an LLM — similarity scores are not calibrated confidence, and thresholds on raw cosine similarity are brittle across question types; a generative LLM for every answer — costs more and is slower when Jev should settle most cases.
-- **Facts checked (2026-11-16, mostly third-party sources):** Jev is hosted-only, in the US, with no EU region documented; TypeSafe offers a DPA with EU standard contractual clauses, says customer data isn't used for training, and offers zero data retention (enterprise / per request via the AI SDK). Vendor material names English as the primary language, with variable accuracy in other languages — no Afrikaans figures. Pricing page and docs were patchy in third-party reports.
+- **Why:** judgements per key point give feedback to the child ("you forgot …"), let moderators see exactly where the grader disagreed (AC-E9), and let verdicts be recalculated when rubric thresholds change without asking the model again. One vendor and one DPA for all model work.
+- **Preference:** specified by the user (2026-11-23)
+- **Alternatives rejected:** TypeSafe AI **Jev** as primary (decided 2026-11-16, replaced 2026-11-23) — cheapest per answer (~$0.04 per million input tokens, output free) with calibrated probabilities, but it classifies the **whole answer** and gives no judgement per key point; a second vendor and DPA. Embedding similarity (pgvector) + pg_trgm, then an LLM — similarity scores are not calibrated confidence, and thresholds on raw cosine similarity are brittle across question types.
+- **Facts checked (2026-11-16, Claude API reference cached 2026-11-03):** Haiku 5.5 $0.10 / $0.50 and Sonnet 5.5 $2 / $10 per million tokens input / output, so escalation costs about 20× a primary judgement. Roughly 1,000 tokens in and 200 out per written answer: ~$0.0002 on Haiku, ~$0.004 on Sonnet.
 - **Research:**
-  - **To learn:** does Jev reach ≥ 90% agreement with Afrikaans teachers' marking (AC-E9), including children's spelling slips? What threshold balances accuracy against fallback volume?
-  - **How:** teachers label 300–500 real-style Grade 4–7 Afrikaans answers; run Jev and Haiku 5.5; measure agreement and fallback rate per question type.
+  - **To learn:** does Haiku 5.5 reach ≥ 90% Verdict agreement with Afrikaans-speaking moderators (AC-E9), and how well does it agree **per key point**, including children's spelling slips? How often does escalation to Sonnet happen, and what cost cap does that imply?
+  - **How:** moderators label 300–500 real-style Grade 4–7 Afrikaans answers per key point; run Haiku and Sonnet; measure Verdict and key-point agreement and escalation rate per question type.
   - **Decide by:** before the January 2027 pilot (the pilot validates AC-E9 at scale).
-  - **If it fails:** the fallback LLM becomes primary for Afrikaans behind the same abstraction.
-- **POPIA:** children's answer text goes to US processors — sign TypeSafe's and Anthropic's DPAs, request zero retention, and send no names or identifiers: only question, model answer, rubric and answer text.
-- **Consequences:** no pgvector or embeddings needed for grading. The PRD's grader wording (Engine constraint, AC-E8, Technical Context) still says "similarity first" — amendment pending.
+  - **If it fails:** Sonnet 5.5 becomes primary for Afrikaans behind the same abstraction, with the cost cap retuned.
+- **POPIA:** children's answer text goes to a US processor — sign Anthropic's DPA, request zero retention, and send no names or identifiers: only question, model answer, rubric and answer text.
+- **Consequences:** no pgvector or embeddings needed for grading. Every written answer is a primary model call (the burst estimate in ARCHITECTURE.md › Back-of-envelope sizing applies). The grader spike measures key-point agreement, not only Verdicts.
 - **Status:** decided (Afrikaans accuracy: research)
 
 ### API & contract
@@ -465,16 +467,18 @@ The user's standing preferences for Slaag (2026-11-16). The decisions below star
 ### Integrations
 
 #### AI: page reading, content pipeline and fallback grader ◆
-- **Context:** content comes from PDFs of phone photos of Afrikaans textbook pages with no text layer. Each page becomes typed facts — verbatim plus 1–2 paraphrases, importance tier, links, textbook-index and CAPS tags — and questions with model answers and rubrics are generated from them. Teachers review every fact (Gate 1); question review is risk-based (Gate 2). The launch library is roughly 10,000 pages.
+- **Context:** content comes from PDFs of phone photos of Afrikaans textbook pages with no text layer. Each page becomes typed facts — verbatim plus 1–2 paraphrases, importance tier, links, textbook-index and CAPS tags — and questions with model answers and rubrics are generated from them. Curators review every fact (Gate 1); question review is risk-based (Gate 2). The launch library is roughly 10,000 pages.
 - **Choice:**
   - **Page reading:** source PDFs go directly to Claude Sonnet 5.5 (`claude-sonnet-5-5`, native PDF input), which transcribes each page verbatim with layout cues (headings, margin keywords, captions, diagram regions). Large production runs use the Message Batches API (50% cost, asynchronous); urgent ingestion uses the real-time API. No separate OCR engine for now.
   - **Content pipeline:** Claude Opus 5.5 (`claude-opus-5-5`) turns transcriptions into facts, tiers, links and tags, and generates questions with model answers and rubrics. Bulk runs use the Batch API; curator-initiated "generate more questions" uses the real-time API. Structured outputs validated against the Zod schemas.
-  - **Fallback grader:** Claude Haiku 5.5 (`claude-haiku-5-5`), real-time, behind `AnswerEvaluationService`.
+  - **Grader:** Claude Haiku 5.5 (`claude-haiku-5-5`) primary and Claude Sonnet 5.5 (`claude-sonnet-5-5`) escalation, real-time, behind `AnswerEvaluationService` (see *Engine → Answer evaluation*).
+  - **AI review (year-1 default reviewer):** an independent check of every fact candidate, anchor and question, with a different prompt and ideally a different model from the producer (e.g. Claude Sonnet 5.5 checking Claude Opus 5.5's extraction against the page image), at batch rates. Confident → approved; doubtful → curator queue.
+  - **Matching and duplicate checks:** Claude Haiku 5.5 at batch rates — one call per page to match fact candidates against a shortlist of existing facts (same CAPS subtopic, old page version), and one call per fact per generation run to drop duplicate questions. No vector index or embedding model (decided 2026-11-23).
   - All calls go through pg-boss and a thin AI-client module in `packages/core`, so models and providers are configuration.
 - **Category:** Integrate
-- **Why:** one vendor and one DPA for all generative work; the Batch API halves the cost of non-urgent work; token cost for ~10,000 pages is small next to teacher review time, so quality (fewer Gate 1/Gate 2 edits) is worth paying for.
+- **Why:** one vendor and one DPA for all generative work; the Batch API halves the cost of non-urgent work; token cost for ~10,000 pages is small next to curator review time, so quality (fewer Gate 1/Gate 2 edits) is worth paying for.
 - **Preference:** specified by the user (recommendation for reading was a hybrid OCR engine + Claude)
-- **Alternatives rejected:** a dedicated OCR engine (Google Cloud Vision / Document AI) plus an LLM — deferred: stronger verbatim fidelity, but another vendor and pipeline step before the pilot; it can slot in ahead of extraction later. Open-source OCR (Tesseract / PaddleOCR) on the worker — weaker on curved, low-light phone photos and uses the single VPS's CPU. Sonnet 5.5 for extraction and generation — teacher time costs far more than the token difference. Sonnet 5.5 as fallback grader — ~20× Haiku's cost per answer, so the cost cap is reached sooner.
+- **Alternatives rejected:** a dedicated OCR engine (Google Cloud Vision / Document AI) plus an LLM — deferred: stronger verbatim fidelity, but another vendor and pipeline step before the pilot; it can slot in ahead of extraction later. Open-source OCR (Tesseract / PaddleOCR) on the worker — weaker on curved, low-light phone photos and uses the single VPS's CPU. Sonnet 5.5 for extraction and generation — curator time costs far more than the token difference. Sonnet 5.5 as fallback grader — ~20× Haiku's cost per answer, so the cost cap is reached sooner.
 - **Facts checked (2026-11-16, Claude API reference cached 2026-11-03):** prices per million tokens input/output — Opus 5.5 $4/$20, Sonnet 5.5 $2/$10, Haiku 5.5 $0.10/$0.50 (Haiku up to 100K-token prompts); Batch API runs asynchronously at 50% cost; PDF input up to 600 pages / 32 MB per request.
 - **Consequences:**
   - Verbatim risk: a vision model may silently normalise wording. Gate 1 compares verbatim facts with the page image; if the pilot's edit rate on verbatim text is high, add an OCR engine.
@@ -606,7 +610,7 @@ The user's standing preferences for Slaag (2026-11-16). The decisions below star
 | K6 PayFast web-only, webhook lifecycle | Webhook inbox + pg-boss; no prices in Android (thin client) |
 | K7 Multi-brand | Brand records in Postgres; Android product flavors; brand token JSON; per-brand OAuth, Firebase, SES domains, PayFast merchants. **Open:** cross-brand sign-in (research) |
 | K8 Language-driven | Paraglide + inlang files as single source → Android strings.xml, emails, push; CI fails on missing keys |
-| K9 AI pipeline + grader | Sonnet 5.5 page reading, Opus 5.5 content pipeline; Jev + Haiku 5.5 grader. **Open:** Afrikaans accuracy (research) |
+| K9 AI pipeline + grader | Sonnet 5.5 page reading, Opus 5.5 content pipeline; Haiku 5.5 grader with Sonnet 5.5 escalation. **Open:** Afrikaans accuracy (research) |
 | K10 Push, email, in-app | FCM via pg-boss; SES + React Email; in-app reminders on web open |
 | K11 Back office | `apps/backoffice` (TanStack Start + Mantine); Google Drive source repository |
 | K12 Engine + scheduled work | `packages/core` services; pg-boss schedules (missed sessions, digests) |
@@ -621,7 +625,6 @@ The user's standing preferences for Slaag (2026-11-16). The decisions below star
 | PayFast | Payments | Parent billing details | South Africa |
 | Amazon SES | Email | Parent email addresses, email content | EU region |
 | Anthropic | Content pipeline, fallback grading | Textbook content; answer text without identifiers | US (check inference location options) |
-| TypeSafe AI (Jev) | Primary grading | Answer text without identifiers | US |
 | Sentry | Error tracking | Technical errors, scrubbed of names/answers | EU region |
 | Better Stack | Logs, uptime | Server logs (avoid personal data in logs) | EU region |
 
@@ -643,8 +646,10 @@ Rough monthly estimates, checked 2026-11-16 from third-party sources where noted
 | Cloudflare R2 | ~$0–5 | ~$5–15 | Free tier then per GB stored; no egress fees |
 | Amazon SES | <$5 | ~$10–30 | ~$0.10 per 1,000 emails |
 | Claude (ingestion, one-off) | ~$150–400 total | per new textbook | Opus 5.5 + Sonnet 5.5 at batch rates for ~10,000 pages (estimate) |
-| Claude Haiku 5.5 (fallback grading) | <$5 | <$30 | $0.10 / $0.50 per M tokens; only below Jev threshold |
-| TypeSafe Jev | <$1 | <$10 | ~$0.042 per M input tokens |
+| Claude Haiku 5.5 (grading, every written answer) | <$10 | ~$250 (~$3,000/year) | ~$0.00015 per written answer with the fixed instructions cached (~$0.0002 without) × ~20M written answers/year (66M answers × ~30% written; ARCHITECTURE.md › sizing). Estimate; written share measured in the pilot |
+| Claude Sonnet 5.5 (grading escalation) | <$10 | ~$170 per 5% escalation rate: 5% ~$170 (~$2,000/year) · 10% ~$330 (~$4,000/year) · 20% ~$670 (~$8,000/year) | ~$0.002 per escalation with caching and only the uncertain key points re-judged (~$0.004 without) × escalation rate × ~20M written answers/year. Trigger not narrowed in v1; the rate is measured in the grader spike. The 20% case is the old Phase 3 "borderline" guess, not data. Bounded per session by the cost cap and per child by the 300/day limit |
+| Claude Sonnet 5.5 (AI review of facts and questions) | ~$500–1,000 total | per new textbook | Rough: ~1 batch call per page for fact candidates (page image + candidates) and ~1 per fact for its questions, at batch rates (estimate; measured on the first textbook) |
+| Claude Haiku 5.5 (fact matching, duplicate questions) | <$5 | per new textbook | ~1 call per page + 1 per fact per generation run, batch rates (estimate) |
 | Sentry | $0 | ~$26+ | Free developer tier, then team plan (confirm) |
 | Better Stack | $0 | ~$25+ | Free tier, then paid (confirm) |
 | Google Play developer account | $25 once | — | |
@@ -656,7 +661,7 @@ Rough monthly estimates, checked 2026-11-16 from third-party sources where noted
 - **PRD amendments not yet applied.** Another session regenerates `docs/PRD.md` from `.omc/specs/deep-interview-slaag-prd.md`, which overwrote an earlier edit. Make these changes through that spec:
   1. ~~Constraints and Technical Context: hosting outside South Africa~~ — **done 2026-11-16** (PRD Revision 12: international hosting allowed under POPIA s72; the PRD stays provider-neutral, so EU/Hetzner remains recorded here only).
   2. ~~Engine constraint, AC-E8 and Technical Context: grading by evaluation model with confidence threshold, not keyword/semantic similarity~~ — **done 2026-11-16** (PRD Revision 13).
-- **Research — Jev Afrikaans accuracy (AC-E9):** labelled evaluation set before the January 2027 pilot (*Engine → Answer evaluation*).
+- **Research — grader Afrikaans accuracy (AC-E9):** Haiku 5.5 Verdict and key-point agreement and Sonnet escalation rate on a labelled evaluation set before the January 2027 pilot (*Engine → Answer evaluation*).
 - **Research — cross-brand parent sign-in (K7):** decide before brand #2 (*Identity → Cross-brand parent sign-in*).
 - **PayFast amount changes:** confirm the subscription API can change the recurring amount for partner-campaign discounts (PRD Revision 11).
 - **POPIA s72 follow-ups:** sign DPAs with every processor listed above; privacy notice states EU storage and lists processors.

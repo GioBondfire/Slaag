@@ -7,7 +7,7 @@ All values below are **starting budgets** (2026-11-16), to be tuned from pilot m
 ## Integration-Point Audit
 | Dependency (role) | Call style | Timeout (connect / response) | Circuit breaker | Bulkhead | Retry policy | Degradation | Status |
 |---|---|---|---|---|---|---|---|
-| **LLM grader** | Synchronous; the child waits | 1 s / **4 s total budget** | Opens at ≥50% failures or timeouts in 30 s (min. 20 calls); half-open after 30 s | **≤30 concurrent calls**; when full, Verdict = Close immediately | None (time budget) | Verdict **Close** at once; child continues; Close answers queued for teacher marking (AC-E12); Close is neutral for mastery | designed |
+| **LLM grader** | Synchronous; the child waits | 1 s / **4 s total budget** | Opens at ≥50% failures or timeouts in 30 s (min. 20 calls); half-open after 30 s | **≤30 concurrent calls**; when full, Verdict = Close immediately | None (time budget) | Verdict **Close** at once; child continues; Close answers queued for moderator marking (AC-E12); Close is neutral for mastery | designed |
 | **Payment provider**: user-facing (checkout, card update) | Synchronous | 2 s / 10 s | Opens after 5 failures in 60 s; half-open after 60 s | ≤10 concurrent | None (the parent retries) | Friendly "try again shortly"; no account change; children unaffected (Access held locally) | designed |
 | **Payment provider**: background (cancel, amount change, status check) | Work queue | 2 s / 15 s | Shared with the row above | Own queue lane | Exponential backoff + jitter, ≤6 attempts over ~24 h, idempotency key; then flag staff | Delayed; reversion unconfirmed before the next billing date alerts staff (AC-A33) | designed |
 | **Payment provider**: inbound webhooks | Received | — | — | — | Provider redelivers | Verify authenticity → save to inbox → acknowledge fast → process in the background; **daily reconciliation** against provider status catches lost webhooks | designed |
@@ -38,6 +38,7 @@ All values below are **starting budgets** (2026-11-16), to be tuned from pilot m
 **Self-inflicted load**
 - [ ] Landing pages (marketing campaigns and partners) served from the edge cache (a partner newsletter can reach hundreds of thousands of members at once). (Owner: team, P1)
 - [ ] Rate limits on checkout, sign-in (AC-A1a) and **link-code redemption** (guessing an 8-character code). (Owner: team, P1)
+- [ ] **Usage limits module** with the first limit: 300 written answers per child per day sent to a model; past it, stop the child's sessions for the rest of the day; flag the child (staff only) and alert a system administrator on the first breach (AC-E25, ARCHITECTURE.md › Usage limits). Candidates for later limits on the same module: sign-in attempts, link-code redemption, sessions per day. (Owner: team, P1)
 - [ ] The session-due push fan-out is spread over 1–2 minutes through the queue. (Owner: team, P1)
 
 ## Health Checks & Metrics
