@@ -254,6 +254,7 @@ One use case per operation. Each loads aggregates, calls domain behaviour, saves
 | `CombineCandidates` | Curator | Joins candidates into one before approval (no lineage) |
 | `EditCandidate` | Curator | Edits statement, paraphrases, anchor details, importance or links before deciding |
 | `RejectCandidate` | Curator | Rejects; no `FactId` is created |
+| `RegenerateWithFeedback` (candidate or fact) | Curator | **Herskep met terugvoer:** the curator selects what to redo (statement, paraphrase 1 or 2), writes feedback, and the AI produces a new draft version of the **same** candidate or fact (same ID), which goes back through review. Works on one item or a batch with one note. The feedback is stored with the version and can be added to the evaluation set |
 | `ResolveOrphanedAnchor` | Curator | For an old anchor with no match after page replacement: retire it or re-anchor elsewhere; a fact left with no anchor is retired |
 
 ### 6.7 Fact maintenance (approved facts)
@@ -287,6 +288,7 @@ One use case per operation. Each loads aggregates, calls domain behaviour, saves
 | `OpenReviewBatches` | Event (`GenerationRunCompleted`) | One batch per source document for mechanical questions; draws the ~10% sample |
 | `ReviewSampledQuestion` | Curator | Pass / fail (with edits) for a sampled question |
 | `CloseReviewBatch` | Job | ≥95% → approve all; otherwise send all to the full queue |
+| `RegenerateQuestionWithFeedback` | Curator | **Herskep met terugvoer** for questions: select question, model answer and/or rubric, write feedback; the AI produces a new draft version of the same question (one item, or a batch such as all "why" questions on one topic in a run), which goes back through review. Feedback stored with the version |
 | `ReviewQuestion` | Curator | Full review: approve, edit (question, model answer, rubric together), set difficulty, reject |
 | `RetireReplacedQuestions` | Event (`VersionApproved` in regenerate mode) | For each fact: once it has at least one approved replacement from the run **and** all the run's drafts for that fact are resolved, retires its old questions |
 | `RepointQuestionsAfterLineage` | Event (`FactsMerged` / `FactSplit`) | Re-points questions to the new fact(s) and sends them to Gate 2; held until then if the merge/split was material, live if minor |
@@ -359,7 +361,7 @@ Read models, not use cases; they don't load aggregates.
 
 | Port | Operations (in short) | Boundary ([ARCHITECTURE.md › Boundary map](ARCHITECTURE.md#boundary-map)) |
 |---|---|---|
-| `ContentAI` | `submit(task, urgency) → TaskRef`; `collect() → [(TaskRef, Done(result) \| Failed(reason))]`; tasks: `IndexProposal`, `PageReading`, `CandidateExtraction`, `MatchJudgement`, `QuestionGeneration`, `ModelAnswerCheck`, `DuplicateQuestionCheck`, `StandardExtraction`, `StandardNodeMatch`, `AiReview` | Full + anti-corruption |
+| `ContentAI` | `submit(task, urgency) → TaskRef`; `collect() → [(TaskRef, Done(result) \| Failed(reason))]`; tasks: `IndexProposal`, `PageReading`, `CandidateExtraction`, `MatchJudgement`, `QuestionGeneration`, `ModelAnswerCheck`, `DuplicateQuestionCheck`, `StandardExtraction`, `StandardNodeMatch`, `AiReview`, `Regeneration` | Full + anti-corruption |
 | `SourceRepository` | `fetch(fileId, revision) → document`; `revisionOf(fileId)` | Full |
 | `MediaStore` | `put(content) → contentHashedRef`; `urlFor(ref, audience)`; crop storage | Partial |
 | Repositories | One per aggregate: `SourceDocuments`, `IndexTrees`, `Uploads`, `Pages`, `FactCandidates`, `Facts`, `SourceAnchors`, `FactLinkSets`, `Questions`, `GenerationRuns`, `ReviewBatches`, `ProblemReports`; each with optimistic version checks | Full |
@@ -465,6 +467,7 @@ plus the events `FactsMerged` and `FactSplit`. Never verbatim text, page images,
 | O12 | Where Standards live | A module inside the Content context |
 | O14 | Exhibit types | Diagram, table, chart/graph, map, photo, illustration, timeline, other |
 | O15 | Measuring AI quality in the pipeline | **Content AI evaluation set** with a gate on every prompt, model or pipeline change; first gold set before the first textbook; see [TESTING.md › Content AI evaluation](TESTING.md#content-ai-evaluation) |
+| O16 | Regenerating with feedback | Kept as a curator tool (**herskep met terugvoer**) for candidates, facts and questions: a new draft version of the same item, back through review; the feedback is stored and can feed the evaluation set |
 
 ### Still open
 | # | Open point | Suggested direction |
