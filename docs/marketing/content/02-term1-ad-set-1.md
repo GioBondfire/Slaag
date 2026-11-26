@@ -2,7 +2,7 @@
 
 _Drafted 2026-11-24 with the Marketing plugin's `draft-content` method, from the angles chosen by the product owner. Campaign context: [CAMPAIGN-PLAN.md](../CAMPAIGN-PLAN.md) (Part B, asset C2). Images: [`../creative/term1-set1/`](../creative/term1-set1/), built with `node docs/marketing/creative/build.mjs term1-set1` (definitions in `creative/ads.mjs`)._
 
-**Voice applied:** the cool older cousin, "jy", no guilt or fear copy, no Snippie (Design Brief and campaign decisions 11–14). **On every image:** the logo with the fixed descriptor **"Slim toetsvoorbereiding · Graad 4–7"**, and the price line R149 per month for the whole family, cancel any time.
+**Voice applied:** the cool older cousin, "jy", no guilt or fear copy, no Snippie (Design Brief and campaign decisions 11–14). **On every image:** the logo with the fixed descriptor **"Slim toetsvoorbereiding · Graad 4–7"**, and the soft prompt **"Kyk hoe Slaag werk →"** ("See how Slaag works →"). **No price in warm-up and base ads** (decision 25); the price appears on the landing page.
 
 ## Running order
 
@@ -32,8 +32,6 @@ A1 keeps running at a low share in the base phase only if it beats one of the ba
 > Die nuwe kwartaal begin. Hierdie keer sonder die paniek die aand voor die toets. 🎒
 >
 > Slaag maak jou kind toetsgereed, uit hul eie handboek – en jy weet altyd waar julle staan.
->
-> R149 per maand vir die hele gesin. Kanselleer enige tyd.
 
 **Headline:** Nuwe kwartaal. Kalmer toetse.
 **Description:** Graad 4–7 · In Afrikaans
@@ -47,8 +45,6 @@ A1 keeps running at a low share in the base phase only if it beats one of the ba
 > Werk, kos, huiswerk, bad – en dan nog die handboek uithaal om vrae te vra? 😮‍💨
 >
 > Slaag vra jou kind die vrae uit hul eie handboek, in kort sessies. Jy kry net 'n boodskap: klaar, en hoe dit gegaan het.
->
-> R149 per maand vir die hele gesin. Kanselleer enige tyd.
 
 **Headline:** Geen tyd om elke aand vrae te vra nie?
 **Description:** Slaag vra die vrae. Jy sien die uitslag.
@@ -62,8 +58,6 @@ A1 keeps running at a low share in the base phase only if it beats one of the ba
 > "Ek het geleer, Ma." Maar weet jy regtig? 🤔
 >
 > Slaag wys jou wat sit al en wat nog nie. Ná elke sessie sien jy die telling, die swak plekke en die volgende stap – op jou foon, met een kyk.
->
-> R149 per maand vir die hele gesin. Kanselleer enige tyd.
 
 **Headline:** "Ek het geleer, Ma." Maar weet jy regtig?
 **Description:** Sien met een kyk of julle op koers is.
@@ -77,8 +71,6 @@ A1 keeps running at a low share in the base phase only if it beats one of the ba
 > Niemand hou daarvan om te sê "nee, dis nie heeltemal reg nie" – nie jy nie, en nie jou kind nie.
 >
 > Slaag merk die antwoorde, wys wat reg was en wat nog kort, en moedig aan. Jy kan weer die een wees wat trots is. 💚
->
-> R149 per maand vir die hele gesin. Kanselleer enige tyd.
 
 **Headline:** Wees weer net Ma, nie die eksaminator nie.
 **Description:** Slaag merk. Jy moedig aan.

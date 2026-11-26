@@ -98,7 +98,7 @@ function html(ad, fmt) {
   <div style="position:relative">${logo(tall ? 64 : 52)}</div>
   <div style="position:relative;font-size:${hSize}px;line-height:1.05;font-weight:900;letter-spacing:-0.015em;max-width:940px">${ad.imageHeadline}</div>
   <div style="position:relative;display:flex;flex-direction:column;flex:1;justify-content:center;${tall ? 'zoom:1.15' : ''}">${mocks[ad.mock]()}</div>
-  <div style="position:relative;align-self:flex-start;background:${T.primary};color:#FFF;font-size:${tall ? 38 : 30}px;font-weight:800;padding:${tall ? '22px 40px' : '18px 32px'};border-radius:${tall ? '36px' : '999px'};line-height:1.3">${tall ? 'R149/maand vir die hele gesin<br><span style="font-weight:700;opacity:.92">Kanselleer enige tyd</span>' : 'R149/maand vir die hele gesin · Kanselleer enige tyd'}</div>
+  <div style="position:relative;align-self:flex-start;background:${T.primary};color:#FFF;font-size:${tall ? 38 : 30}px;font-weight:800;padding:${tall ? '22px 40px' : '18px 32px'};border-radius:${tall ? '36px' : '999px'};line-height:1.3">${ad.footer ?? 'Kyk hoe Slaag werk →'}</div>
 </div></body></html>`;
 }
 

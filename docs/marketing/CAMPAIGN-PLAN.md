@@ -55,7 +55,7 @@ The term is split into thirds, plus a short warm-up before school opens and a ho
 | 3 | **Your child actually wants to do it.** Short sessions, instant feedback, credits and badges; never shamed | "Will my child use it?" / screen time | Base, ramp |
 | 4 | **Calmer than the night before.** Enter the test date and Slaag plans one session at a time, even with a test tomorrow | Evening battles, late discovery | Ramp, push |
 
-**Price line:** *R149 per maand vir die hele gesin (tot 3 kinders). Kanselleer enige tyd.* (Under R50 per child for three children.)
+**Price line:** *R149 per maand vir die hele gesin (tot 3 kinders). Kanselleer enige tyd.* (Under R50 per child for three children.) **Not shown in warm-up and base ads**: early ads build interest and the price lives on the landing page. Ramp and push ads may show it (decide per set).
 
 **Holiday message:** *celebrate, create envy, no blame*, e.g. *"Kwartaal klaar, toetse geskryf – Slaag-gesinne, julle het hierdie vakansie verdien! 🌴"*
 
@@ -241,6 +241,7 @@ All confirmed with the product owner on 2026-11-23/24. Nothing in this plan is a
 | 18 | Meta signals: server-side `InitiateCheckout`, `Subscribe`, custom cancelled/suspended/reactivated; **no Pixel**; daily hashed emails of every Parent user; never child data |
 | 23 | **No marketing consent checkbox and no opt-out**; sharing with Meta disclosed in a privacy-notice line only (risk accepted) |
 | 24 | Fixed **product descriptor** next to the logo on every ad: *Slim toetsvoorbereiding · Graad 4–7* (2026-11-25) |
+| 25 | **No price in warm-up and base ads**; their footer is the soft prompt "Kyk hoe Slaag werk →" (2026-11-26) |
 | 19 | Term 1 budget split: warm-up R600 (5%), base R2,400 (20%), ramp R3,600 (30%), push R4,800 (40%), holiday R600 (5%) |
 | 20 | Weekly warning line: 10 sign-ups by 12 Jan, 60 by 3 Feb, 140 by 24 Feb, 250 by 19 Mar |
 | 21 | Retargeting window: checkout started without a sign-up in the **last 14 days** |
