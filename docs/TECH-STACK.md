@@ -499,7 +499,7 @@ The user's standing preferences for Slaag (2026-11-16). The decisions below star
 - **Choice:** PayFast
 - **Category:** Integrate
 - **Why:** fixed by the PRD (K6).
-- **Open:** partner campaigns (PRD Revision 11) need the recurring amount to change after a discount period — confirm PayFast's subscription API supports amount changes.
+- **Open (sandbox spike before the pilot; [BILLING-CONTEXT.md › O-B1](logical-design/BILLING-CONTEXT.md#11-open-points)):** changing the recurring amount by API (now needed for standard fee changes, not only offers); an ITN per failed attempt; a paused status after the final retry; a card-expiry signal; masked card details; fetching subscription status (reconciliation); cancelling by API; a subscription with no initial amount; ad-hoc charges on a token (second products, D9); the minimum amount.
 - **Status:** decided
 
 ### Back office

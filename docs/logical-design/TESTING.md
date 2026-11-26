@@ -62,6 +62,8 @@ Targets are starting values, adjusted after the first run.
 | 7 | Offer sign-up → discount locked in → reversion notice → amount change confirmed | Use-case + payment sandbox | planned |
 | 8 | Account erasure → every context erases its data (incl. removal from ad-platform audiences) | Use-case + end-to-end | planned |
 | 9 | Second (test) brand configured with no code change (AC-B8) | End-to-end | planned |
+| 10 | Cancel (mandate ended at once) → Cancelling → resume before month end (no charge, billing from the 2nd) → Active; and cooling-off refund → Cancelled at once, access ends | Use-case + payment sandbox | planned |
+| 11 | Out-of-order and repeated notifications; two checkouts completed in two tabs (second mandate ended, refunded, flagged); daily reconciliation catches a lost notification | State-machine table + use-case | planned |
 
 ## CI Gates
 Run in this order; a failing gate stops the pipeline.

@@ -60,7 +60,7 @@ All values below are **starting budgets** (2026-11-16), to be tuned from pilot m
 - Oldest queue message older than 5 min
 - Webhook in the inbox unprocessed for more than 15 min
 - A circuit breaker **stays** open for more than 10 min (opening alone is expected behaviour)
-- Fee reversion unconfirmed before the next billing date
+- Amount change (fee change; offer reversion after launch) unconfirmed before the next billing date
 - Close rate or LLM cost per session spikes
 - Anything in the dead-letter queue
 
